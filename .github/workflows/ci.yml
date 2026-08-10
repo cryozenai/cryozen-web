@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A superseded run tells you nothing, so cancel it and keep the queue short.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `next build` type-checks the whole project, so this covers TypeScript
+      # too. No GITHUB_TOKEN is provided on purpose: the build must stay green
+      # when the GitHub Releases API is unreachable, which is exactly the
+      # fallback path lib/releases.ts implements.
+      - name: Build
+        run: npm run build
