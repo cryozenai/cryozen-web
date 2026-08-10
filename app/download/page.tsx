@@ -152,7 +152,7 @@ export default async function DownloadPage() {
             </p>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <div className="space-y-2">
               {dockerCommands.map((command) => (
                 <CopyCommand key={command} command={command} />
