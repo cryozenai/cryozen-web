@@ -51,6 +51,15 @@ const markdownComponents: Components = {
       {...props}
     />
   ),
+  img: ({ node, alt, ...props }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      {...props}
+      alt={alt ?? ""}
+      loading="lazy"
+      className="my-4 h-auto max-w-full rounded-lg border border-hairline"
+    />
+  ),
   hr: () => <hr className="my-6 border-hairline" />,
   strong: ({ node, ...props }) => (
     <strong className="font-semibold text-ink" {...props} />

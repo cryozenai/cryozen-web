@@ -1,0 +1,24 @@
+version: 2
+
+updates:
+  # Next, React, and Tailwind move quickly, and this site pins several of them
+  # exactly. Without this, those pins rot silently.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the routine noise, so review attention goes to the majors.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # The workflow pins actions by major tag; this keeps those majors current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
