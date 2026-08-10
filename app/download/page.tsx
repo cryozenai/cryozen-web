@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { ButtonLink, Card, Container, Eyebrow, InlineCode } from "@/components/ui";
+import {
+  ButtonLink,
+  Card,
+  Container,
+  Eyebrow,
+  InlineCode,
+  primaryButton,
+} from "@/components/ui";
 import { PlatformIcon } from "@/components/platform-icon";
 import { CopyCommand } from "@/components/copy-command";
 import { desktopPlatforms, getPlatform } from "@/lib/platforms";
@@ -115,7 +122,7 @@ export default async function DownloadPage() {
 
               <a
                 href={href}
-                className="mt-8 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-base transition-colors duration-150 hover:bg-glow"
+                className={`${primaryButton} mt-8 inline-flex gap-2 px-5 py-3`}
               >
                 Download for {platform.shortName}
               </a>

@@ -48,16 +48,22 @@ export function SectionHeading({
 
 type ButtonVariant = "primary" | "secondary" | "ghost";
 
-const variants: Record<ButtonVariant, string> = {
-  primary:
-    "bg-primary text-base hover:bg-glow shadow-[0_0_40px_-12px_var(--color-primary)]",
-  secondary:
-    "border border-hairline bg-surface/80 text-ink hover:border-primary/50 hover:text-core",
-  ghost: "text-muted hover:text-core",
-};
-
+/*
+ * Shape and colour only. Display, gap, and padding stay with the call site,
+ * because Tailwind resolves conflicting utilities by stylesheet order, not by
+ * class-list order, so a shared `px-5` cannot be reliably overridden by `px-4`.
+ */
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-colors duration-150";
+  "items-center justify-center rounded-lg text-sm font-semibold transition-colors duration-150";
+
+export const primaryButton = `${buttonBase} bg-primary text-ground hover:bg-glow`;
+export const secondaryButton = `${buttonBase} border border-hairline bg-surface/80 text-ink hover:border-primary/50 hover:text-core`;
+
+const variants: Record<ButtonVariant, string> = {
+  primary: `${primaryButton} shadow-[0_0_40px_-12px_var(--color-primary)]`,
+  secondary: secondaryButton,
+  ghost: `${buttonBase} text-muted hover:text-core`,
+};
 
 export function ButtonLink({
   variant = "primary",
@@ -69,7 +75,7 @@ export function ButtonLink({
   return (
     <Link
       href={href}
-      className={`${buttonBase} ${variants[variant]} ${className}`}
+      className={`inline-flex gap-2 px-5 py-3 ${variants[variant]} ${className}`}
       {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
       {...props}
     />

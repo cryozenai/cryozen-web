@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import type { PlatformId } from "@/lib/platforms";
 import { PlatformIcon } from "@/components/platform-icon";
+import { primaryButton, secondaryButton } from "@/components/ui";
 
 export type DownloadLinks = Record<PlatformId, string>;
 
@@ -43,6 +44,7 @@ export function DownloadCta({
   const platform = useSyncExternalStore(subscribe, detectPlatform, serverSnapshot);
 
   const size = platform ? sizes[platform] : null;
+  const heroButton = `${primaryButton} inline-flex gap-2.5 px-6 py-3.5 shadow-[0_0_50px_-12px_var(--color-primary)]`;
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -50,7 +52,7 @@ export function DownloadCta({
         {platform ? (
           <a
             href={links[platform]}
-            className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-primary px-6 py-3.5 text-sm font-semibold text-base shadow-[0_0_50px_-12px_var(--color-primary)] transition-colors duration-150 hover:bg-glow"
+            className={heroButton}
           >
             <PlatformIcon platform={platform} className="size-5" />
             Download for {labels[platform]}
@@ -58,7 +60,7 @@ export function DownloadCta({
         ) : (
           <Link
             href="/download"
-            className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-primary px-6 py-3.5 text-sm font-semibold text-base shadow-[0_0_50px_-12px_var(--color-primary)] transition-colors duration-150 hover:bg-glow"
+            className={heroButton}
           >
             Download CryoZen
           </Link>
@@ -66,7 +68,7 @@ export function DownloadCta({
 
         <Link
           href="/download"
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-hairline bg-surface/80 px-6 py-3.5 text-sm font-semibold text-ink transition-colors duration-150 hover:border-primary/50 hover:text-core"
+          className={`${secondaryButton} inline-flex gap-2 px-6 py-3.5`}
         >
           All platforms
         </Link>

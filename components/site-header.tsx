@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Wordmark } from "@/components/logo";
 import { GitHubIcon } from "@/components/icons";
+import { primaryButton } from "@/components/ui";
 import { githubUrl, nav } from "@/lib/site";
 
 export function SiteHeader() {
@@ -16,7 +17,7 @@ export function SiteHeader() {
   const close = () => setOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-hairline/70 bg-base/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-hairline/70 bg-ground/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 lg:px-8">
         <Link href="/" aria-label="CryoZen home" className="shrink-0">
           <Wordmark />
@@ -54,7 +55,7 @@ export function SiteHeader() {
           </a>
           <Link
             href="/download"
-            className="hidden rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-base transition-colors duration-150 hover:bg-glow sm:inline-flex"
+            className={`${primaryButton} hidden px-4 py-2 sm:inline-flex`}
           >
             Download
           </Link>
@@ -83,7 +84,7 @@ export function SiteHeader() {
       </div>
 
       {open ? (
-        <nav id="mobile-nav" className="border-t border-hairline bg-base/95 md:hidden">
+        <nav id="mobile-nav" className="border-t border-hairline bg-ground/95 md:hidden">
           <div className="mx-auto flex w-full max-w-6xl flex-col px-6 py-3">
             {nav.map((item) => (
               <Link

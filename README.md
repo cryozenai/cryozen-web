@@ -30,10 +30,14 @@ npm run lint    # eslint
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `GITHUB_TOKEN` | No | Lifts the unauthenticated GitHub API rate limit (60 requests/hour per IP) during builds and revalidation. A token with no scopes is enough; the repository is public. |
+| `GITHUB_TOKEN` | No, but see below | Authenticates the GitHub API calls that read releases, and lifts the unauthenticated rate limit (60 requests/hour per IP) during builds and revalidation. |
 
-Copy `.env.example` to `.env.local` if you need it locally.
-Without a token the site still builds: every GitHub call degrades to the releases page instead of failing.
+The product repository `shreejitverma/cryozen` is private today.
+Until it is made public, the releases API returns 404 to anonymous callers, so a token with `repo` scope is required for any release data to appear on the site at all.
+Once the repository is public, a token with no scopes is enough and only serves to raise the rate limit.
+
+Copy `.env.example` to `.env.local` and fill in the token.
+Without a working token the site still builds: every GitHub call degrades to the releases page instead of failing, so the download buttons and the changelog quietly fall back rather than reporting the 404.
 
 ## Theme
 
@@ -42,7 +46,7 @@ It is an ice-fire scheme: a near-black blue ground, a glacial cyan primary, and 
 
 | Token | Value | Used for |
 | --- | --- | --- |
-| `--color-base` | `#05080F` | Page ground |
+| `--color-ground` | `#05080F` | Page ground |
 | `--color-surface` | `#0B1119` | Panels |
 | `--color-elevated` | `#101A24` | Inputs, code blocks |
 | `--color-hairline` | `#1A2836` | Borders |
@@ -54,6 +58,10 @@ It is an ice-fire scheme: a near-black blue ground, a glacial cyan primary, and 
 | `--color-muted` | `#7C8DA1` | Secondary text |
 
 Two custom utilities carry the look: `text-flame` (the headline gradient) and `panel` (the hairline card with a cold inner light).
+
+Colour tokens must not reuse a name from Tailwind's default font-size scale (`xs`, `sm`, `base`, `lg`, `xl`, and the `Nxl` steps).
+`text-<name>` resolves font sizes before colours, so a `--color-base` token would make `text-base` a font size everywhere and silently drop the colour.
+That is why the page ground is `--color-ground`.
 
 ## Structure
 
@@ -98,5 +106,6 @@ Open items are marked `TODO(cryozen)` in the source:
 
 ## Deploying
 
-Import the repository into Vercel, set the production domain to `cryozen.ai`, and add `GITHUB_TOKEN` if you want the higher API rate limit.
+Import the repository into Vercel, set the production domain to `cryozen.ai`, and add `GITHUB_TOKEN`.
+While the product repository is private that token is what makes release data resolve at all; once it is public the token only raises the API rate limit.
 The framework preset, build command, and output are all detected automatically.

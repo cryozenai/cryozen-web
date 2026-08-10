@@ -8,7 +8,7 @@ export function Aurora() {
       aria-hidden="true"
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
     >
-      <div className="absolute inset-0 bg-base" />
+      <div className="absolute inset-0 bg-ground" />
 
       <div
         className="animate-drift absolute -top-1/3 left-1/2 h-[42rem] w-[64rem] -translate-x-1/2 rounded-full opacity-60 blur-3xl"

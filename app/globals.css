@@ -6,7 +6,7 @@
  * white-hot core reserved for the few things that must burn brightest.
  */
 @theme {
-  --color-base: #05080f;
+  --color-ground: #05080f;
   --color-surface: #0b1119;
   --color-elevated: #101a24;
   --color-hairline: #1a2836;
@@ -53,7 +53,7 @@ html {
 }
 
 body {
-  background-color: var(--color-base);
+  background-color: var(--color-ground);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

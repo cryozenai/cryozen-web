@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Markdown from "react-markdown";
+import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ButtonLink, Card, Container, Eyebrow } from "@/components/ui";
 import { formatBytes, formatDate, getReleases } from "@/lib/releases";
@@ -13,40 +14,45 @@ export const metadata: Metadata = {
   alternates: { canonical: "/changelog" },
 };
 
-const markdownComponents = {
-  h1: (props: React.ComponentProps<"h1">) => (
+/*
+ * react-markdown hands every override the hast `node` alongside the DOM props,
+ * so each one is destructured away before the rest is spread onto an intrinsic
+ * element. Spreading it through would serialize as node="[object Object]".
+ */
+const markdownComponents: Components = {
+  h1: ({ node, ...props }) => (
     <h3 className="mt-6 mb-3 text-base font-semibold text-core" {...props} />
   ),
-  h2: (props: React.ComponentProps<"h2">) => (
+  h2: ({ node, ...props }) => (
     <h3 className="mt-6 mb-3 text-base font-semibold text-core" {...props} />
   ),
-  h3: (props: React.ComponentProps<"h3">) => (
+  h3: ({ node, ...props }) => (
     <h4 className="mt-5 mb-2 text-sm font-semibold text-core" {...props} />
   ),
-  p: (props: React.ComponentProps<"p">) => <p className="my-3 text-sm/7 text-muted" {...props} />,
-  ul: (props: React.ComponentProps<"ul">) => (
+  p: ({ node, ...props }) => <p className="my-3 text-sm/7 text-muted" {...props} />,
+  ul: ({ node, ...props }) => (
     <ul className="my-3 list-disc space-y-1.5 pl-5 text-sm/7 text-muted marker:text-primary/60" {...props} />
   ),
-  ol: (props: React.ComponentProps<"ol">) => (
+  ol: ({ node, ...props }) => (
     <ol className="my-3 list-decimal space-y-1.5 pl-5 text-sm/7 text-muted marker:text-primary/60" {...props} />
   ),
-  a: (props: React.ComponentProps<"a">) => (
+  a: ({ node, ...props }) => (
     <a className="text-primary hover:text-glow" target="_blank" rel="noreferrer" {...props} />
   ),
-  code: (props: React.ComponentProps<"code">) => (
+  code: ({ node, ...props }) => (
     <code
       className="rounded border border-hairline bg-elevated px-1.5 py-0.5 font-mono text-[0.85em] text-glow"
       {...props}
     />
   ),
-  pre: (props: React.ComponentProps<"pre">) => (
+  pre: ({ node, ...props }) => (
     <pre
       className="my-4 overflow-x-auto rounded-lg border border-hairline bg-elevated/70 p-4 font-mono text-xs text-ink"
       {...props}
     />
   ),
   hr: () => <hr className="my-6 border-hairline" />,
-  strong: (props: React.ComponentProps<"strong">) => (
+  strong: ({ node, ...props }) => (
     <strong className="font-semibold text-ink" {...props} />
   ),
 };
