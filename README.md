@@ -21,6 +21,8 @@ Node 24, pinned in three places that name one major and move in one commit.
 `@types/node` is pinned to `^24` in `package.json` and is the runtime the build type-checks against: its major *is* the Node major it describes, not an independent version.
 No pin is redundant, so do not drop one for the others; whichever one drifts leaves the project running on one Node major and validated against another.
 `npm run check:node-pins` enforces that, in CI after `npm ci` and locally on demand, and names the offending file and value when they disagree.
+CI is the enforcement point on purpose: the check is not a `prebuild` hook, because the drift affects type-checking only and failing a production deploy over it would trade a small correctness win for an outage risk.
+Its failing branch is covered by `npm test`, since a guard that only ever passes is not known to work.
 Dependabot is separately configured never to raise `@types/node` past a major on its own, so the drift is refused before it reaches a pull request.
 
 ```bash
@@ -33,13 +35,15 @@ The site runs on `http://localhost:3000`.
 ```bash
 npm run build            # production build, also type-checks the project
 npm run lint             # eslint
+npm test                 # node --test, covers the checks under scripts/
 npm run check:node-pins  # .nvmrc, engines.node, and @types/node agree on one major
 ```
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
+`.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm test`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
 The build step type-checks the whole project, so there is no separate `tsc` job.
+`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks rather than the site.
 
 CI deliberately runs **without** a `GITHUB_TOKEN`.
 That keeps the fallback path in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading to the releases page, CI would catch it.

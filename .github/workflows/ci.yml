@@ -37,6 +37,11 @@ jobs:
       - name: Check Node pins
         run: npm run check:node-pins
 
+      # Covers the pin check's own failing branch, which nothing else exercises
+      # while the pins agree.
+      - name: Test
+        run: npm test
+
       - name: Lint
         run: npm run lint
 
