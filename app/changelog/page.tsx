@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Markdown from "react-markdown";
 import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ButtonLink, Card, Container, Eyebrow } from "@/components/ui";
+import { ButtonLink, Card, Container, Eyebrow, textLink } from "@/components/ui";
 import { formatBytes, formatDate, getReleases } from "@/lib/releases";
 import { releasesUrl } from "@/lib/site";
 
@@ -37,7 +37,7 @@ const markdownComponents: Components = {
     <ol className="my-3 list-decimal space-y-1.5 pl-5 text-sm/7 text-muted marker:text-primary/60" {...props} />
   ),
   a: ({ node, ...props }) => (
-    <a className="text-primary hover:text-glow" target="_blank" rel="noreferrer" {...props} />
+    <a className={textLink} target="_blank" rel="noreferrer" {...props} />
   ),
   code: ({ node, ...props }) => (
     <code
@@ -143,7 +143,7 @@ export default async function ChangelogPage() {
                 href={release.htmlUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-6 inline-flex text-xs text-primary hover:text-glow"
+                className={`${textLink} mt-6 inline-flex text-xs`}
               >
                 View on GitHub
               </a>

@@ -6,6 +6,7 @@ import {
   Eyebrow,
   InlineCode,
   primaryButton,
+  textLink,
 } from "@/components/ui";
 import { PlatformIcon } from "@/components/platform-icon";
 import { CopyCommand } from "@/components/copy-command";
@@ -60,7 +61,7 @@ export default async function DownloadPage() {
                 href={releasesUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary hover:text-glow"
+                className={textLink}
               >
                 GitHub Releases
               </a>
@@ -202,7 +203,7 @@ export default async function DownloadPage() {
           href={releasesUrl}
           target="_blank"
           rel="noreferrer"
-          className="text-primary hover:text-glow"
+          className={textLink}
         >
           Browse every release on GitHub
         </a>
