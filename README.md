@@ -15,6 +15,12 @@ Metadata is fetched from the GitHub API and revalidated hourly, so a new product
 
 ## Local development
 
+Node 24, pinned in two places that are kept in lockstep on purpose.
+`.nvmrc` pins local development and CI, which reads it through `actions/setup-node`'s `node-version-file`.
+`engines.node` is pinned to `24.x` in `package.json` and is what Vercel resolves the build and function runtime from; Vercel never reads `.nvmrc`.
+Neither pin is redundant, so do not drop one for the other: whichever half loses its pin drifts to a different major than the other two.
+Bump `.nvmrc` and `engines.node` together, in one commit, so the move is deliberate and visible.
+
 ```bash
 npm install
 npm run dev
@@ -23,9 +29,17 @@ npm run dev
 The site runs on `http://localhost:3000`.
 
 ```bash
-npm run build   # production build
+npm run build   # production build, also type-checks the project
 npm run lint    # eslint
 ```
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs `npm ci`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
+The build step type-checks the whole project, so there is no separate `tsc` job.
+
+CI deliberately runs **without** a `GITHUB_TOKEN`.
+That keeps the fallback path in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading to the releases page, CI would catch it.
 
 ## Environment
 
