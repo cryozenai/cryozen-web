@@ -120,6 +120,21 @@ Open items are marked `TODO(cryozen)` in the source:
 - `app/privacy/page.tsx`, `app/terms/page.tsx` — have counsel review.
 - `components/workspace-preview.tsx` — replace the stylized frame with a real screenshot of the running app.
 
+## Security headers
+
+`next.config.ts` sets a Content Security Policy, HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy`, and a `Permissions-Policy` on every route.
+The reasoning for each non-obvious choice is in the comments there rather than repeated here, but two are worth knowing before you touch them:
+
+- `script-src` allows `'unsafe-inline'`. Next inlines its bootstrap and streaming payload, so the alternative is per-request nonces, which require middleware and make every page dynamic. This site has no forms, no auth, and no cookies, and the only third-party content is release-note markdown that `react-markdown` escapes. Add nonces when any of that stops being true.
+- `Strict-Transport-Security` includes `includeSubDomains`, which commits every future `*.cryozen.ai` host to HTTPS. It deliberately omits `preload`, since being baked into browsers is slow to reverse and should be an explicit submission.
+
+The policy is verified by loading every page in a real browser and confirming zero console messages, and by checking that the site requests no external origins, which is what makes the strict `font-src` and `connect-src` correct.
+`next/font` self-hosts Geist at build time, so there is no font CDN to allow.
+
+## Dependencies
+
+`.github/dependabot.yml` opens weekly npm updates, with minor and patch bumps grouped into one pull request so review attention goes to majors, and monthly updates for the pinned GitHub Actions.
+
 ## Deploying
 
 Import the repository into Vercel, set the production domain to `cryozen.ai`, and add `GITHUB_TOKEN`.
