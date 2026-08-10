@@ -15,13 +15,13 @@ Metadata is fetched from the GitHub API and revalidated hourly, so a new product
 
 ## Local development
 
-Node 24, pinned in two places that are kept in lockstep on purpose.
+Node 24, pinned in three places that name one major and move in one commit.
 `.nvmrc` pins local development and CI, which reads it through `actions/setup-node`'s `node-version-file`.
 `engines.node` is pinned to `24.x` in `package.json` and is what Vercel resolves the build and function runtime from; Vercel never reads `.nvmrc`.
-Neither pin is redundant, so do not drop one for the other: whichever half loses its pin drifts to a different major than the other two.
-Bump `.nvmrc` and `engines.node` together, in one commit, so the move is deliberate and visible.
-`@types/node` belongs to that same lockstep: its major *is* the Node major it describes, so Dependabot is configured never to raise it on its own.
-Move all three in the same commit.
+`@types/node` is pinned to `^24` in `package.json` and is the runtime the build type-checks against: its major *is* the Node major it describes, not an independent version.
+No pin is redundant, so do not drop one for the others; whichever one drifts leaves the project running on one Node major and validated against another.
+`npm run check:node-pins` enforces that, in CI after `npm ci` and locally on demand, and names the offending file and value when they disagree.
+Dependabot is separately configured never to raise `@types/node` past a major on its own, so the drift is refused before it reaches a pull request.
 
 ```bash
 npm install
@@ -31,13 +31,14 @@ npm run dev
 The site runs on `http://localhost:3000`.
 
 ```bash
-npm run build   # production build, also type-checks the project
-npm run lint    # eslint
+npm run build            # production build, also type-checks the project
+npm run lint             # eslint
+npm run check:node-pins  # .nvmrc, engines.node, and @types/node agree on one major
 ```
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs `npm ci`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
+`.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
 The build step type-checks the whole project, so there is no separate `tsc` job.
 
 CI deliberately runs **without** a `GITHUB_TOKEN`.

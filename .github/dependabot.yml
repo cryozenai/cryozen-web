@@ -17,10 +17,9 @@ updates:
           - patch
     ignore:
       # @types/node's major IS the Node major it describes, so it is not an
-      # independent dependency: it belongs to the same lockstep as .nvmrc and
-      # engines.node. Letting Dependabot raise it alone would type-check the
-      # project against APIs the pinned runtime does not have. Bump it in the
-      # same commit that moves .nvmrc and engines.node, and never on its own.
+      # independent dependency: it moves with .nvmrc and engines.node, in one
+      # commit. `npm run check:node-pins` enforces that; this only keeps
+      # Dependabot from opening the pull request that would violate it.
       - dependency-name: "@types/node"
         update-types:
           - "version-update:semver-major"
