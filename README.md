@@ -3,7 +3,8 @@
 The marketing and download site for [CryoZen](https://github.com/shreejitverma/cryozen), served at **cryozen.ai**.
 
 It is a Next.js App Router site on Vercel.
-Every download button points at a real asset on GitHub Releases, and release metadata is fetched from the GitHub API and revalidated hourly, so a new product release appears on the site without a redeploy.
+Every download button resolves to a real asset on GitHub Releases when release metadata is readable, and falls back to the releases page when it is not.
+Metadata is fetched from the GitHub API and revalidated hourly, so a new product release appears on the site without a redeploy.
 
 ## Stack
 
