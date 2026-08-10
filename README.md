@@ -106,6 +106,8 @@ lib/
   platforms.ts        per-platform asset names, requirements, install steps
   releases.ts         GitHub Releases client with graceful fallbacks
   pricing.ts          tiers and FAQ copy
+scripts/
+  check-node-pins.mjs Node pin lockstep check, with its test alongside
 ```
 
 ## Keeping downloads correct
@@ -145,6 +147,7 @@ That is what makes the strict `font-src` and `connect-src` correct: `next/font` 
 ## Dependencies
 
 `.github/dependabot.yml` opens weekly npm updates, with minor and patch bumps grouped into one pull request so review attention goes to majors, and monthly updates for the pinned GitHub Actions.
+Its one `ignore` rule, covering `@types/node` majors, is explained under Local development.
 
 ## Deploying
 
