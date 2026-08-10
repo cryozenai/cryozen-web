@@ -15,8 +15,11 @@ Metadata is fetched from the GitHub API and revalidated hourly, so a new product
 
 ## Local development
 
-Node 24 or newer, as pinned in `.nvmrc` and declared in `package.json`.
-CI reads `.nvmrc`, so local, CI, and the Vercel runtime all agree on the major version.
+Node 24, pinned in two places that are kept in lockstep on purpose.
+`.nvmrc` pins local development and CI, which reads it through `actions/setup-node`'s `node-version-file`.
+`engines.node` is pinned to `24.x` in `package.json` and is what Vercel resolves the build and function runtime from; Vercel never reads `.nvmrc`.
+Neither pin is redundant, so do not drop one for the other: whichever half loses its pin drifts to a different major than the other two.
+Bump `.nvmrc` and `engines.node` together, in one commit, so the move is deliberate and visible.
 
 ```bash
 npm install
