@@ -56,7 +56,7 @@ type ButtonVariant = "primary" | "secondary" | "ghost";
 const buttonBase =
   "items-center justify-center rounded-lg text-sm font-semibold transition-colors duration-150";
 
-export const primaryButton = `${buttonBase} bg-primary text-ground hover:bg-glow`;
+export const primaryButton = `${buttonBase} bg-primary text-ground hover:bg-glow active:bg-primary-strong`;
 export const secondaryButton = `${buttonBase} border border-hairline bg-surface/80 text-ink hover:border-primary/50 hover:text-core`;
 
 const variants: Record<ButtonVariant, string> = {

@@ -52,6 +52,7 @@ It is an ice-fire scheme: a near-black blue ground, a glacial cyan primary, and 
 | `--color-elevated` | `#101A24` | Inputs, code blocks |
 | `--color-hairline` | `#1A2836` | Borders |
 | `--color-primary` | `#4FE3E8` | Links, CTAs |
+| `--color-primary-strong` | `#2CCFD6` | Pressed state of primary CTAs |
 | `--color-glow` | `#7FF2FF` | Hover, flame edge |
 | `--color-core` | `#EAFCFF` | Headings, emphasis |
 | `--color-deep` | `#1E5F8C` | Cold ember shadow |
