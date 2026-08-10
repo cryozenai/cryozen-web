@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalList, LegalPage, LegalSection } from "@/components/legal";
+import { textLink } from "@/components/ui";
 import { githubUrl, site } from "@/lib/site";
 
 /*
@@ -24,7 +25,7 @@ export default function TermsPage() {
         <p>
           These terms cover your use of {site.domain} and the builds distributed through it. The
           software itself is licensed separately: LICENSE.md in the{" "}
-          <a href={githubUrl} target="_blank" rel="noreferrer" className="text-primary hover:text-glow">
+          <a href={githubUrl} target="_blank" rel="noreferrer" className={textLink}>
             product repository
           </a>{" "}
           is the controlling document, and where the two disagree, the license wins.

@@ -82,6 +82,16 @@ export function ButtonLink({
   );
 }
 
+/*
+ * Inline links inside prose. The underline is the point, not decoration:
+ * WCAG 1.4.1 requires links in a block of text to be distinguishable by
+ * something other than colour, and cyan-on-muted does not clear the 3:1
+ * contrast ratio that would exempt it. Use this for every link that sits in a
+ * sentence; standalone links use it too, so there is no rule to remember.
+ */
+export const textLink =
+  "text-primary underline decoration-primary/50 underline-offset-4 transition-colors duration-150 hover:text-glow hover:decoration-glow";
+
 export function Card({
   className = "",
   children,

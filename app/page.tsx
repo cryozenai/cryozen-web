@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { ButtonLink, Card, Container, Eyebrow, SectionHeading } from "@/components/ui";
+import {
+  ButtonLink,
+  Card,
+  Container,
+  Eyebrow,
+  SectionHeading,
+  textLink,
+} from "@/components/ui";
 import { DownloadCta } from "@/components/download-cta";
 import { WorkspacePreview } from "@/components/workspace-preview";
 import { PlatformIcon } from "@/components/platform-icon";
@@ -248,7 +255,7 @@ export default async function HomePage() {
                 href={releasesUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary hover:text-glow"
+                className={textLink}
               >
                 GitHub Releases
               </a>

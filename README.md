@@ -75,6 +75,9 @@ It is an ice-fire scheme: a near-black blue ground, a glacial cyan primary, and 
 
 Two custom utilities carry the look: `text-flame` (the headline gradient) and `panel` (the hairline card with a cold inner light).
 
+Links inside prose use the exported `textLink` style from `components/ui.tsx`, which underlines them.
+That underline is a WCAG 1.4.1 requirement rather than a stylistic preference; the comment on `textLink` records why this palette cannot be exempted from it, and Lighthouse flags a regression as `link-in-text-block`.
+
 Colour tokens must not reuse a name from Tailwind's default font-size scale (`xs`, `sm`, `base`, `lg`, `xl`, and the `Nxl` steps).
 `text-<name>` resolves font sizes before colours, so a `--color-base` token would make `text-base` a font size everywhere and silently drop the colour.
 That is why the page ground is `--color-ground`.
