@@ -20,6 +20,8 @@ Node 24, pinned in two places that are kept in lockstep on purpose.
 `engines.node` is pinned to `24.x` in `package.json` and is what Vercel resolves the build and function runtime from; Vercel never reads `.nvmrc`.
 Neither pin is redundant, so do not drop one for the other: whichever half loses its pin drifts to a different major than the other two.
 Bump `.nvmrc` and `engines.node` together, in one commit, so the move is deliberate and visible.
+`@types/node` belongs to that same lockstep: its major *is* the Node major it describes, so Dependabot is configured never to raise it on its own.
+Move all three in the same commit.
 
 ```bash
 npm install
