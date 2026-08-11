@@ -115,6 +115,17 @@ export function assetSizeFor(platformId: PlatformId, release: Release | null): s
   return asset ? formatBytes(asset.size) : null;
 }
 
+/**
+ * URL for a specific named asset (an alternate format), or the releases page
+ * when it is not on the latest release. Same never-404 contract as
+ * downloadUrlFor.
+ */
+export function assetUrlByName(assetName: string, release: Release | null): string {
+  if (!release) return latestReleaseUrl;
+  const asset = release.assets.find((candidate) => candidate.name === assetName);
+  return asset?.downloadUrl ?? latestReleaseUrl;
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB"];

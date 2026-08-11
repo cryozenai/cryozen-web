@@ -116,9 +116,11 @@ scripts/
 
 | Platform | Asset |
 | --- | --- |
-| macOS | `CryoZen.dmg` |
+| macOS (Apple Silicon) | `CryoZen.dmg` |
+| macOS (Intel) | `CryoZen-Intel.dmg` |
 | Windows | `CryoZen-Windows-Portable.zip` |
-| Linux | `CryoZen-Linux-Portable.tar.gz` |
+| Linux (primary) | `CryoZen-x86_64.AppImage` |
+| Linux (alternates) | `cryozen_amd64.deb`, `cryozen.x86_64.rpm`, `CryoZen-Linux-Portable.tar.gz` |
 
 These must match what `.github/workflows/release.yml` in the product repository uploads.
 If a build script renames an artifact, update `lib/platforms.ts` in the same change, otherwise the button silently falls back to the releases page.
