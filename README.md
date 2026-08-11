@@ -35,7 +35,7 @@ The site runs on `http://localhost:3000`.
 ```bash
 npm run build            # production build, also type-checks the project
 npm run lint             # eslint
-npm test                 # node --test, covers the checks under scripts/
+npm test                 # node --test, the tests under scripts/
 npm run check:node-pins  # .nvmrc, engines.node, and @types/node agree on one major
 ```
 
@@ -43,7 +43,7 @@ npm run check:node-pins  # .nvmrc, engines.node, and @types/node agree on one ma
 
 `.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm test`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
 The build step type-checks the whole project, so there is no separate `tsc` job.
-`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks rather than the site.
+`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks and the download-link contract (see "Keeping downloads correct").
 
 CI deliberately runs **without** a `GITHUB_TOKEN`.
 That keeps the fallback path in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading to the releases page, CI would catch it.
@@ -108,6 +108,7 @@ lib/
   pricing.ts          tiers and FAQ copy
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
+  releases.test.mjs   download-link contract test: exact-match asset resolution and the never-404 fallback
 ```
 
 ## Keeping downloads correct
@@ -122,8 +123,9 @@ scripts/
 | Linux (primary) | `CryoZen-x86_64.AppImage` |
 | Linux (alternates) | `cryozen_amd64.deb`, `cryozen.x86_64.rpm`, `CryoZen-Linux-Portable.tar.gz` |
 
-These must match what `.github/workflows/release.yml` in the product repository uploads.
+These must match what `.github/workflows/release.yml` in the product repository uploads; the product repo's `packaging/README.md` documents `lib/platforms.ts` as part of that release contract.
 If a build script renames an artifact, update `lib/platforms.ts` in the same change, otherwise the button silently falls back to the releases page.
+`scripts/releases.test.mjs` covers the site side of the contract: every primary and alternate name resolves to a direct download URL against this asset list, and a missing asset falls back to the releases page rather than a 404 link.
 
 ## Before launch
 
