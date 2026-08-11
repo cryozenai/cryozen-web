@@ -15,11 +15,15 @@ Metadata is fetched from the GitHub API and revalidated hourly, so a new product
 
 ## Local development
 
-Node 24, pinned in two places that are kept in lockstep on purpose.
+Node 24, pinned in three places that name one major and move in one commit.
 `.nvmrc` pins local development and CI, which reads it through `actions/setup-node`'s `node-version-file`.
 `engines.node` is pinned to `24.x` in `package.json` and is what Vercel resolves the build and function runtime from; Vercel never reads `.nvmrc`.
-Neither pin is redundant, so do not drop one for the other: whichever half loses its pin drifts to a different major than the other two.
-Bump `.nvmrc` and `engines.node` together, in one commit, so the move is deliberate and visible.
+`@types/node` is pinned to `^24` in `package.json` and is the runtime the build type-checks against: its major *is* the Node major it describes, not an independent version.
+No pin is redundant, so do not drop one for the others; whichever one drifts leaves the project running on one Node major and validated against another.
+`npm run check:node-pins` enforces that, in CI after `npm ci` and locally on demand, and names the offending file and value when they disagree.
+CI is the enforcement point on purpose: the check is not a `prebuild` hook, because the drift affects type-checking only and failing a production deploy over it would trade a small correctness win for an outage risk.
+Its failing branch is covered by `npm test`, since a guard that only ever passes is not known to work.
+Dependabot is separately configured never to raise `@types/node` past a major on its own, so the drift is refused before it reaches a pull request.
 
 ```bash
 npm install
@@ -29,14 +33,17 @@ npm run dev
 The site runs on `http://localhost:3000`.
 
 ```bash
-npm run build   # production build, also type-checks the project
-npm run lint    # eslint
+npm run build            # production build, also type-checks the project
+npm run lint             # eslint
+npm test                 # node --test, covers the checks under scripts/
+npm run check:node-pins  # .nvmrc, engines.node, and @types/node agree on one major
 ```
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs `npm ci`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
+`.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm test`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
 The build step type-checks the whole project, so there is no separate `tsc` job.
+`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks rather than the site.
 
 CI deliberately runs **without** a `GITHUB_TOKEN`.
 That keeps the fallback path in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading to the releases page, CI would catch it.
@@ -99,6 +106,8 @@ lib/
   platforms.ts        per-platform asset names, requirements, install steps
   releases.ts         GitHub Releases client with graceful fallbacks
   pricing.ts          tiers and FAQ copy
+scripts/
+  check-node-pins.mjs Node pin lockstep check, with its test alongside
 ```
 
 ## Keeping downloads correct
@@ -138,6 +147,7 @@ That is what makes the strict `font-src` and `connect-src` correct: `next/font` 
 ## Dependencies
 
 `.github/dependabot.yml` opens weekly npm updates, with minor and patch bumps grouped into one pull request so review attention goes to majors, and monthly updates for the pinned GitHub Actions.
+Its one `ignore` rule, covering `@types/node` majors, is explained under Local development.
 
 ## Deploying
 

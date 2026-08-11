@@ -15,6 +15,14 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # @types/node's major IS the Node major it describes, so it is not an
+      # independent dependency: it moves with .nvmrc and engines.node, in one
+      # commit. `npm run check:node-pins` enforces that; this only keeps
+      # Dependabot from opening the pull request that would violate it.
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
 
   # The workflow pins actions by major tag; this keeps those majors current.
   - package-ecosystem: github-actions
