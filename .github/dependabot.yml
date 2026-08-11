@@ -23,6 +23,21 @@ updates:
       - dependency-name: "@types/node"
         update-types:
           - "version-update:semver-major"
+      # ESLint 10 crashes eslint-config-next 16.x: the eslint-plugin-react it
+      # bundles throws inside usedPropTypes under the new rule API, so `npm run
+      # lint` dies before linting a single file. Drop this once
+      # eslint-config-next ships an ESLint 10 compatible plugin set.
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
+      # TypeScript 7 is refused outright by typescript-eslint ("does not
+      # support TS 7.0"), which eslint-config-next depends on, so linting
+      # cannot run at all. TypeScript 6 is fine and is what we track. See
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      # and drop this once that lands.
+      - dependency-name: "typescript"
+        versions:
+          - ">=7"
 
   # The workflow pins actions by major tag; this keeps those majors current.
   - package-ecosystem: github-actions
