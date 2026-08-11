@@ -147,7 +147,7 @@ That is what makes the strict `font-src` and `connect-src` correct: `next/font` 
 ## Dependencies
 
 `.github/dependabot.yml` opens weekly npm updates, with minor and patch bumps grouped into one pull request so review attention goes to majors, and monthly updates for the pinned GitHub Actions.
-Its one `ignore` rule, covering `@types/node` majors, is explained under Local development.
+It also carries `ignore` rules for `@types/node` majors (explained under Local development), ESLint majors, and TypeScript >=6.1; each rule's comment in `dependabot.yml` names the compatibility blocker and the condition for removing it.
 
 ## Deploying
 
