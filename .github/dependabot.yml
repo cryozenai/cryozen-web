@@ -30,14 +30,17 @@ updates:
       - dependency-name: "eslint"
         update-types:
           - "version-update:semver-major"
-      # TypeScript 7 is refused outright by typescript-eslint ("does not
-      # support TS 7.0"), which eslint-config-next depends on, so linting
-      # cannot run at all. TypeScript 6 is fine and is what we track. See
+      # typescript-eslint (reached through eslint-config-next) declares
+      # peerDependencies typescript ">=4.8.4 <6.1.0", so any TypeScript at or
+      # above 6.1 - not just 7 - breaks linting: npm errors ERESOLVE on
+      # install, and typescript-eslint refuses unsupported versions. The
+      # package.json pin "~6.0.3" matches; 6.0.x patches still flow. Widen
+      # this (and the pin) only when typescript-eslint raises that peer
+      # range, not when a new TypeScript ships. See
       # https://github.com/typescript-eslint/typescript-eslint/issues/10940
-      # and drop this once that lands.
       - dependency-name: "typescript"
         versions:
-          - ">=7"
+          - ">=6.1"
 
   # The workflow pins actions by major tag; this keeps those majors current.
   - package-ecosystem: github-actions
