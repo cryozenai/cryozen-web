@@ -70,7 +70,7 @@ export const platforms: Platform[] = [
     assetName: "CryoZen-x86_64.AppImage",
     fileLabel: "AppImage (x86_64)",
     summary:
-      "A single self-contained executable that runs on any distribution. Packages for Debian, Fedora, and a portable tarball are below.",
+      "A single self-contained executable that runs on any distribution. Also available as .deb, .rpm, and a portable tarball.",
     requirements: ["A 64-bit distribution with glibc", "Nothing else - Python is bundled"],
     steps: [
       "Make it executable: chmod +x CryoZen-x86_64.AppImage",

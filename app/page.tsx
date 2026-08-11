@@ -12,7 +12,12 @@ import { WorkspacePreview } from "@/components/workspace-preview";
 import { PlatformIcon } from "@/components/platform-icon";
 import { ArrowIcon, CheckIcon } from "@/components/icons";
 import { platforms } from "@/lib/platforms";
-import { assetSizeFor, downloadUrlFor, getLatestRelease } from "@/lib/releases";
+import {
+  assetSizeFor,
+  assetUrlByName,
+  downloadUrlFor,
+  getLatestRelease,
+} from "@/lib/releases";
 import { quickstartUrl, releasesUrl } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -123,7 +128,11 @@ export default async function HomePage() {
           </p>
 
           <div className="mt-10">
-            <DownloadCta links={links} sizes={sizes} />
+            <DownloadCta
+              links={links}
+              sizes={sizes}
+              intelHref={assetUrlByName("CryoZen-Intel.dmg", release)}
+            />
           </div>
 
           <div className="mt-16 w-full max-w-5xl text-left">
@@ -207,7 +216,7 @@ export default async function HomePage() {
           <SectionHeading
             eyebrow="Install it"
             title="macOS, Windows, Linux, and Docker."
-            description="Desktop builds launch a local server and open the workspace in an app window. Docker is the path for servers and GPUs."
+            description="Desktop builds run a local server and open CryoZen in your browser. Docker is the path for servers and GPUs."
           />
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {platforms.map((platform) => (
