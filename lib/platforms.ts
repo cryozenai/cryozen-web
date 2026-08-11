@@ -2,8 +2,14 @@
  * Platform definitions for the download surface.
  *
  * Asset names must match what `.github/workflows/release.yml` in the product
- * repo uploads to each GitHub release. If a build script renames an artifact,
+ * repo uploads to each GitHub release - packaging/README.md there documents
+ * this file as part of that contract. If a build script renames an artifact,
  * change it here too or the download button falls back to the releases page.
+ *
+ * Since the self-contained installers (product repo `packaging/`), every
+ * desktop build bundles Python and all dependencies: nothing is required on
+ * the user's machine, and user data lives in the platform's per-user data
+ * directory, never inside the install.
  */
 export type PlatformId = "macos" | "windows" | "linux" | "docker";
 
@@ -18,6 +24,8 @@ export interface Platform {
   summary: string;
   requirements: string[];
   steps: string[];
+  /** Additional downloadable formats beyond the primary asset. */
+  alternates?: { assetName: string; label: string }[];
 }
 
 export const platforms: Platform[] = [
@@ -28,13 +36,17 @@ export const platforms: Platform[] = [
     assetName: "CryoZen.dmg",
     fileLabel: "Disk image (.dmg)",
     summary:
-      "A drag-to-Applications launcher app. Opening it starts the local server and opens CryoZen in an app window.",
-    requirements: ["macOS 13 Ventura or newer", "Python 3.11 or newer"],
+      "A self-contained app: drag to Applications and launch. The server starts locally and CryoZen opens in your browser.",
+    requirements: [
+      "macOS 13 Ventura or newer (Apple Silicon; Intel build below)",
+      "Nothing else - Python is bundled",
+    ],
     steps: [
       "Open CryoZen.dmg and drag CryoZen to Applications.",
-      "Launch CryoZen. The first run creates a virtual environment and installs dependencies, which takes a few minutes.",
-      "The interface opens at http://127.0.0.1:7860 once the server is ready.",
+      "Right-click CryoZen and choose Open the first time: the build is not code-signed yet, so Gatekeeper asks once.",
+      "Your browser opens at http://127.0.0.1:7860 when the server is ready. Data lives in ~/Library/Application Support/CryoZen.",
     ],
+    alternates: [{ assetName: "CryoZen-Intel.dmg", label: "Intel Macs (.dmg)" }],
   },
   {
     id: "windows",
@@ -43,27 +55,32 @@ export const platforms: Platform[] = [
     assetName: "CryoZen-Windows-Portable.zip",
     fileLabel: "Portable archive (.zip)",
     summary:
-      "A portable folder with a launcher. Nothing is written outside the folder you unzip it into.",
-    requirements: ["Windows 10 or newer (64-bit)", "Python 3.11 or newer on PATH"],
+      "A self-contained folder: unzip anywhere and run CryoZen.exe. Nothing is installed system-wide.",
+    requirements: ["Windows 10 or newer (64-bit)", "Nothing else - Python is bundled"],
     steps: [
-      "Unzip CryoZen-Windows-Portable.zip somewhere you can write to.",
-      "Run the CryoZen launcher in that folder. The first run sets up the environment.",
-      "The interface opens at http://127.0.0.1:7860 once the server is ready.",
+      "Unzip CryoZen-Windows-Portable.zip and open the CryoZen folder.",
+      "Run CryoZen.exe. SmartScreen asks once for unsigned builds: choose More info, then Run anyway.",
+      "Your browser opens at http://127.0.0.1:7860 when the server is ready. Data lives in %LOCALAPPDATA%\\CryoZen.",
     ],
   },
   {
     id: "linux",
     name: "Linux",
     shortName: "Linux",
-    assetName: "CryoZen-Linux-Portable.tar.gz",
-    fileLabel: "Portable archive (.tar.gz)",
+    assetName: "CryoZen-x86_64.AppImage",
+    fileLabel: "AppImage (x86_64)",
     summary:
-      "A portable directory with a shell launcher. Works on any distribution with Python available.",
-    requirements: ["A 64-bit distribution with glibc", "Python 3.11 or newer, including python3-venv"],
+      "A single self-contained executable that runs on any distribution. Also available as .deb, .rpm, and a portable tarball.",
+    requirements: ["A 64-bit distribution with glibc", "Nothing else - Python is bundled"],
     steps: [
-      "Extract the archive: tar -xzf CryoZen-Linux-Portable.tar.gz",
-      "Run ./CryoZen.sh inside the extracted directory. The first run sets up the environment.",
-      "The interface opens at http://127.0.0.1:7860 once the server is ready.",
+      "Make it executable: chmod +x CryoZen-x86_64.AppImage",
+      "Run it: ./CryoZen-x86_64.AppImage",
+      "Your browser opens at http://127.0.0.1:7860 when the server is ready. Data lives in ~/.local/share/cryozen.",
+    ],
+    alternates: [
+      { assetName: "cryozen_amd64.deb", label: ".deb (Debian, Ubuntu)" },
+      { assetName: "cryozen.x86_64.rpm", label: ".rpm (Fedora, RHEL)" },
+      { assetName: "CryoZen-Linux-Portable.tar.gz", label: "Portable .tar.gz" },
     ],
   },
   {

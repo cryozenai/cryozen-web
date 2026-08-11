@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import type { PlatformId } from "@/lib/platforms";
 import { PlatformIcon } from "@/components/platform-icon";
-import { primaryButton, secondaryButton } from "@/components/ui";
+import { primaryButton, secondaryButton, textLink } from "@/components/ui";
 
 export type DownloadLinks = Record<PlatformId, string>;
 
@@ -36,9 +36,12 @@ const serverSnapshot = () => null;
 export function DownloadCta({
   links,
   sizes,
+  intelHref,
 }: {
   links: DownloadLinks;
   sizes: Partial<Record<PlatformId, string | null>>;
+  /** Intel macOS build, shown as a caption when the detected platform is macOS. */
+  intelHref?: string;
 }) {
   // Null on the server and during hydration, then the detected platform.
   const platform = useSyncExternalStore(subscribe, detectPlatform, serverSnapshot);
@@ -79,6 +82,15 @@ export function DownloadCta({
           ? `${size ? `${size} · ` : ""}Free to download. Runs entirely on your machine.`
           : "Available for macOS, Windows, Linux, and Docker."}
       </p>
+
+      {platform === "macos" && intelHref ? (
+        <p className="text-xs text-muted">
+          Apple Silicon build. On an Intel Mac?{" "}
+          <a href={intelHref} className={textLink}>
+            Download the Intel build
+          </a>
+        </p>
+      ) : null}
     </div>
   );
 }

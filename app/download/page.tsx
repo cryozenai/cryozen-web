@@ -13,6 +13,7 @@ import { CopyCommand } from "@/components/copy-command";
 import { desktopPlatforms, getPlatform } from "@/lib/platforms";
 import {
   assetSizeFor,
+  assetUrlByName,
   downloadUrlFor,
   formatDate,
   getLatestRelease,
@@ -77,14 +78,14 @@ export default async function DownloadPage() {
         the download button on the same baseline across all three cards, even
         though the copy above them wraps to different heights.
       */}
-      <div className="mt-14 grid gap-4 lg:grid-cols-3 lg:grid-rows-[repeat(7,auto)]">
+      <div className="mt-14 grid gap-4 lg:grid-cols-3 lg:grid-rows-[repeat(8,auto)]">
         {desktopPlatforms.map((platform) => {
           const href = downloadUrlFor(platform.id, release);
           const size = assetSizeFor(platform.id, release);
           return (
             <Card
               key={platform.id}
-              className="flex flex-col p-7 lg:row-span-7 lg:grid lg:grid-rows-subgrid"
+              className="flex flex-col p-7 lg:row-span-8 lg:grid lg:grid-rows-subgrid"
             >
               <PlatformIcon platform={platform.id} className="size-7 text-primary" />
               <h2 className="mt-5 text-xl font-semibold text-core">{platform.name}</h2>
@@ -127,6 +128,21 @@ export default async function DownloadPage() {
               >
                 Download for {platform.shortName}
               </a>
+
+              {platform.alternates?.length ? (
+                <ul className="mt-4 space-y-1.5">
+                  {platform.alternates.map((alternate) => (
+                    <li key={alternate.assetName} className="text-center">
+                      <a
+                        href={assetUrlByName(alternate.assetName, release)}
+                        className="font-mono text-xs text-muted transition-colors duration-150 hover:text-core"
+                      >
+                        {alternate.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </Card>
           );
         })}
@@ -189,10 +205,11 @@ export default async function DownloadPage() {
           </p>
         </Card>
         <Card className="p-6">
-          <h3 className="text-sm font-semibold text-core">First launch takes a few minutes</h3>
+          <h3 className="text-sm font-semibold text-core">Self-contained, and your data stays put</h3>
           <p className="mt-3 text-sm/6 text-muted">
-            Desktop builds ship the application source and create a Python virtual environment on
-            first run, so the first start installs dependencies. Later launches are immediate.
+            Every desktop build bundles its own runtime - no Python, no dependencies, no first-run
+            setup. Your data lives in your user folder, so upgrading is replacing the app, and
+            uninstalling never touches your data.
           </p>
         </Card>
       </div>
