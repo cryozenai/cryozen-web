@@ -52,14 +52,13 @@ That keeps the fallback path in `lib/releases.ts` under test: if an unreachable 
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `GITHUB_TOKEN` | No, but see below | Authenticates the GitHub API calls that read releases, and lifts the unauthenticated rate limit (60 requests/hour per IP) during builds and revalidation. |
+| `GITHUB_TOKEN` | No | Optional. Lifts the anonymous GitHub API rate limit (60 requests/hour per IP) during builds and revalidation. |
 
-The product repository `shreejitverma/cryozen` is private today.
-Until it is made public, the releases API returns 404 to anonymous callers, so a token with `repo` scope is required for any release data to appear on the site at all.
-Once the repository is public, a token with no scopes is enough and only serves to raise the rate limit.
+The product repository `shreejitverma/cryozen` is private, but the site never reads it: releases come from the public `shreejitverma/cryozen-releases` repository, which anonymous callers can read.
+A token therefore needs no scopes and only serves to raise the rate limit.
 
-Copy `.env.example` to `.env.local` and fill in the token.
-Without a working token the site still builds: every GitHub call degrades to the releases page instead of failing, so the download buttons and the changelog quietly fall back rather than reporting the 404.
+To set one, copy `.env.example` to `.env.local` and fill in the token.
+Without a token the site still builds and resolves releases; if the API is unreachable or rate limited, every GitHub call degrades to the releases page instead of failing, so the download buttons and the changelog fall back quietly.
 
 ## Theme
 

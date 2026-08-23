@@ -10,7 +10,7 @@ import {
 } from "@/components/ui";
 import { PlatformIcon } from "@/components/platform-icon";
 import { CopyCommand } from "@/components/copy-command";
-import { desktopPlatforms, getPlatform } from "@/lib/platforms";
+import { desktopPlatforms, dockerCommands, getPlatform } from "@/lib/platforms";
 import {
   assetSizeFor,
   assetUrlByName,
@@ -28,12 +28,6 @@ export const metadata: Metadata = {
     "Download CryoZen for macOS, Windows, or Linux, or run it with Docker. Every build is published on GitHub Releases.",
   alternates: { canonical: "/download" },
 };
-
-const dockerCommands = [
-  "git clone https://github.com/shreejitverma/cryozen-releases.git",
-  "cd cryozen-releases && cp .env.example .env",
-  "docker compose up -d",
-];
 
 export default async function DownloadPage() {
   const release = await getLatestRelease();

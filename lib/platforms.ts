@@ -28,6 +28,12 @@ export interface Platform {
   alternates?: { assetName: string; label: string }[];
 }
 
+export const dockerCommands = [
+  "git clone https://github.com/shreejitverma/cryozen-releases.git",
+  "cd cryozen-releases && cp .env.example .env",
+  "docker compose up -d",
+] as const;
+
 export const platforms: Platform[] = [
   {
     id: "macos",
@@ -99,9 +105,9 @@ export const platforms: Platform[] = [
       "The recommended path for servers, GPUs, and anything long-running. Pulls the published image (linux/amd64 and linux/arm64); no build step.",
     requirements: ["Docker with Compose v2", "A host you control"],
     steps: [
-      "git clone https://github.com/shreejitverma/cryozen-releases.git",
-      "cd cryozen-releases && cp .env.example .env",
-      "docker compose up -d, then open http://localhost:7000",
+      dockerCommands[0],
+      dockerCommands[1],
+      `${dockerCommands[2]}, then open http://localhost:7000`,
     ],
   },
 ];
