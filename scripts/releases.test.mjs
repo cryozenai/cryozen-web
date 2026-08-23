@@ -28,6 +28,7 @@ const allAssetNames = [
   "CryoZen.dmg",
   "CryoZen-Intel.dmg",
   "CryoZen-Windows-Portable.zip",
+  "CryoZen-Setup-x64.exe",
   "CryoZen-x86_64.AppImage",
   "cryozen_amd64.deb",
   "cryozen.x86_64.rpm",

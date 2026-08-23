@@ -52,14 +52,13 @@ That keeps the fallback path in `lib/releases.ts` under test: if an unreachable 
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `GITHUB_TOKEN` | No, but see below | Authenticates the GitHub API calls that read releases, and lifts the unauthenticated rate limit (60 requests/hour per IP) during builds and revalidation. |
+| `GITHUB_TOKEN` | No | Optional. Lifts the anonymous GitHub API rate limit (60 requests/hour per IP) during builds and revalidation. |
 
-The product repository `shreejitverma/cryozen` is private today.
-Until it is made public, the releases API returns 404 to anonymous callers, so a token with `repo` scope is required for any release data to appear on the site at all.
-Once the repository is public, a token with no scopes is enough and only serves to raise the rate limit.
+The product repository `shreejitverma/cryozen` is private, but the site never reads it: releases come from the public `shreejitverma/cryozen-releases` repository, which anonymous callers can read.
+A token therefore needs no scopes and only serves to raise the rate limit.
 
-Copy `.env.example` to `.env.local` and fill in the token.
-Without a working token the site still builds: every GitHub call degrades to the releases page instead of failing, so the download buttons and the changelog quietly fall back rather than reporting the 404.
+To set one, copy `.env.example` to `.env.local` and fill in the token.
+Without a token the site still builds and resolves releases; if the API is unreachable or rate limited, every GitHub call degrades to the releases page instead of failing, so the download buttons and the changelog fall back quietly.
 
 ## Theme
 
@@ -109,6 +108,7 @@ lib/
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
   releases.test.mjs   download-link contract test: exact-match asset resolution and the never-404 fallback
+  release-channel.test.mjs  release-channel contract test: releases and downloads come from the public repo, source links from the product repo
 ```
 
 ## Keeping downloads correct
@@ -119,10 +119,12 @@ scripts/
 | --- | --- |
 | macOS (Apple Silicon) | `CryoZen.dmg` |
 | macOS (Intel) | `CryoZen-Intel.dmg` |
-| Windows | `CryoZen-Windows-Portable.zip` |
+| Windows (primary) | `CryoZen-Setup-x64.exe` |
+| Windows (alternate) | `CryoZen-Windows-Portable.zip` |
 | Linux (primary) | `CryoZen-x86_64.AppImage` |
 | Linux (alternates) | `cryozen_amd64.deb`, `cryozen.x86_64.rpm`, `CryoZen-Linux-Portable.tar.gz` |
 
+Releases are read from the public `shreejitverma/cryozen-releases` repository (`GITHUB_RELEASES_REPO` in `lib/site.ts`), not the private product repo: the product pipeline publishes identical assets to both, and only the public one can serve anonymous downloads.
 These must match what `.github/workflows/release.yml` in the product repository uploads; the product repo's `packaging/README.md` documents `lib/platforms.ts` as part of that release contract.
 If a build script renames an artifact, update `lib/platforms.ts` in the same change, otherwise the button silently falls back to the releases page.
 `scripts/releases.test.mjs` covers the site side of the contract: every primary and alternate name resolves to a direct download URL against this asset list, and a missing asset falls back to the releases page rather than a 404 link.
@@ -155,6 +157,13 @@ It also carries `ignore` rules for `@types/node` majors (explained under Local d
 
 ## Deploying
 
-Import the repository into Vercel, set the production domain to `cryozen.ai`, and add `GITHUB_TOKEN`.
-While the product repository is private that token is what makes release data resolve at all; once it is public the token only raises the API rate limit.
+Import the repository into Vercel and set the production domain to `cryozen.ai`.
+`GITHUB_TOKEN` is optional; see "Environment" for what it does.
 The framework preset, build command, and output are all detected automatically.
+
+### When the Vercel check fails with "Account is blocked"
+
+That status comes from the Vercel team, not from this repository: Vercel refuses to create a deployment at all, so no build log exists for the commit.
+Inspect the reason with `vercel api /v2/teams/<team-id>` and read `softBlock.reason` (for example `FAIR_USE_LIMITS_EXCEEDED` with `blockedDueToOverageType`).
+Every route here is prerendered and revalidated hourly, so this site is not the source of function CPU usage; the overage comes from another project on the same Hobby team.
+Lift the block on the Vercel side (upgrade the team or wait for the fair-use window to reset), then re-run the check; no change to this repository can clear it.

@@ -1,4 +1,4 @@
-import { GITHUB_OWNER, GITHUB_REPO, latestReleaseUrl } from "@/lib/site";
+import { GITHUB_OWNER, GITHUB_RELEASES_REPO, latestReleaseUrl } from "@/lib/site";
 import type { PlatformId } from "@/lib/platforms";
 import { getPlatform } from "@/lib/platforms";
 
@@ -37,7 +37,9 @@ interface GitHubRelease {
   assets: GitHubAsset[];
 }
 
-const API_ROOT = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
+// Releases are read from the public release channel, not the private product
+// repo: anonymous visitors can only download assets from a public repository.
+const API_ROOT = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_RELEASES_REPO}`;
 
 /** Release metadata is refetched hourly; downloads never block on GitHub being up. */
 const REVALIDATE_SECONDS = 3600;
