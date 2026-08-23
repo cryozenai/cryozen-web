@@ -108,6 +108,7 @@ lib/
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
   releases.test.mjs   download-link contract test: exact-match asset resolution and the never-404 fallback
+  release-channel.test.mjs  release-channel contract test: releases and downloads come from the public repo, source links from the product repo
 ```
 
 ## Keeping downloads correct
@@ -156,6 +157,6 @@ It also carries `ignore` rules for `@types/node` majors (explained under Local d
 
 ## Deploying
 
-Import the repository into Vercel, set the production domain to `cryozen.ai`, and add `GITHUB_TOKEN`.
-While the product repository is private that token is what makes release data resolve at all; once it is public the token only raises the API rate limit.
+Import the repository into Vercel and set the production domain to `cryozen.ai`.
+`GITHUB_TOKEN` is optional; see "Environment" for what it does.
 The framework preset, build command, and output are all detected automatically.
