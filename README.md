@@ -160,3 +160,10 @@ It also carries `ignore` rules for `@types/node` majors (explained under Local d
 Import the repository into Vercel and set the production domain to `cryozen.ai`.
 `GITHUB_TOKEN` is optional; see "Environment" for what it does.
 The framework preset, build command, and output are all detected automatically.
+
+### When the Vercel check fails with "Account is blocked"
+
+That status comes from the Vercel team, not from this repository: Vercel refuses to create a deployment at all, so no build log exists for the commit.
+Inspect the reason with `vercel api /v2/teams/<team-id>` and read `softBlock.reason` (for example `FAIR_USE_LIMITS_EXCEEDED` with `blockedDueToOverageType`).
+Every route here is prerendered and revalidated hourly, so this site is not the source of function CPU usage; the overage comes from another project on the same Hobby team.
+Lift the block on the Vercel side (upgrade the team or wait for the fair-use window to reset), then re-run the check; no change to this repository can clear it.
