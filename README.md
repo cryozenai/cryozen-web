@@ -119,10 +119,12 @@ scripts/
 | --- | --- |
 | macOS (Apple Silicon) | `CryoZen.dmg` |
 | macOS (Intel) | `CryoZen-Intel.dmg` |
-| Windows | `CryoZen-Windows-Portable.zip` |
+| Windows (primary) | `CryoZen-Setup-x64.exe` |
+| Windows (alternate) | `CryoZen-Windows-Portable.zip` |
 | Linux (primary) | `CryoZen-x86_64.AppImage` |
 | Linux (alternates) | `cryozen_amd64.deb`, `cryozen.x86_64.rpm`, `CryoZen-Linux-Portable.tar.gz` |
 
+Releases are read from the public `shreejitverma/cryozen-releases` repository (`GITHUB_RELEASES_REPO` in `lib/site.ts`), not the private product repo: the product pipeline publishes identical assets to both, and only the public one can serve anonymous downloads.
 These must match what `.github/workflows/release.yml` in the product repository uploads; the product repo's `packaging/README.md` documents `lib/platforms.ts` as part of that release contract.
 If a build script renames an artifact, update `lib/platforms.ts` in the same change, otherwise the button silently falls back to the releases page.
 `scripts/releases.test.mjs` covers the site side of the contract: every primary and alternate name resolves to a direct download URL against this asset list, and a missing asset falls back to the releases page rather than a 404 link.

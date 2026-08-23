@@ -43,7 +43,7 @@ export const platforms: Platform[] = [
     ],
     steps: [
       "Open CryoZen.dmg and drag CryoZen to Applications.",
-      "Right-click CryoZen and choose Open the first time: the build is not code-signed yet, so Gatekeeper asks once.",
+      "If macOS says the app cannot be opened, right-click CryoZen, choose Open, then Open again: unsigned builds need this once. Signed and notarized builds open normally.",
       "Your browser opens at http://127.0.0.1:7860 when the server is ready. Data lives in ~/Library/Application Support/CryoZen.",
     ],
     alternates: [{ assetName: "CryoZen-Intel.dmg", label: "Intel Macs (.dmg)" }],
@@ -52,15 +52,21 @@ export const platforms: Platform[] = [
     id: "windows",
     name: "Windows",
     shortName: "Windows",
-    assetName: "CryoZen-Windows-Portable.zip",
-    fileLabel: "Portable archive (.zip)",
+    assetName: "CryoZen-Setup-x64.exe",
+    fileLabel: "Installer (.exe)",
     summary:
-      "A self-contained folder: unzip anywhere and run CryoZen.exe. Nothing is installed system-wide.",
-    requirements: ["Windows 10 or newer (64-bit)", "Nothing else - Python is bundled"],
+      "A standard installer: Program Files, a Start Menu shortcut, and an entry in Apps & Features. Prefer the portable zip to run from a folder without installing.",
+    requirements: ["Windows 10 or newer (64-bit x64)", "Nothing else - Python is bundled"],
     steps: [
-      "Unzip CryoZen-Windows-Portable.zip and open the CryoZen folder.",
-      "Run CryoZen.exe. SmartScreen asks once for unsigned builds: choose More info, then Run anyway.",
-      "Your browser opens at http://127.0.0.1:7860 when the server is ready. Data lives in %LOCALAPPDATA%\\CryoZen.",
+      "Run CryoZen-Setup-x64.exe and follow the prompts. Silent install for scripts: CryoZen-Setup-x64.exe /S",
+      "If SmartScreen appears on an unsigned build, choose More info, then Run anyway. Signed builds do not prompt.",
+      "Launch CryoZen from the Start Menu. Your browser opens at http://127.0.0.1:7860 when the server is ready. Data lives in %LOCALAPPDATA%\\CryoZen and survives uninstall.",
+    ],
+    alternates: [
+      {
+        assetName: "CryoZen-Windows-Portable.zip",
+        label: "Portable .zip (no install: unzip and run CryoZen.exe)",
+      },
     ],
   },
   {
@@ -90,12 +96,12 @@ export const platforms: Platform[] = [
     assetName: null,
     fileLabel: "Container image",
     summary:
-      "The recommended path for servers, GPUs, and anything long-running. Pins every dependency and survives host upgrades.",
+      "The recommended path for servers, GPUs, and anything long-running. Pulls the published image (linux/amd64 and linux/arm64); no build step.",
     requirements: ["Docker with Compose v2", "A host you control"],
     steps: [
-      "git clone https://github.com/shreejitverma/cryozen.git",
-      "cd cryozen && cp .env.example .env",
-      "docker compose up -d --build, then open http://localhost:7000",
+      "git clone https://github.com/shreejitverma/cryozen-releases.git",
+      "cd cryozen-releases && cp .env.example .env",
+      "docker compose up -d, then open http://localhost:7000",
     ],
   },
 ];

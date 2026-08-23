@@ -18,7 +18,7 @@ import {
   formatDate,
   getLatestRelease,
 } from "@/lib/releases";
-import { ghcrImage, githubUrl, deploymentDocsUrl, releasesUrl } from "@/lib/site";
+import { ghcrImage, releasesRepoUrl, deploymentDocsUrl, releasesUrl } from "@/lib/site";
 
 export const revalidate = 3600;
 
@@ -30,9 +30,9 @@ export const metadata: Metadata = {
 };
 
 const dockerCommands = [
-  "git clone https://github.com/shreejitverma/cryozen.git",
-  "cd cryozen && cp .env.example .env",
-  "docker compose up -d --build",
+  "git clone https://github.com/shreejitverma/cryozen-releases.git",
+  "cd cryozen-releases && cp .env.example .env",
+  "docker compose up -d",
 ];
 
 export default async function DownloadPage() {
@@ -184,8 +184,8 @@ export default async function DownloadPage() {
               <ButtonLink href={deploymentDocsUrl} variant="secondary">
                 Deployment guide
               </ButtonLink>
-              <ButtonLink href={githubUrl} variant="secondary">
-                View source
+              <ButtonLink href={releasesRepoUrl} variant="secondary">
+                Compose bundle on GitHub
               </ButtonLink>
             </div>
           </div>

@@ -1,5 +1,13 @@
 export const GITHUB_OWNER = "shreejitverma";
+/** The product source repository (private). */
 export const GITHUB_REPO = "cryozen";
+/**
+ * The public release channel. The product repo is private, so its release
+ * assets cannot be downloaded anonymously; the release pipeline publishes
+ * every release (assets, SHA256SUMS.txt, notes) to this public repo, and the
+ * site reads releases and links downloads from here.
+ */
+export const GITHUB_RELEASES_REPO = "cryozen-releases";
 
 export const site = {
   name: "CryoZen",
@@ -13,7 +21,8 @@ export const site = {
 } as const;
 
 export const githubUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`;
-export const releasesUrl = `${githubUrl}/releases`;
+export const releasesRepoUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_RELEASES_REPO}`;
+export const releasesUrl = `${releasesRepoUrl}/releases`;
 export const latestReleaseUrl = `${releasesUrl}/latest`;
 export const docsUrl = `${githubUrl}/blob/main/docs/README.md`;
 export const quickstartUrl = `${githubUrl}/blob/main/QUICKSTART_LOCAL.md`;
