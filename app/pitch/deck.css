@@ -1,0 +1,169 @@
+/*
+ * The deck's type scale, declared once for both media it renders in.
+ *
+ * On screen a slide is a viewport tall and the scale is fluid. In print a slide
+ * is a fixed 1280x720 page, which is shorter than the viewport it was tuned in,
+ * so the scale has to step down or the tail of a dense slide falls off the
+ * bottom edge. Keeping both sets of numbers on the same custom properties is
+ * what stops the two from drifting: a component asks for `--deck-lede` and gets
+ * the right size for whichever medium it is in, and nobody has to remember to
+ * add a print override when they add a block.
+ *
+ * The print floor is 24px. At 96 DPI that is 18pt, which is the size a deck
+ * stays readable at when it is projected in a room or scanned as a thumbnail.
+ * Anything set below it here is annotation - a kicker, a list marker, an axis
+ * label, a citation - never a sentence read for meaning.
+ */
+.deck-root {
+  --deck-h1: clamp(2.2rem, 4.6vw, 3.7rem);
+  --deck-h2: clamp(1.85rem, 3.7vw, 2.9rem);
+  --deck-lede: clamp(1.15rem, 1.7vw, 1.55rem);
+  --deck-bullet: clamp(1.05rem, 1.45vw, 1.35rem);
+  --deck-body: clamp(1rem, 1.3vw, 1.2rem);
+  --deck-metric: clamp(1.8rem, 3.2vw, 2.5rem);
+  --deck-figure: clamp(1.3rem, 2vw, 1.7rem);
+  --deck-annot: 0.95rem;
+  --deck-micro: 0.9rem;
+
+  --deck-gap: 1.5rem;
+  --deck-list-gap: 0.75rem;
+  --deck-lh-head: 1.08;
+  --deck-lh-body: 1.45;
+}
+
+/* The standard space between a slide's blocks, so the rhythm has one source. */
+.deck-root .deck-block {
+  margin-top: var(--deck-gap);
+}
+
+@media print {
+  @page {
+    size: 1280px 720px;
+    margin: 0;
+  }
+
+  /*
+   * The site chrome is navigation, and a printed page has none. The aurora goes
+   * with it: it is `position: fixed`, which browsers paint on the first page
+   * only, so leaving it in means page one looks different from every other.
+   */
+  body:has(.deck-root) > header,
+  body:has(.deck-root) > footer,
+  body:has(.deck-root) .site-aurora {
+    display: none !important;
+  }
+
+  body:has(.deck-root) {
+    background: var(--color-ground);
+  }
+
+  .deck-root {
+    --deck-h1: 44px;
+    --deck-h2: 33px;
+    --deck-lede: 24px;
+    --deck-bullet: 24px;
+    --deck-body: 24px;
+    --deck-metric: 36px;
+    --deck-figure: 26px;
+    --deck-annot: 17px;
+    --deck-micro: 15px;
+
+    --deck-gap: 10px;
+    --deck-list-gap: 9px;
+    --deck-lh-head: 1.02;
+    --deck-lh-body: 1.3;
+  }
+
+  /*
+   * A definite height, not a minimum: one slide is one page, and a slide that
+   * outgrows the page has to be caught rather than allowed to push its own tail
+   * onto a second one where a page count still looks correct.
+   *
+   * `scripts/check-deck-print.mjs` is the thing that catches it. Run it after
+   * any change to a slide's copy or to the scale above.
+   */
+  .deck-root .deck-slide {
+    height: 720px !important;
+    min-height: 0 !important;
+    /*
+     * Top-aligned, unlike on screen. Centring a slide that outgrows the page
+     * clips its heading as well as its tail, which is the failure mode that
+     * hides overflow rather than showing it.
+     */
+    justify-content: flex-start;
+    border: none;
+    padding: 30px 52px !important;
+    overflow: hidden;
+    background: var(--color-ground);
+    break-inside: avoid;
+    break-after: page;
+  }
+
+  .deck-root .deck-slide:last-child {
+    break-after: auto;
+  }
+
+  /* Rows size to their content; a definite height would let a quadrant's
+     border stroke cut through the labels inside it. */
+  .deck-root .deck-matrix {
+    min-height: 0 !important;
+  }
+
+  /*
+   * The page is 1280px wide but Chrome does not resolve `lg:` against it, so
+   * the two-column matrix layout - and with it the rotated y-axis label - has
+   * to be asserted here. Without this the printed matrix has no vertical axis,
+   * which is the half of the chart that says where the data lives.
+   */
+  .deck-root .deck-matrix-wrap {
+    grid-template-columns: auto 1fr !important;
+  }
+
+  .deck-root .deck-ylab {
+    display: flex !important;
+  }
+
+  .deck-root .deck-ylab-flat {
+    display: none !important;
+  }
+
+  /*
+   * The market slide is the densest in either deck: a three-tier funnel, a
+   * takeaway, and a seven-row sourced assumption table. Its rows carry the
+   * page's vertical budget, so they lose their screen breathing room rather
+   * than the table losing its total - which is exactly the row an investor
+   * checks first.
+   */
+  /*
+   * On screen the funnel is capped for line length; on the page it takes the
+   * full column, which is what keeps each tier's description to one or two
+   * lines instead of three. Those lines are the slide's whole vertical budget.
+   */
+  .deck-root .deck-funnel {
+    max-width: none !important;
+  }
+
+  .deck-root .deck-tier {
+    padding: 7px 16px !important;
+  }
+
+  .deck-root .deck-assum-row {
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  /*
+   * Same trade on the product slide: the two capability columns give up their
+   * screen padding so the line under them - the one naming the operating
+   * systems it runs on - stays on the page.
+   */
+  .deck-root .deck-column {
+    padding: 14px 16px !important;
+  }
+
+  /* Backgrounds and accent colours are the deck, not decoration. */
+  .deck-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
