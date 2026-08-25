@@ -11,6 +11,8 @@
  * the user's machine, and user data lives in the platform's per-user data
  * directory, never inside the install.
  */
+import { releasesRepoUrl } from "@/lib/site";
+
 export type PlatformId = "macos" | "windows" | "linux" | "docker";
 
 export interface Platform {
@@ -29,10 +31,13 @@ export interface Platform {
 }
 
 export const dockerCommands = [
-  "git clone https://github.com/shreejitverma/cryozen-releases.git",
+  // Derived rather than written out: this URL names the same repository as
+  // releasesRepoUrl, and spelling it twice is what let it survive the move to
+  // the cryozenai organisation while the rest of the site had been updated.
+  `git clone ${releasesRepoUrl}.git`,
   "cd cryozen-releases && cp .env.example .env",
   "docker compose up -d",
-] as const;
+];
 
 export const platforms: Platform[] = [
   {

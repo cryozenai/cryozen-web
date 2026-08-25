@@ -24,8 +24,8 @@ const { getLatestRelease, getReleases, downloadUrlFor } = await import("../lib/r
 const { getPlatform, dockerCommands } = await import("../lib/platforms.ts");
 const { githubUrl, releasesRepoUrl, releasesUrl, latestReleaseUrl } = await import("../lib/site.ts");
 
-const PUBLIC_REPO = "https://github.com/shreejitverma/cryozen-releases";
-const PRIVATE_REPO = "https://github.com/shreejitverma/cryozen";
+const PUBLIC_REPO = "https://github.com/cryozenai/cryozen-releases";
+const PRIVATE_REPO = "https://github.com/cryozenai/cryozen";
 
 const desktopAssets = ["macos", "windows", "linux"].map((id) => ({
   name: getPlatform(id).assetName,
@@ -66,8 +66,8 @@ test("release metadata is fetched from the public cryozen-releases repo API", as
     await getReleases(5);
     assert.equal(latest.release?.tag, "v9.9.9");
     assert.deepEqual(calls, [
-      "https://api.github.com/repos/shreejitverma/cryozen-releases/releases/latest",
-      "https://api.github.com/repos/shreejitverma/cryozen-releases/releases?per_page=5",
+      "https://api.github.com/repos/cryozenai/cryozen-releases/releases/latest",
+      "https://api.github.com/repos/cryozenai/cryozen-releases/releases?per_page=5",
     ]);
   });
 });

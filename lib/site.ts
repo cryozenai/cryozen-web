@@ -1,4 +1,4 @@
-export const GITHUB_OWNER = "shreejitverma";
+export const GITHUB_OWNER = "cryozenai";
 /** The product source repository (private). */
 export const GITHUB_REPO = "cryozen";
 /**
