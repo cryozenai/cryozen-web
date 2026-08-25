@@ -6,6 +6,7 @@ It is a Next.js App Router site on Vercel.
 Every download button uses GitHub's floating `/releases/latest/download/<asset>` link, so it serves the newest build the moment a release publishes, without waiting for the site to revalidate.
 It falls back to the releases page only when the API positively reports that the asset is not downloadable: a channel with no published release, or a release that does not carry that asset.
 Metadata is fetched from the GitHub API and revalidated hourly, so a new product release appears on the site without a redeploy.
+Only the link floats: the version and size shown beside a button come from that cached metadata, so within a revalidation window after a release the page can name the previous tag next to a button that downloads the new build.
 
 ## Stack
 
