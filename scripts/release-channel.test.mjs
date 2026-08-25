@@ -63,9 +63,21 @@ test("release links target the public channel; source links keep the product rep
   assert.equal(releasesRepoUrl, PUBLIC_REPO);
   assert.equal(releasesUrl, `${PUBLIC_REPO}/releases`);
   assert.equal(latestReleaseUrl, `${PUBLIC_REPO}/releases/latest`);
-  // With no release published yet, every download falls back into the public repo.
+  // What this test is named for is the channel, not the shape: a download must
+  // never resolve into the private product repo, which anonymous visitors
+  // cannot read. A null release means the API call failed, and the button now
+  // answers that with a direct link into the public channel rather than the
+  // releases page, so assert the repository rather than one exact URL.
   for (const id of ["macos", "windows", "linux"]) {
-    assert.equal(downloadUrlFor(id, null), `${PUBLIC_REPO}/releases/latest`);
+    const url = downloadUrlFor(id, null);
+    assert.ok(url.startsWith(`${PUBLIC_REPO}/releases/`), `${id} leaves the public channel: ${url}`);
+    // The boundary matters: PRIVATE_REPO is a prefix of PUBLIC_REPO
+    // (".../cryozen" vs ".../cryozen-releases"), so a bare startsWith would
+    // reject the correct URL.
+    assert.ok(
+      !url.startsWith(`${PRIVATE_REPO}/`),
+      `${id} points at the private repo: ${url}`,
+    );
   }
 });
 
