@@ -77,7 +77,14 @@ async function latestFrom(respond) {
   }
 }
 
-const published = () => latestFrom(respondWith(apiRelease(allAssetNames)));
+async function published() {
+  const latest = await latestFrom(respondWith(apiRelease(allAssetNames)));
+  // The published and unknown branches return the same URL for a carried
+  // asset, so a test that only reads the URL cannot tell them apart. Pin the
+  // branch here and every caller of this helper inherits the discrimination.
+  assert.equal(latest.status, "published");
+  return latest;
+}
 
 test("assetUrlByName resolves each contract asset to a direct download", async () => {
   const latest = await published();
@@ -127,7 +134,11 @@ test("an asset the latest release does not carry falls back to the releases page
   const withoutIntel = await latestFrom(
     respondWith(apiRelease(allAssetNames.filter((name) => name !== "CryoZen-Intel.dmg"))),
   );
+  assert.equal(withoutIntel.status, "published");
   assert.equal(assetUrlByName("CryoZen-Intel.dmg", withoutIntel), latestReleaseUrl);
+  // The same state must still resolve the assets it does carry, so the page
+  // fallback is per asset rather than the whole release giving up.
+  assert.equal(assetUrlByName("CryoZen.dmg", withoutIntel), latestAssetUrl("CryoZen.dmg"));
 });
 
 test("every primary and alternate asset name is on the release contract", async () => {

@@ -59,7 +59,7 @@ The product repository `shreejitverma/cryozen` is private, but the site never re
 A token therefore needs no scopes and only serves to raise the rate limit.
 
 To set one, copy `.env.example` to `.env.local` and fill in the token.
-Without a token the site still builds and resolves releases; if the API is unreachable or rate limited, the changelog and the version labels degrade to being omitted rather than failing, and the download buttons still link straight to the latest release.
+Without a token the site still builds and resolves releases; if the API is unreachable or rate limited, the version labels degrade to being omitted, the changelog falls back to its empty state, and the download buttons still link straight to the latest release.
 
 ## Theme
 

@@ -83,6 +83,10 @@ test("release links target the public channel; source links keep the product rep
   // repository the link lands in rather than the URL itself.
   await withFetchStub(async () => {
     const latest = await getLatestRelease();
+    // Without this the assertions below hold under any state, since the page
+    // fallback lives in the public channel too; they would stop checking the
+    // download URL and nobody would notice.
+    assert.equal(latest.status, "published");
     for (const id of ["macos", "windows", "linux"]) {
       const url = downloadUrlFor(id, latest);
       assert.ok(
