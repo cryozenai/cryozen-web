@@ -100,6 +100,9 @@ test("the download URL floats to latest rather than pinning the fetched tag", as
   const url = assetUrlByName("CryoZen.dmg", await published());
   assert.ok(!url.includes("v1.2.3"), `download URL pins a tag: ${url}`);
   assert.match(url, /\/releases\/latest\/download\/CryoZen\.dmg$/);
+  // Every download hangs off whatever the channel calls its latest release, so
+  // redefining that cannot update the page link and leave the buttons behind.
+  assert.equal(url, `${latestReleaseUrl}/download/CryoZen.dmg`);
 });
 
 test("an unreachable GitHub API still yields a direct download, not a page", async () => {

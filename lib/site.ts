@@ -25,16 +25,19 @@ export const releasesRepoUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_RELE
 export const releasesUrl = `${releasesRepoUrl}/releases`;
 export const latestReleaseUrl = `${releasesUrl}/latest`;
 /**
- * A download link that always serves the newest release's copy of `assetName`.
+ * A download link for the newest release's copy of `assetName`.
  *
  * GitHub answers `/releases/latest/download/<asset>` with a 302 to that asset on
  * whichever release is currently latest, so the link is correct the moment a
- * release publishes and needs no API call to build. That is what makes a
- * download button direct: the visitor gets the file, not a page, and never a
- * file from a release that has since been superseded.
+ * release publishes and needs no API call to build. The visitor gets the file
+ * rather than a page, and never a file from a release that has since been
+ * superseded. It 404s when the latest release does not carry the asset, which
+ * is why callers decide when to send the visitor to `latestReleaseUrl` instead:
+ * see `assetUrlByName` in lib/releases.ts for what each release state resolves
+ * to. Built from `latestReleaseUrl` so the two cannot name different releases.
  */
 export const latestAssetUrl = (assetName: string) =>
-  `${releasesUrl}/latest/download/${assetName}`;
+  `${latestReleaseUrl}/download/${assetName}`;
 export const docsUrl = `${githubUrl}/blob/main/docs/README.md`;
 export const quickstartUrl = `${githubUrl}/blob/main/QUICKSTART_LOCAL.md`;
 export const deploymentDocsUrl = `${githubUrl}/blob/main/docs/operations/deployment.md`;

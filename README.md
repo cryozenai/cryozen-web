@@ -108,7 +108,7 @@ lib/
   pricing.ts          tiers and FAQ copy
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
-  releases.test.mjs   download-link contract test: exact-match asset resolution and the never-404 fallback
+  releases.test.mjs   download-link contract test: every asset resolves to a floating latest-release download, never the fetched tag, with the releases-page fallback wherever GitHub reports absence
   release-channel.test.mjs  release-channel contract test: releases and downloads come from the public repo, source links from the product repo
 ```
 
