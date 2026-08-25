@@ -3,8 +3,10 @@
 The marketing and download site for [CryoZen](https://github.com/shreejitverma/cryozen), served at **cryozen.ai**.
 
 It is a Next.js App Router site on Vercel.
-Every download button resolves to a real asset on GitHub Releases when release metadata is readable, and falls back to the releases page when it is not.
+Every download button uses GitHub's floating `/releases/latest/download/<asset>` link, so it serves the newest build the moment a release publishes, without waiting for the site to revalidate.
+It falls back to the releases page only when the API positively reports that the asset is not downloadable: a channel with no published release, or a release that does not carry that asset.
 Metadata is fetched from the GitHub API and revalidated hourly, so a new product release appears on the site without a redeploy.
+Only the link floats: the version and size shown beside a button come from that cached metadata, so within a revalidation window after a release the page can name the previous tag next to a button that downloads the new build.
 
 ## Stack
 
@@ -46,7 +48,7 @@ The build step type-checks the whole project, so there is no separate `tsc` job.
 `npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks and the download-link contract (see "Keeping downloads correct").
 
 CI deliberately runs **without** a `GITHUB_TOKEN`.
-That keeps the fallback path in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading to the releases page, CI would catch it.
+That keeps the degradation paths in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading, CI would catch it.
 
 ## Environment
 
@@ -58,7 +60,7 @@ The product repository `shreejitverma/cryozen` is private, but the site never re
 A token therefore needs no scopes and only serves to raise the rate limit.
 
 To set one, copy `.env.example` to `.env.local` and fill in the token.
-Without a token the site still builds and resolves releases; if the API is unreachable or rate limited, every GitHub call degrades to the releases page instead of failing, so the download buttons and the changelog fall back quietly.
+Without a token the site still builds and resolves releases; if the API is unreachable or rate limited, the version labels degrade to being omitted, the changelog falls back to its empty state, and the download buttons still link straight to the latest release.
 
 ## Theme
 
@@ -107,7 +109,7 @@ lib/
   pricing.ts          tiers and FAQ copy
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
-  releases.test.mjs   download-link contract test: exact-match asset resolution and the never-404 fallback
+  releases.test.mjs   download-link contract test: every asset resolves to a floating latest-release download, never the fetched tag, with the releases-page fallback wherever GitHub reports absence
   release-channel.test.mjs  release-channel contract test: releases and downloads come from the public repo, source links from the product repo
 ```
 
@@ -127,7 +129,7 @@ scripts/
 Releases are read from the public `shreejitverma/cryozen-releases` repository (`GITHUB_RELEASES_REPO` in `lib/site.ts`), not the private product repo: the product pipeline publishes identical assets to both, and only the public one can serve anonymous downloads.
 These must match what `.github/workflows/release.yml` in the product repository uploads; the product repo's `packaging/README.md` documents `lib/platforms.ts` as part of that release contract.
 If a build script renames an artifact, update `lib/platforms.ts` in the same change, otherwise the button silently falls back to the releases page.
-`scripts/releases.test.mjs` covers the site side of the contract: every primary and alternate name resolves to a direct download URL against this asset list, and a missing asset falls back to the releases page rather than a 404 link.
+`scripts/releases.test.mjs` covers the site side of the contract against a stubbed GitHub API: every primary and alternate name resolves to a direct download URL, an asset missing from the latest release and a channel with nothing published both fall back to the releases page rather than a link that 404s, and a failed API call still yields a direct download.
 
 ## Before launch
 

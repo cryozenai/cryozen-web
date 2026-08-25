@@ -1,4 +1,4 @@
-import { GITHUB_OWNER, GITHUB_RELEASES_REPO, latestReleaseUrl } from "@/lib/site";
+import { GITHUB_OWNER, GITHUB_RELEASES_REPO, latestAssetUrl, latestReleaseUrl } from "@/lib/site";
 import type { PlatformId } from "@/lib/platforms";
 import { getPlatform } from "@/lib/platforms";
 
@@ -73,59 +73,107 @@ function normalize(release: GitHubRelease): Release {
   };
 }
 
-async function get<T>(path: string): Promise<T | null> {
+/**
+ * The three answers a GitHub read can give, kept apart because they mean
+ * different things to a download button.
+ *
+ * `absent` is a positive answer - GitHub says the resource does not exist -
+ * while `failed` says only that we could not ask. Collapsing both into one
+ * empty value would make an empty release channel indistinguishable from an
+ * outage, and the two call for opposite fallbacks.
+ */
+type Fetched<T> = { state: "ok"; data: T } | { state: "absent" } | { state: "failed" };
+
+async function get<T>(path: string): Promise<Fetched<T>> {
   try {
     const response = await fetch(`${API_ROOT}${path}`, {
       headers: headers(),
       next: { revalidate: REVALIDATE_SECONDS },
     });
-    if (!response.ok) return null;
-    return (await response.json()) as T;
+    if (response.status === 404) return { state: "absent" };
+    if (!response.ok) return { state: "failed" };
+    return { state: "ok", data: (await response.json()) as T };
   } catch {
-    // A GitHub outage or an unreleased repo must not fail the build; callers
-    // fall back to the releases page.
-    return null;
+    // A GitHub outage must not fail the build; callers degrade instead.
+    return { state: "failed" };
   }
 }
 
-export async function getLatestRelease(): Promise<Release | null> {
-  const release = await get<GitHubRelease>("/releases/latest");
-  return release ? normalize(release) : null;
+/**
+ * The latest release, or why there is not one.
+ *
+ * `none` means GitHub answered that the channel has no published release, so a
+ * floating asset link would 404 and the releases page is the honest target.
+ * `unknown` means the call failed, which says nothing about what is published.
+ * Every member carries `release` so display code can read it without
+ * discriminating.
+ */
+export type LatestRelease =
+  | { status: "published"; release: Release }
+  | { status: "none"; release: null }
+  | { status: "unknown"; release: null };
+
+export async function getLatestRelease(): Promise<LatestRelease> {
+  const result = await get<GitHubRelease>("/releases/latest");
+  if (result.state === "ok") return { status: "published", release: normalize(result.data) };
+  return result.state === "absent"
+    ? { status: "none", release: null }
+    : { status: "unknown", release: null };
 }
 
 export async function getReleases(limit = 20): Promise<Release[]> {
-  const releases = await get<GitHubRelease[]>(`/releases?per_page=${limit}`);
-  if (!releases) return [];
-  return releases.filter((release) => !release.draft).map(normalize);
+  const result = await get<GitHubRelease[]>(`/releases?per_page=${limit}`);
+  if (result.state !== "ok") return [];
+  return result.data.filter((release) => !release.draft).map(normalize);
 }
 
 /**
- * Direct asset URL for a platform, or the releases page when the asset is not
- * published yet. Never returns a URL that is known to 404.
+ * Direct download URL for a platform's primary asset.
+ *
+ * Platforms with no asset (Docker) have nothing to download, so they get the
+ * releases page.
  */
-export function downloadUrlFor(platformId: PlatformId, release: Release | null): string {
+export function downloadUrlFor(platformId: PlatformId, latest: LatestRelease): string {
   const { assetName } = getPlatform(platformId);
-  if (!assetName || !release) return latestReleaseUrl;
-  const asset = release.assets.find((candidate) => candidate.name === assetName);
-  return asset?.downloadUrl ?? latestReleaseUrl;
+  if (!assetName) return latestReleaseUrl;
+  return assetUrlByName(assetName, latest);
 }
 
-export function assetSizeFor(platformId: PlatformId, release: Release | null): string | null {
+export function assetSizeFor(platformId: PlatformId, latest: LatestRelease): string | null {
   const { assetName } = getPlatform(platformId);
-  if (!assetName || !release) return null;
-  const asset = release.assets.find((candidate) => candidate.name === assetName);
+  if (!assetName || !latest.release) return null;
+  const asset = latest.release.assets.find((candidate) => candidate.name === assetName);
   return asset ? formatBytes(asset.size) : null;
 }
 
 /**
- * URL for a specific named asset (an alternate format), or the releases page
- * when it is not on the latest release. Same never-404 contract as
- * downloadUrlFor.
+ * Direct download URL for a named asset.
+ *
+ * Returns GitHub's floating `/releases/latest/download/<asset>` link rather
+ * than the pinned `browser_download_url` read from the API, so the button
+ * downloads whatever is newest at the moment of the click. The pinned URL is
+ * only as fresh as the last revalidation, which meant that for up to an hour
+ * after a release the site handed out the previous version's installer.
+ *
+ * What each state resolves to, and what that is worth:
+ *
+ * - `published`, release carries the asset: the floating link. It resolves,
+ *   with one exception - the presence check reads hourly-cached metadata while
+ *   the href floats, so if a newer release drops an asset the cached one
+ *   carried, the link 404s until the next revalidation.
+ * - `published`, asset positively absent: the releases page. Never a 404.
+ * - `none`, the channel has no release at all: the releases page. Never a 404.
+ * - `unknown`, the call failed: the floating link, best effort. It resolves
+ *   whenever the channel has a release carrying the asset, which is very nearly
+ *   always, and 404s on a genuinely empty channel. That is the deliberate
+ *   trade: a link that almost always downloads beats a page that never does.
  */
-export function assetUrlByName(assetName: string, release: Release | null): string {
-  if (!release) return latestReleaseUrl;
-  const asset = release.assets.find((candidate) => candidate.name === assetName);
-  return asset?.downloadUrl ?? latestReleaseUrl;
+export function assetUrlByName(assetName: string, latest: LatestRelease): string {
+  if (latest.status === "unknown") return latestAssetUrl(assetName);
+  const carriesAsset =
+    latest.status === "published" &&
+    latest.release.assets.some((candidate) => candidate.name === assetName);
+  return carriesAsset ? latestAssetUrl(assetName) : latestReleaseUrl;
 }
 
 export function formatBytes(bytes: number): string {
