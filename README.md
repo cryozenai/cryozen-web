@@ -46,7 +46,7 @@ npm run check:deck-print # printed pitch decks lost no copy (needs a running ser
 
 `.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm test`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
 The build step type-checks the whole project, so there is no separate `tsc` job.
-`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks and the download-link contract (see "Keeping downloads correct").
+`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks, the download-link contract (see "Keeping downloads correct"), and the deck-data invariants.
 
 CI deliberately runs **without** a `GITHUB_TOKEN`.
 That keeps the degradation paths in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading, CI would catch it.
@@ -81,6 +81,7 @@ It is an ice-fire scheme: a near-black blue ground, a glacial cyan primary, and 
 | `--color-deep` | `#1E5F8C` | Cold ember shadow |
 | `--color-ink` | `#C9D6E3` | Body text |
 | `--color-muted` | `#7C8DA1` | Secondary text |
+| `--color-warn` | `#E0A94A` | The one warm colour, spent only on the pitch decks' unbenchmarked market assumptions |
 
 Two custom utilities carry the look: `text-flame` (the headline gradient) and `panel` (the hairline card with a cold inner light).
 
@@ -104,7 +105,7 @@ app/
   opengraph-image.tsx generated social card
   sitemap.ts robots.ts
 components/           header, footer, CTAs, primitives
-  deck/               slide and block renderers, presenting chrome, title-slide canvas
+  deck/               slide and block renderers, presenting chrome, title-slide mark
 lib/
   site.ts             names, URLs, nav
   platforms.ts        per-platform asset names, requirements, install steps
@@ -149,7 +150,8 @@ Two inline markers work inside any string: `**strong**` and `==accent==`.
 
 Presenting: arrow keys, `PageUp`/`PageDown`, or space page between slides; the rail on the right jumps to one.
 `Notes` (or `n`) reveals each slide's 30-second spoken track, which is hidden by default and never printed.
-`PDF` prints, and the print stylesheet in `app/pitch/deck.css` pins each slide to one 1280x720 landscape page with the site chrome dropped.
+`PDF` prints, and each slide becomes one 1280x720 landscape page with the site chrome dropped.
+The print type scale and the layout overrides live in `app/pitch/deck.css`; the `@page` box itself is rendered from `components/deck/deck-shell.tsx`, and the comments in both files record why it cannot live in the stylesheet.
 
 **Run `npm run check:deck-print` after changing deck copy or the print scale.**
 A printed slide is a fixed-height box with `overflow: hidden`, which is what puts one slide on one page and what makes an over-full slide fail silently: the page count still comes out right and the bottom of the slide is simply gone.
