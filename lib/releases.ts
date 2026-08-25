@@ -155,13 +155,18 @@ export function assetSizeFor(platformId: PlatformId, latest: LatestRelease): str
  * only as fresh as the last revalidation, which meant that for up to an hour
  * after a release the site handed out the previous version's installer.
  *
- * The never-404 contract holds across all three states. GitHub is consulted
- * only for what it can positively answer: an `unknown` channel means the call
- * failed, which says nothing about the asset, so the constructed link wins -
- * a link that almost certainly downloads beats a page that certainly does not.
- * The two positive absences, a channel with no release at all and a release
- * that does not carry this asset, would both 404 through the floating link, so
- * they get the releases page.
+ * What each state resolves to, and what that is worth:
+ *
+ * - `published`, release carries the asset: the floating link. It resolves,
+ *   with one exception - the presence check reads hourly-cached metadata while
+ *   the href floats, so if a newer release drops an asset the cached one
+ *   carried, the link 404s until the next revalidation.
+ * - `published`, asset positively absent: the releases page. Never a 404.
+ * - `none`, the channel has no release at all: the releases page. Never a 404.
+ * - `unknown`, the call failed: the floating link, best effort. It resolves
+ *   whenever the channel has a release carrying the asset, which is very nearly
+ *   always, and 404s on a genuinely empty channel. That is the deliberate
+ *   trade: a link that almost always downloads beats a page that never does.
  */
 export function assetUrlByName(assetName: string, latest: LatestRelease): string {
   if (latest.status === "unknown") return latestAssetUrl(assetName);

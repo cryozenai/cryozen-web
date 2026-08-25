@@ -48,13 +48,14 @@ export default async function DownloadPage() {
               Latest release{" "}
               <span className="font-mono text-primary">{release.tag}</span>
               {published ? `, published ${published}` : null}. Builds come straight from GitHub
-              Releases.
+              Releases. If a button below opens the releases page instead of downloading, that
+              platform&apos;s file is not attached to this release.
             </>
           ) : (
             <>
               {latest.status === "none"
                 ? "No build is published yet, so the buttons below link to "
-                : "Release details are unavailable right now, but the buttons below still download the latest build from "}
+                : "Release details are unavailable right now, but the buttons below still link straight to the latest build on "}
               <a
                 href={releasesUrl}
                 target="_blank"
