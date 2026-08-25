@@ -31,6 +31,21 @@ const SPACE_ACTIVATES =
  */
 const PENDING_MS = 1000;
 
+/*
+ * The one deck rule that no selector can scope: `@page` describes the sheet,
+ * not an element, so it applies to whatever is printed while it is in the
+ * document. It cannot live in `app/pitch/deck.css` - Next renders a route
+ * stylesheet as a `<link precedence>`, which React treats as a hoistable
+ * resource and never removes, so after a client navigation off the deck the
+ * page geometry would still be 1280x720 when the reader prints an ordinary
+ * page of the site.
+ *
+ * A plain `<style>` with no `href` or `precedence` is not hoistable, so React
+ * mounts and unmounts it with this component and the page box is live exactly
+ * while a deck is on screen.
+ */
+const PAGE_BOX = "@page { size: 1280px 720px; margin: 0; }";
+
 /**
  * The presenting chrome around a deck: scroll progress, a slide rail, keyboard
  * paging, the speaker-notes toggle, and print.
@@ -194,6 +209,8 @@ export function DeckShell({
 
   return (
     <div className="group/deck" data-notes={notes ? "on" : "off"}>
+      <style>{PAGE_BOX}</style>
+
       <div
         aria-hidden="true"
         className="fixed inset-x-0 top-0 z-60 h-0.5 origin-left bg-primary print:hidden"

@@ -92,7 +92,7 @@ export function DeckBlock({ block }: { block: Block }) {
 
     case "columns":
       return (
-        <div className="deck-block grid gap-4 md:grid-cols-2">
+        <div className="deck-columns deck-block grid gap-4 md:grid-cols-2">
           {block.items.map((column) => (
             <div
               key={column.title}

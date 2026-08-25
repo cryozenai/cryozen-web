@@ -21,8 +21,8 @@ const pad = (value: number) => String(value).padStart(2, "0");
 
 export function TitleSlideView({ slide }: { slide: TitleSlide }) {
   return (
-    <header id={slide.id} className={SLIDE}>
-      <div className={`${INNER} grid items-center gap-8 lg:grid-cols-[1.15fr_0.85fr]`}>
+    <header id={slide.id} className={`${SLIDE} deck-title`}>
+      <div className={`${INNER} deck-hero grid items-center gap-8 lg:grid-cols-[1.15fr_0.85fr]`}>
         <div>
           <p className="flex items-center gap-3 font-mono text-[length:var(--deck-mark)] tracking-[0.28em] text-muted uppercase">
             <Logo className="size-5 shrink-0" />
@@ -41,8 +41,8 @@ export function TitleSlideView({ slide }: { slide: TitleSlide }) {
           <p className="deck-block font-mono text-[length:var(--deck-micro)] tracking-wide text-muted">{slide.foot}</p>
         </div>
 
-        <div className="order-first lg:order-none">
-          <Lemniscate className="block h-[34vh] w-full lg:h-[min(58vh,32rem)] print:h-[380px]" />
+        <div className="deck-hero-mark order-first lg:order-none">
+          <Lemniscate className="block h-[34vh] w-full lg:h-[min(58vh,32rem)] print:h-[240px]" />
         </div>
       </div>
     </header>

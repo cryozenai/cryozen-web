@@ -44,10 +44,15 @@
 }
 
 @media print {
-  @page {
-    size: 1280px 720px;
-    margin: 0;
-  }
+  /*
+   * The 1280x720 page box is deliberately not here. `@page` describes the
+   * sheet rather than an element, so no selector can confine it to the deck,
+   * and a route stylesheet outlives its route: Next renders this file as a
+   * `<link precedence>`, which React never removes, so an `@page` rule in it
+   * would still be reshaping the paper after the reader clicked through to
+   * Pricing. It is rendered from `components/deck/deck-shell.tsx` as an
+   * un-hoistable `<style>` instead, which mounts and unmounts with the deck.
+   */
 
   /*
    * The site chrome is navigation, and a printed page has none. The aurora goes
@@ -111,18 +116,55 @@
     break-after: auto;
   }
 
+  /*
+   * The title slide is the exception to the top-aligning above: it is a hero,
+   * not a dense slide, so there is no tail to catch and an optically centred
+   * page reads the way the deck of record's did.
+   */
+  .deck-root .deck-title {
+    justify-content: center;
+  }
+
+  /*
+   * Measured, not assumed: printing this page box in headless Chrome, a
+   * `min-width: 640px` query matches and a `min-width: 768px` query does not,
+   * whatever `--window-size` says. So the page is laid out at an effective
+   * width somewhere in 640-767 and every Tailwind tier above `sm:` - `md:` as
+   * well as `lg:` - silently prints in its phone layout. A block that wants a
+   * wider layout on paper has to assert it here by hand.
+   *
+   * Which blocks get one is a per-block judgement made against rasterized
+   * pages, not an oversight to be tidied up later. The matrix and the two
+   * capability columns are asserted below because stacking costs them their
+   * meaning. `plans` and `funding` are deliberately left alone: 2x2 plan cards
+   * and a stacked ask slide were compared against their screen layouts on a
+   * 16:9 page and read better. Do not "finish" this list.
+   */
+  .deck-root .deck-hero {
+    grid-template-columns: 1.15fr 0.85fr !important;
+  }
+
+  /*
+   * On a narrow screen the mark leads because it is the first thing worth
+   * seeing above a fold. On the page there is no fold, and the headline is
+   * what an investor reads first.
+   */
+  .deck-root .deck-hero-mark {
+    order: 0 !important;
+  }
+
+  .deck-root .deck-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
   /* Rows size to their content; a definite height would let a quadrant's
      border stroke cut through the labels inside it. */
   .deck-root .deck-matrix {
     min-height: 0 !important;
   }
 
-  /*
-   * The page is 1280px wide but Chrome does not resolve `lg:` against it, so
-   * the two-column matrix layout - and with it the rotated y-axis label - has
-   * to be asserted here. Without this the printed matrix has no vertical axis,
-   * which is the half of the chart that says where the data lives.
-   */
+  /* Without this the printed matrix has no vertical axis, which is the half of
+     the chart that says where the data lives. */
   .deck-root .deck-matrix-wrap {
     grid-template-columns: auto 1fr !important;
   }
@@ -167,6 +209,21 @@
    */
   .deck-root .deck-column {
     padding: 14px 16px !important;
+  }
+
+  /*
+   * `text-flame` clips a gradient to the glyphs with a transparent colour.
+   * Skia's PDF backend does not fully honour that clip, so the h1's own box
+   * paints as a hairline rectangle around the headline. At 44px on paper the
+   * gradient is doing no work anyway, so the deck's h1 takes the ramp's top
+   * stop as a flat colour. Scoped to the deck: the home, pricing and /pitch
+   * index headlines use the same utility and print fine.
+   */
+  .deck-root h1 {
+    background-image: none !important;
+    -webkit-background-clip: border-box !important;
+    background-clip: border-box !important;
+    color: var(--color-core) !important;
   }
 
   /* Backgrounds and accent colours are the deck, not decoration. */
