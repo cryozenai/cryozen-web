@@ -5,6 +5,16 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 
 type SlideRef = { id: string; label: string };
 
+/*
+ * Controls whose own activation key is Space. Paging on Space has to yield to
+ * them, or the keypress a focused control is waiting for scrolls the deck
+ * instead - which is the whole of keyboard operation for the Notes and PDF
+ * buttons, since a pointer is not involved.
+ */
+const SPACE_ACTIVATES =
+  'button, summary, a[href], [role="button"], [role="checkbox"], [role="switch"],' +
+  ' [role="radio"], [role="tab"], [role="menuitem"], [role="option"]';
+
 /**
  * The presenting chrome around a deck: scroll progress, a slide rail, keyboard
  * paging, the speaker-notes toggle, and print.
@@ -64,6 +74,14 @@ export function DeckShell({
   const goTo = useCallback(
     (index: number) => {
       const clamped = Math.min(slides.length - 1, Math.max(0, index));
+      /*
+       * Claim the target before the scroll starts. The observer is still the
+       * source of truth for scroll-driven changes, but it cannot report this
+       * one until the slide is half on screen, and a presenter paging faster
+       * than the animation would otherwise re-target the slide already in
+       * flight and lose every press in between.
+       */
+      activeRef.current = clamped;
       document.getElementById(slides[clamped].id)?.scrollIntoView({
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
           ? "auto"
@@ -75,9 +93,10 @@ export function DeckShell({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
+      const target = event.target instanceof Element ? event.target : null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === " " && target?.closest(SPACE_ACTIVATES)) return;
 
       if (["ArrowDown", "ArrowRight", "PageDown", " "].includes(event.key)) {
         event.preventDefault();

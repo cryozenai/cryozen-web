@@ -8,7 +8,7 @@
  * the way a hand-written HTML deck does.
  *
  * Inline emphasis inside any string uses the two markers in `rich-text.tsx`:
- * `**strong**` for the white-hot core weight, and `~accent~` for cyan.
+ * `**strong**` for the white-hot core weight, and `==accent==` for cyan.
  */
 
 export type Bullet = {

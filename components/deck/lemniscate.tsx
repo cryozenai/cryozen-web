@@ -82,27 +82,69 @@ export function Lemniscate({ className = "" }: { className?: string }) {
       context.fill();
     };
 
-    if (reduceMotion) {
-      // Still drawn, just not animated: the mark is the point, the motion is not.
-      const onResize = () => {
-        resize();
-        draw(0);
-      };
-      draw(0);
-      window.addEventListener("resize", onResize);
-      return () => window.removeEventListener("resize", onResize);
-    }
-
     let frame = 0;
+    let running = false;
+    // The last timestamp drawn, so a redraw resumes the curve where it stood.
+    let clock = 0;
+
+    /*
+     * The bitmap is sized from the laid-out box, so anything that relaids the
+     * box has to resize before it redraws or the old bitmap is stretched into
+     * the new one. Print is exactly that: the slide swaps to a 1280x720 page
+     * and the title grid stacks, and no `resize` event fires for it.
+     */
+    const redraw = () => {
+      resize();
+      draw(clock);
+    };
+
     const loop = (time: number) => {
+      clock = time;
       draw(time);
       frame = requestAnimationFrame(loop);
     };
-    frame = requestAnimationFrame(loop);
-    window.addEventListener("resize", resize);
-    return () => {
+
+    // Reduced motion still gets the mark, drawn once. The motion is not the point.
+    const start = () => {
+      if (running || reduceMotion) return;
+      running = true;
+      frame = requestAnimationFrame(loop);
+    };
+    const stop = () => {
+      if (!running) return;
+      running = false;
       cancelAnimationFrame(frame);
-      window.removeEventListener("resize", resize);
+    };
+
+    draw(0);
+
+    /*
+     * One title slide among fourteen full-viewport ones: off screen, the loop
+     * is redrawing a 240-segment path and a gradient halo nobody is looking at.
+     * rAF pauses for a hidden tab but not for a scrolled-past canvas.
+     */
+    const visibility = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) start();
+        else stop();
+      },
+      { threshold: 0 },
+    );
+    visibility.observe(canvas);
+
+    const printQuery = window.matchMedia("print");
+    window.addEventListener("resize", redraw);
+    window.addEventListener("beforeprint", redraw);
+    window.addEventListener("afterprint", redraw);
+    printQuery.addEventListener("change", redraw);
+
+    return () => {
+      stop();
+      visibility.disconnect();
+      window.removeEventListener("resize", redraw);
+      window.removeEventListener("beforeprint", redraw);
+      window.removeEventListener("afterprint", redraw);
+      printQuery.removeEventListener("change", redraw);
     };
   }, []);
 

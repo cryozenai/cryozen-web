@@ -1,6 +1,6 @@
 import type { Deck } from "./types";
 
-const NB = " ";
+const NB = " ";
 
 /**
  * The on-prem / regulated-finance positioning, and the recommended lead: it is

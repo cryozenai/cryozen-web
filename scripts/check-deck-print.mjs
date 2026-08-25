@@ -42,9 +42,14 @@ const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
  * what keeps it honest: a row reading "Year-3 SOM" is missed by presence alone
  * (both words recur elsewhere on the slide) and caught by multiplicity.
  *
- * Words are squashed to alphanumerics first, which absorbs the two other things
- * pdftotext does to text: it un-hyphenates at a line break ("twelve-month" comes
- * back as "twelvemonth"), and it puts gaps inside letter-spaced uppercase.
+ * Words are squashed to alphanumerics after the split, which absorbs the
+ * punctuation the copy carries and the un-hyphenation pdftotext does at a line
+ * break ("twelve-month" comes back as "twelvemonth"). It does not absorb a gap
+ * pdftotext puts *inside* a word, because the split has already happened by
+ * then: a letter-spaced run emitted as "C O N F I D E N T I A L" would read as
+ * eleven tokens and report a drop. At the tracking the decks use it does not
+ * split them, and squashing the page whole before splitting - the only way to
+ * defend against it here - would collapse the multiset this check is built on.
  */
 const squash = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
@@ -120,11 +125,21 @@ function checkDeck(deck, workDir) {
   const pages = Number(
     /Pages:\s+(\d+)/.exec(execFileSync("pdfinfo", [pdf], { encoding: "utf8" }))?.[1],
   );
-  const problems = [];
+  /*
+   * The word check reads slide N off page N+1, and that mapping is only valid
+   * while the counts agree. A slide that spills onto two pages shifts every
+   * slide after it, so continuing here would bury the one true message under a
+   * page of drops that are an artefact of the offset, not of lost copy.
+   */
   if (pages !== deck.slides.length) {
-    problems.push(`${deck.slug}: ${pages} pages for ${deck.slides.length} slides`);
+    return [
+      `${deck.slug}: ${pages} pages for ${deck.slides.length} slides` +
+        " - a slide spilled its page, so slide-to-page mapping is off and the" +
+        " word check was skipped for this deck",
+    ];
   }
 
+  const problems = [];
   deck.slides.forEach((slide, position) => {
     const printed = wordCounts(
       execFileSync("pdftotext", ["-f", `${position + 1}`, "-l", `${position + 1}`, pdf, "-"], {
