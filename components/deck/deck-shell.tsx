@@ -19,6 +19,18 @@ const SPACE_ACTIVATES =
   'button, summary, [role="button"], [role="checkbox"], [role="switch"],' +
   ' [role="radio"], [role="tab"], [role="menuitem"], [role="option"]';
 
+/*
+ * How long a pending claim may stand before geometry takes over again.
+ *
+ * The release events are all best-effort: `scrollend` is the newest of the
+ * three and is not everywhere yet, and a rail click moves the deck without
+ * firing `wheel` or `touchstart` either. So no event is allowed to be load
+ * bearing - the claim carries the moment it was made and lapses on its own,
+ * evaluated when it is read rather than on a timer, so nothing has to fire for
+ * it to go away. A smooth scroll of one viewport settles well inside a second.
+ */
+const PENDING_MS = 1000;
+
 /**
  * The presenting chrome around a deck: scroll progress, a slide rail, keyboard
  * paging, the speaker-notes toggle, and print.
@@ -43,12 +55,13 @@ export function DeckShell({
   // Measured by the keyboard handler without re-subscribing it on every scroll.
   const sectionsRef = useRef<HTMLElement[]>([]);
   /*
-   * The slide a `goTo` is scrolling toward, held only while that scroll is
-   * still in flight. It is what lets a second keypress land on the slide after
-   * the one being scrolled to instead of re-targeting it, and it is released
-   * the moment the reader takes the scroll over themselves.
+   * The slide a `goTo` is scrolling toward, stamped with when the scroll was
+   * started. It is what lets a second keypress land on the slide after the one
+   * being scrolled to instead of re-targeting it, and it is dropped the moment
+   * the reader takes the scroll over themselves - or, failing any signal at
+   * all, once the stamp is older than a scroll could be.
    */
-  const pendingRef = useRef<number | null>(null);
+  const pendingRef = useRef<{ index: number; at: number } | null>(null);
 
   useEffect(() => {
     const onScroll = () => {
@@ -107,23 +120,28 @@ export function DeckShell({
   /*
    * Where the next keypress counts from. Geometry is the default; the pending
    * claim overrides it only while a scroll this component started is still
-   * short of its target, which is the window in which geometry still reports
-   * the slide being left rather than the one being paged to.
+   * short of its target and young enough to still be running, which is the
+   * window in which geometry still reports the slide being left rather than
+   * the one being paged to.
    */
   const originIndex = useCallback(() => {
     const geometric = nearestSlide();
     const pending = pendingRef.current;
-    if (pending === null || pending === geometric) {
+    if (
+      pending === null ||
+      pending.index === geometric ||
+      performance.now() - pending.at > PENDING_MS
+    ) {
       pendingRef.current = null;
       return geometric;
     }
-    return pending;
+    return pending.index;
   }, [nearestSlide]);
 
   const goTo = useCallback(
     (index: number) => {
       const clamped = Math.min(slides.length - 1, Math.max(0, index));
-      pendingRef.current = clamped;
+      pendingRef.current = { index: clamped, at: performance.now() };
       document.getElementById(slides[clamped].id)?.scrollIntoView({
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
           ? "auto"

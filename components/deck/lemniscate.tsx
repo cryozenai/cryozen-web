@@ -1,17 +1,65 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
+
+// The curve in parametric form: x = R√2·cos(a)/d, y = x·sin(a), d = 1+sin²(a).
+const point = (a: number, cx: number, cy: number, r: number) => {
+  const d = 1 + Math.sin(a) * Math.sin(a);
+  const x = (r * Math.SQRT2 * Math.cos(a)) / d;
+  return { x: cx + x, y: cy + x * Math.sin(a) };
+};
+
+const STEPS = 240;
+
+/*
+ * The printed mark's coordinate space.
+ *
+ * A square viewBox reproduces the canvas exactly: the canvas sizes its radius
+ * from `min(width, height)` and centres it, which is what `preserveAspectRatio`
+ * already does with a square box in an oblong one. Everything below is
+ * expressed as the same fraction of the radius the canvas uses, so the two
+ * drawings are the same drawing at different resolutions.
+ */
+const BOX = 400;
+const R = BOX * 0.34;
+const WOBBLE = R * 0.04;
+const HALO_WIDTH = R * 0.08;
+const LINE_WIDTH = R * 0.0167;
+const SPARK_HALO = R * 0.174;
+const SPARK_CORE = R * 0.02;
+
+/* The static frame: `time = 0`, so the spark sits at the start of the sweep. */
+const PRINT_PATH = (() => {
+  let path = "";
+  for (let i = 0; i <= STEPS; i += 1) {
+    const a = (i / STEPS) * Math.PI * 2;
+    const { x, y } = point(a, BOX / 2, BOX / 2, R);
+    const wobble = Math.sin(a * 2) * WOBBLE;
+    path += `${i === 0 ? "M" : "L"}${(x + wobble).toFixed(2)} ${y.toFixed(2)}`;
+  }
+  return `${path}Z`;
+})();
+
+const PRINT_SPARK = point(0, BOX / 2, BOX / 2, R);
 
 /**
  * The title-slide mark: a lemniscate of Bernoulli with a spark travelling it.
  *
  * It is the brand thesis drawn once - a closed loop with no outward path,
  * which is the same claim the deck makes about the data. Colours are read from
- * the site's own custom properties rather than hard-coded, so the canvas
- * follows the palette in `globals.css` the way every other element does.
+ * the site's own custom properties rather than hard-coded, so the mark follows
+ * the palette in `globals.css` the way every other element does.
+ *
+ * Screen gets the animated canvas; print gets the same curve as a static inline
+ * SVG. The PDF is the artefact that reaches an investor and the print check
+ * reads only its text layer, so the printed mark cannot be left depending on
+ * whether a resize notification is delivered before Chrome captures the page.
+ * Vector output has no bitmap to be stale, and is right at any page size.
  */
 export function Lemniscate({ className = "" }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  // Squashed because `useId` emits delimiters that a `url(#...)` cannot carry.
+  const haloId = `lemniscate-halo-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
 
   useEffect(() => {
     const canvas = ref.current;
@@ -38,13 +86,6 @@ export function Lemniscate({ className = "" }: { className?: string }) {
     };
     resize();
 
-    // The curve in parametric form: x = R√2·cos(a)/d, y = x·sin(a), d = 1+sin²(a).
-    const point = (a: number, cx: number, cy: number, r: number) => {
-      const d = 1 + Math.sin(a) * Math.sin(a);
-      const x = (r * Math.SQRT2 * Math.cos(a)) / d;
-      return { x: cx + x, y: cy + x * Math.sin(a) };
-    };
-
     const draw = (time: number) => {
       const { width, height } = canvas;
       context.clearRect(0, 0, width, height);
@@ -55,9 +96,8 @@ export function Lemniscate({ className = "" }: { className?: string }) {
       // Two passes: a wide soft halo, then the bright hairline over it.
       for (const pass of [0, 1] as const) {
         context.beginPath();
-        const steps = 240;
-        for (let i = 0; i <= steps; i += 1) {
-          const a = (i / steps) * Math.PI * 2;
+        for (let i = 0; i <= STEPS; i += 1) {
+          const a = (i / STEPS) * Math.PI * 2;
           const { x, y } = point(a, cx, cy, r);
           const wobble = Math.sin(a * 2 + time * 0.0009) * 6 * dpr;
           if (i === 0) context.moveTo(x + wobble, y);
@@ -134,9 +174,8 @@ export function Lemniscate({ className = "" }: { className?: string }) {
      * The bitmap is sized from the laid-out box, so anything that relays out
      * the box has to resize before it redraws or the old bitmap is stretched
      * into the new one. Observing the box itself catches every cause at once -
-     * a window resize, a font settling, and the print re-layout that swaps the
-     * slide to a 1280x720 page and stacks the title grid, which fires no
-     * `resize` event and which `beforeprint` is too early to measure.
+     * a window resize, a font settling, a container that reflows - without
+     * having to enumerate them.
      */
     const box = new ResizeObserver(redraw);
     box.observe(canvas);
@@ -148,5 +187,44 @@ export function Lemniscate({ className = "" }: { className?: string }) {
     };
   }, []);
 
-  return <canvas ref={ref} aria-hidden="true" className={className} />;
+  return (
+    <div className={className}>
+      <canvas ref={ref} aria-hidden="true" className="block size-full print:hidden" />
+      <svg
+        aria-hidden="true"
+        viewBox={`0 0 ${BOX} ${BOX}`}
+        className="hidden size-full print:block"
+      >
+        <defs>
+          <radialGradient id={haloId}>
+            <stop offset="0%" stopColor="var(--color-glow, #7ff2ff)" stopOpacity="1" />
+            <stop offset="100%" stopColor="var(--color-glow, #7ff2ff)" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <path
+          d={PRINT_PATH}
+          fill="none"
+          stroke="var(--color-deep, #1e5f8c)"
+          strokeWidth={HALO_WIDTH}
+          strokeLinejoin="round"
+          strokeOpacity="0.5"
+        />
+        <path
+          d={PRINT_PATH}
+          fill="none"
+          stroke="var(--color-primary, #4fe3e8)"
+          strokeWidth={LINE_WIDTH}
+          strokeLinejoin="round"
+          strokeOpacity="0.95"
+        />
+        <circle cx={PRINT_SPARK.x} cy={PRINT_SPARK.y} r={SPARK_HALO} fill={`url(#${haloId})`} />
+        <circle
+          cx={PRINT_SPARK.x}
+          cy={PRINT_SPARK.y}
+          r={SPARK_CORE}
+          fill="var(--color-glow, #7ff2ff)"
+        />
+      </svg>
+    </div>
+  );
 }

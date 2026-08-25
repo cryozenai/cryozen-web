@@ -137,16 +137,21 @@ function checkDeck(deck, workDir) {
    * while the counts agree. Any disagreement shifts every slide after the one
    * that caused it, so continuing would bury the one true message under a page
    * of drops that are an artefact of the offset, not of lost copy. Each of
-   * these says only what was observed - the cause differs per branch and the
-   * repair differs with it - and each is a hard failure.
+   * these reports what was observed and what it invalidates, offering a cause
+   * only where one can be named as a possibility rather than asserted, and each
+   * is a hard failure.
    */
   const pageInfo = execFileSync("pdfinfo", [pdf], { encoding: "utf8" });
   const pageMatch = /Pages:\s+(\d+)/.exec(pageInfo);
   if (!pageMatch) {
     return [
-      `${deck.slug}: no page count in the pdfinfo output, so the printed deck` +
-        " could not be checked at all - the PDF or the pdfinfo call is broken," +
-        ` not the deck. pdfinfo said: ${JSON.stringify(pageInfo.trim().slice(0, 200))}`,
+      {
+        dropped: false,
+        message:
+          `${deck.slug}: no page count in the pdfinfo output, so the printed deck` +
+          " could not be checked at all - the PDF or the pdfinfo call is broken," +
+          ` not the deck. pdfinfo said: ${JSON.stringify(pageInfo.trim().slice(0, 200))}`,
+      },
     ];
   }
 
@@ -154,16 +159,27 @@ function checkDeck(deck, workDir) {
   const slideCount = deck.slides.length;
   if (pages > slideCount) {
     return [
-      `${deck.slug}: ${pages} pages for ${slideCount} slides - a slide outgrew` +
-        " its page and pushed a tail onto another one, so slide-to-page mapping" +
-        " is off and the word check was skipped for this deck",
+      {
+        dropped: false,
+        message:
+          `${deck.slug}: ${pages} pages for ${slideCount} slides, so` +
+          " slide-to-page mapping is off and the word check was skipped for this" +
+          " deck. A slide is clipped at the page edge rather than spilling, so an" +
+          " extra page comes from somewhere else - possibly something inside" +
+          " `.deck-root` that is not a slide, or a slide whose overflow clip was" +
+          " defeated",
+      },
     ];
   }
   if (pages < slideCount) {
     return [
-      `${deck.slug}: ${pages} pages for ${slideCount} slides - a slide did not` +
-        " get a page of its own, so slide-to-page mapping is off and the word" +
-        " check was skipped for this deck",
+      {
+        dropped: false,
+        message:
+          `${deck.slug}: ${pages} pages for ${slideCount} slides - a slide did not` +
+          " get a page of its own, so slide-to-page mapping is off and the word" +
+          " check was skipped for this deck",
+      },
     ];
   }
 
@@ -183,10 +199,12 @@ function checkDeck(deck, workDir) {
     for (const [word, wanted] of expected) {
       const got = printed.get(word) ?? 0;
       if (got < wanted) {
-        problems.push(
-          `${deck.slug} page ${position + 1} (${slide.id}) dropped "${word}"` +
+        problems.push({
+          dropped: true,
+          message:
+            `${deck.slug} page ${position + 1} (${slide.id}) dropped "${word}"` +
             ` (${got} of ${wanted} on the page)`,
-        );
+        });
       }
     }
   });
@@ -199,11 +217,14 @@ try {
   const problems = [enterpriseDeck, developerDeck].flatMap((deck) => checkDeck(deck, workDir));
   if (problems.length > 0) {
     console.error("Deck print check failed:\n");
-    for (const problem of problems) console.error(`  ${problem}`);
-    console.error(
-      "\nA dropped line means the slide outgrew its 1280x720 page. Cut copy, or" +
-        " retune the print scale in app/pitch/deck.css.",
-    );
+    for (const problem of problems) console.error(`  ${problem.message}`);
+    // Only the repair for a real drop; a mapping failure has a different cause.
+    if (problems.some((problem) => problem.dropped)) {
+      console.error(
+        "\nA dropped line means the slide outgrew its 1280x720 page. Cut copy, or" +
+          " retune the print scale in app/pitch/deck.css.",
+      );
+    }
     process.exit(1);
   }
   console.log("Both decks print complete: every line of copy reached its page.");
