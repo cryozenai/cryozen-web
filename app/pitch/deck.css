@@ -24,6 +24,13 @@
   --deck-figure: clamp(1.3rem, 2vw, 1.7rem);
   --deck-annot: 0.95rem;
   --deck-micro: 0.9rem;
+  /*
+   * The title-slide mark line only. It sets tighter than `--deck-micro` on
+   * screen because it carries `0.28em` of tracking over 39 characters and wraps
+   * against the 1.15fr title track a little above 1024px if it grows, but it
+   * still has to step up in print like every other printed string.
+   */
+  --deck-mark: 0.72rem;
 
   --deck-gap: 1.5rem;
   --deck-list-gap: 0.75rem;
@@ -67,6 +74,7 @@
     --deck-figure: 26px;
     --deck-annot: 17px;
     --deck-micro: 15px;
+    --deck-mark: 15px;
 
     --deck-gap: 10px;
     --deck-list-gap: 9px;

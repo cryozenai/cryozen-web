@@ -24,7 +24,7 @@ export function TitleSlideView({ slide }: { slide: TitleSlide }) {
     <header id={slide.id} className={SLIDE}>
       <div className={`${INNER} grid items-center gap-8 lg:grid-cols-[1.15fr_0.85fr]`}>
         <div>
-          <p className="flex items-center gap-3 font-mono text-[length:var(--deck-micro)] tracking-[0.28em] text-muted uppercase">
+          <p className="flex items-center gap-3 font-mono text-[length:var(--deck-mark)] tracking-[0.28em] text-muted uppercase">
             <Logo className="size-5 shrink-0" />
             <span>
               CryoZen <span aria-hidden="true">/</span>{" "}

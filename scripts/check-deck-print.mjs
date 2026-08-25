@@ -62,7 +62,17 @@ function wordCounts(text) {
   return counts;
 }
 
-/** Fields that describe structure rather than copy; they never reach the page. */
+/*
+ * Keys held out of the expectation.
+ *
+ * Most describe structure and never reach the page. Two do reach it: `percent`
+ * prints as the figure beside a funding bar, and `index` as the slide number in
+ * an eyebrow. Both are numbers, and `copyStrings` collects strings only, so they
+ * are held out with or without this set - numeric copy is simply outside what
+ * the word check covers, and the funding-split figures and slide numbers are
+ * therefore unverified. A cropped funding row still takes its `label` string
+ * with it, and that is checked.
+ */
 const STRUCTURAL = new Set([
   "kind",
   "id",
@@ -122,20 +132,38 @@ function checkDeck(deck, workDir) {
     `${baseUrl}/pitch/${deck.slug}`,
   ]);
 
-  const pages = Number(
-    /Pages:\s+(\d+)/.exec(execFileSync("pdfinfo", [pdf], { encoding: "utf8" }))?.[1],
-  );
   /*
    * The word check reads slide N off page N+1, and that mapping is only valid
-   * while the counts agree. A slide that spills onto two pages shifts every
-   * slide after it, so continuing here would bury the one true message under a
-   * page of drops that are an artefact of the offset, not of lost copy.
+   * while the counts agree. Any disagreement shifts every slide after the one
+   * that caused it, so continuing would bury the one true message under a page
+   * of drops that are an artefact of the offset, not of lost copy. Each of
+   * these says only what was observed - the cause differs per branch and the
+   * repair differs with it - and each is a hard failure.
    */
-  if (pages !== deck.slides.length) {
+  const pageInfo = execFileSync("pdfinfo", [pdf], { encoding: "utf8" });
+  const pageMatch = /Pages:\s+(\d+)/.exec(pageInfo);
+  if (!pageMatch) {
     return [
-      `${deck.slug}: ${pages} pages for ${deck.slides.length} slides` +
-        " - a slide spilled its page, so slide-to-page mapping is off and the" +
-        " word check was skipped for this deck",
+      `${deck.slug}: no page count in the pdfinfo output, so the printed deck` +
+        " could not be checked at all - the PDF or the pdfinfo call is broken," +
+        ` not the deck. pdfinfo said: ${JSON.stringify(pageInfo.trim().slice(0, 200))}`,
+    ];
+  }
+
+  const pages = Number(pageMatch[1]);
+  const slideCount = deck.slides.length;
+  if (pages > slideCount) {
+    return [
+      `${deck.slug}: ${pages} pages for ${slideCount} slides - a slide outgrew` +
+        " its page and pushed a tail onto another one, so slide-to-page mapping" +
+        " is off and the word check was skipped for this deck",
+    ];
+  }
+  if (pages < slideCount) {
+    return [
+      `${deck.slug}: ${pages} pages for ${slideCount} slides - a slide did not` +
+        " get a page of its own, so slide-to-page mapping is off and the word" +
+        " check was skipped for this deck",
     ];
   }
 

@@ -10,9 +10,13 @@ type SlideRef = { id: string; label: string };
  * them, or the keypress a focused control is waiting for scrolls the deck
  * instead - which is the whole of keyboard operation for the Notes and PDF
  * buttons, since a pointer is not involved.
+ *
+ * A link is deliberately not in this list. Space is not a link's activation key
+ * in any browser - `<a href>` takes Enter - so a focused slide-rail dot pages
+ * the deck on Space and jumps to its slide on Enter.
  */
 const SPACE_ACTIVATES =
-  'button, summary, a[href], [role="button"], [role="checkbox"], [role="switch"],' +
+  'button, summary, [role="button"], [role="checkbox"], [role="switch"],' +
   ' [role="radio"], [role="tab"], [role="menuitem"], [role="option"]';
 
 /**
@@ -36,8 +40,15 @@ export function DeckShell({
   const [progress, setProgress] = useState(0);
   const [active, setActive] = useState(0);
   const [notes, setNotes] = useState(false);
-  // Read by the keyboard handler without re-subscribing it on every scroll.
-  const activeRef = useRef(0);
+  // Measured by the keyboard handler without re-subscribing it on every scroll.
+  const sectionsRef = useRef<HTMLElement[]>([]);
+  /*
+   * The slide a `goTo` is scrolling toward, held only while that scroll is
+   * still in flight. It is what lets a second keypress land on the slide after
+   * the one being scrolled to instead of re-targeting it, and it is released
+   * the moment the reader takes the scroll over themselves.
+   */
+  const pendingRef = useRef<number | null>(null);
 
   useEffect(() => {
     const onScroll = () => {
@@ -53,6 +64,7 @@ export function DeckShell({
     const sections = slides
       .map((slide) => document.getElementById(slide.id))
       .filter((element): element is HTMLElement => element !== null);
+    sectionsRef.current = sections;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -60,7 +72,6 @@ export function DeckShell({
           if (!entry.isIntersecting) continue;
           const index = sections.indexOf(entry.target as HTMLElement);
           if (index === -1) continue;
-          activeRef.current = index;
           setActive(index);
         }
       },
@@ -71,17 +82,48 @@ export function DeckShell({
     return () => observer.disconnect();
   }, [slides]);
 
+  /*
+   * A scroll position, not a stored index, answers "which slide am I on": the
+   * slide whose centre sits nearest the centre of the viewport. Geometry cannot
+   * go stale, so however the reader got here - keys, wheel, drag, a rail link,
+   * a restored hash - the answer is the slide they are actually looking at.
+   */
+  const nearestSlide = useCallback(() => {
+    const sections = sectionsRef.current;
+    const centre = window.innerHeight / 2;
+    let nearest = 0;
+    let shortest = Number.POSITIVE_INFINITY;
+    sections.forEach((section, index) => {
+      const rect = section.getBoundingClientRect();
+      const distance = Math.abs(rect.top + rect.height / 2 - centre);
+      if (distance < shortest) {
+        shortest = distance;
+        nearest = index;
+      }
+    });
+    return nearest;
+  }, []);
+
+  /*
+   * Where the next keypress counts from. Geometry is the default; the pending
+   * claim overrides it only while a scroll this component started is still
+   * short of its target, which is the window in which geometry still reports
+   * the slide being left rather than the one being paged to.
+   */
+  const originIndex = useCallback(() => {
+    const geometric = nearestSlide();
+    const pending = pendingRef.current;
+    if (pending === null || pending === geometric) {
+      pendingRef.current = null;
+      return geometric;
+    }
+    return pending;
+  }, [nearestSlide]);
+
   const goTo = useCallback(
     (index: number) => {
       const clamped = Math.min(slides.length - 1, Math.max(0, index));
-      /*
-       * Claim the target before the scroll starts. The observer is still the
-       * source of truth for scroll-driven changes, but it cannot report this
-       * one until the slide is half on screen, and a presenter paging faster
-       * than the animation would otherwise re-target the slide already in
-       * flight and lose every press in between.
-       */
-      activeRef.current = clamped;
+      pendingRef.current = clamped;
       document.getElementById(slides[clamped].id)?.scrollIntoView({
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
           ? "auto"
@@ -92,6 +134,26 @@ export function DeckShell({
   );
 
   useEffect(() => {
+    /*
+     * Any scroll the reader drives themselves abandons the slide this component
+     * was paging to, so the claim is dropped and the next keypress counts from
+     * where they actually stopped. `scrollend` covers the ordinary case of a
+     * programmatic scroll simply arriving.
+     */
+    const release = () => {
+      pendingRef.current = null;
+    };
+    window.addEventListener("wheel", release, { passive: true });
+    window.addEventListener("touchstart", release, { passive: true });
+    window.addEventListener("scrollend", release);
+    return () => {
+      window.removeEventListener("wheel", release);
+      window.removeEventListener("touchstart", release);
+      window.removeEventListener("scrollend", release);
+    };
+  }, []);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
@@ -100,17 +162,17 @@ export function DeckShell({
 
       if (["ArrowDown", "ArrowRight", "PageDown", " "].includes(event.key)) {
         event.preventDefault();
-        goTo(activeRef.current + 1);
+        goTo(originIndex() + 1);
       } else if (["ArrowUp", "ArrowLeft", "PageUp"].includes(event.key)) {
         event.preventDefault();
-        goTo(activeRef.current - 1);
+        goTo(originIndex() - 1);
       } else if (event.key.toLowerCase() === "n") {
         setNotes((open) => !open);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [goTo]);
+  }, [goTo, originIndex]);
 
   return (
     <div className="group/deck" data-notes={notes ? "on" : "off"}>

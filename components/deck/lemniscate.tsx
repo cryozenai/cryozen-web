@@ -29,8 +29,12 @@ export function Lemniscate({ className = "" }: { className?: string }) {
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      canvas.width = Math.max(1, Math.round(rect.width * dpr));
-      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+      const width = Math.max(1, Math.round(rect.width * dpr));
+      const height = Math.max(1, Math.round(rect.height * dpr));
+      // Writing either attribute clears the bitmap, so only write a real change.
+      if (canvas.width === width && canvas.height === height) return;
+      canvas.width = width;
+      canvas.height = height;
     };
     resize();
 
@@ -87,12 +91,6 @@ export function Lemniscate({ className = "" }: { className?: string }) {
     // The last timestamp drawn, so a redraw resumes the curve where it stood.
     let clock = 0;
 
-    /*
-     * The bitmap is sized from the laid-out box, so anything that relaids the
-     * box has to resize before it redraws or the old bitmap is stretched into
-     * the new one. Print is exactly that: the slide swaps to a 1280x720 page
-     * and the title grid stacks, and no `resize` event fires for it.
-     */
     const redraw = () => {
       resize();
       draw(clock);
@@ -132,19 +130,21 @@ export function Lemniscate({ className = "" }: { className?: string }) {
     );
     visibility.observe(canvas);
 
-    const printQuery = window.matchMedia("print");
-    window.addEventListener("resize", redraw);
-    window.addEventListener("beforeprint", redraw);
-    window.addEventListener("afterprint", redraw);
-    printQuery.addEventListener("change", redraw);
+    /*
+     * The bitmap is sized from the laid-out box, so anything that relays out
+     * the box has to resize before it redraws or the old bitmap is stretched
+     * into the new one. Observing the box itself catches every cause at once -
+     * a window resize, a font settling, and the print re-layout that swaps the
+     * slide to a 1280x720 page and stacks the title grid, which fires no
+     * `resize` event and which `beforeprint` is too early to measure.
+     */
+    const box = new ResizeObserver(redraw);
+    box.observe(canvas);
 
     return () => {
       stop();
       visibility.disconnect();
-      window.removeEventListener("resize", redraw);
-      window.removeEventListener("beforeprint", redraw);
-      window.removeEventListener("afterprint", redraw);
-      printQuery.removeEventListener("change", redraw);
+      box.disconnect();
     };
   }, []);
 
