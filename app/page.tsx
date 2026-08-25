@@ -84,19 +84,20 @@ const audiences = [
 ];
 
 export default async function HomePage() {
-  const release = await getLatestRelease();
+  const latest = await getLatestRelease();
+  const release = latest.release;
 
   const links = {
-    macos: downloadUrlFor("macos", release),
-    windows: downloadUrlFor("windows", release),
-    linux: downloadUrlFor("linux", release),
+    macos: downloadUrlFor("macos", latest),
+    windows: downloadUrlFor("windows", latest),
+    linux: downloadUrlFor("linux", latest),
     docker: "/download#docker",
   };
 
   const sizes = {
-    macos: assetSizeFor("macos", release),
-    windows: assetSizeFor("windows", release),
-    linux: assetSizeFor("linux", release),
+    macos: assetSizeFor("macos", latest),
+    windows: assetSizeFor("windows", latest),
+    linux: assetSizeFor("linux", latest),
   };
 
   return (
@@ -131,7 +132,7 @@ export default async function HomePage() {
             <DownloadCta
               links={links}
               sizes={sizes}
-              intelHref={assetUrlByName("CryoZen-Intel.dmg", release)}
+              intelHref={assetUrlByName("CryoZen-Intel.dmg", latest)}
             />
           </div>
 

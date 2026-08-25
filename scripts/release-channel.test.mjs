@@ -27,12 +27,26 @@ const { githubUrl, releasesRepoUrl, releasesUrl, latestReleaseUrl } = await impo
 const PUBLIC_REPO = "https://github.com/shreejitverma/cryozen-releases";
 const PRIVATE_REPO = "https://github.com/shreejitverma/cryozen";
 
+const desktopAssets = ["macos", "windows", "linux"].map((id) => ({
+  name: getPlatform(id).assetName,
+  browser_download_url: "",
+  size: 0,
+  download_count: 0,
+}));
+
 async function withFetchStub(fn) {
   const calls = [];
   const original = globalThis.fetch;
   globalThis.fetch = async (url) => {
     calls.push(String(url));
-    const release = { tag_name: "v9.9.9", published_at: "", html_url: "", prerelease: false, draft: false, assets: [] };
+    const release = {
+      tag_name: "v9.9.9",
+      published_at: "",
+      html_url: "",
+      prerelease: false,
+      draft: false,
+      assets: desktopAssets,
+    };
     const body = String(url).includes("?per_page=") ? [release] : release;
     return new Response(JSON.stringify(body), {
       status: 200,
@@ -50,7 +64,7 @@ test("release metadata is fetched from the public cryozen-releases repo API", as
   await withFetchStub(async (calls) => {
     const latest = await getLatestRelease();
     await getReleases(5);
-    assert.equal(latest?.tag, "v9.9.9");
+    assert.equal(latest.release?.tag, "v9.9.9");
     assert.deepEqual(calls, [
       "https://api.github.com/repos/shreejitverma/cryozen-releases/releases/latest",
       "https://api.github.com/repos/shreejitverma/cryozen-releases/releases?per_page=5",
@@ -58,27 +72,32 @@ test("release metadata is fetched from the public cryozen-releases repo API", as
   });
 });
 
-test("release links target the public channel; source links keep the product repo", () => {
+test("release links target the public channel; source links keep the product repo", async () => {
   assert.equal(githubUrl, PRIVATE_REPO);
   assert.equal(releasesRepoUrl, PUBLIC_REPO);
   assert.equal(releasesUrl, `${PUBLIC_REPO}/releases`);
   assert.equal(latestReleaseUrl, `${PUBLIC_REPO}/releases/latest`);
   // What this test is named for is the channel, not the shape: a download must
   // never resolve into the private product repo, which anonymous visitors
-  // cannot read. A null release means the API call failed, and the button now
-  // answers that with a direct link into the public channel rather than the
-  // releases page, so assert the repository rather than one exact URL.
-  for (const id of ["macos", "windows", "linux"]) {
-    const url = downloadUrlFor(id, null);
-    assert.ok(url.startsWith(`${PUBLIC_REPO}/releases/`), `${id} leaves the public channel: ${url}`);
-    // The boundary matters: PRIVATE_REPO is a prefix of PUBLIC_REPO
-    // (".../cryozen" vs ".../cryozen-releases"), so a bare startsWith would
-    // reject the correct URL.
-    assert.ok(
-      !url.startsWith(`${PRIVATE_REPO}/`),
-      `${id} points at the private repo: ${url}`,
-    );
-  }
+  // cannot read. The button no longer hands back one fixed URL, so assert the
+  // repository the link lands in rather than the URL itself.
+  await withFetchStub(async () => {
+    const latest = await getLatestRelease();
+    for (const id of ["macos", "windows", "linux"]) {
+      const url = downloadUrlFor(id, latest);
+      assert.ok(
+        url.startsWith(`${PUBLIC_REPO}/releases/`),
+        `${id} leaves the public channel: ${url}`,
+      );
+      // The boundary matters: PRIVATE_REPO is a prefix of PUBLIC_REPO
+      // (".../cryozen" vs ".../cryozen-releases"), so a bare startsWith would
+      // reject the correct URL.
+      assert.ok(
+        !url.startsWith(`${PRIVATE_REPO}/`),
+        `${id} points at the private repo: ${url}`,
+      );
+    }
+  });
 });
 
 test("Windows primary download is the installer with the portable zip as alternate", () => {

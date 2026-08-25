@@ -73,30 +73,58 @@ function normalize(release: GitHubRelease): Release {
   };
 }
 
-async function get<T>(path: string): Promise<T | null> {
+/**
+ * The three answers a GitHub read can give, kept apart because they mean
+ * different things to a download button.
+ *
+ * `absent` is a positive answer - GitHub says the resource does not exist -
+ * while `failed` says only that we could not ask. Collapsing both into one
+ * empty value would make an empty release channel indistinguishable from an
+ * outage, and the two call for opposite fallbacks.
+ */
+type Fetched<T> = { state: "ok"; data: T } | { state: "absent" } | { state: "failed" };
+
+async function get<T>(path: string): Promise<Fetched<T>> {
   try {
     const response = await fetch(`${API_ROOT}${path}`, {
       headers: headers(),
       next: { revalidate: REVALIDATE_SECONDS },
     });
-    if (!response.ok) return null;
-    return (await response.json()) as T;
+    if (response.status === 404) return { state: "absent" };
+    if (!response.ok) return { state: "failed" };
+    return { state: "ok", data: (await response.json()) as T };
   } catch {
-    // A GitHub outage or an unreleased repo must not fail the build; callers
-    // fall back to the releases page.
-    return null;
+    // A GitHub outage must not fail the build; callers degrade instead.
+    return { state: "failed" };
   }
 }
 
-export async function getLatestRelease(): Promise<Release | null> {
-  const release = await get<GitHubRelease>("/releases/latest");
-  return release ? normalize(release) : null;
+/**
+ * The latest release, or why there is not one.
+ *
+ * `none` means GitHub answered that the channel has no published release, so a
+ * floating asset link would 404 and the releases page is the honest target.
+ * `unknown` means the call failed, which says nothing about what is published.
+ * Every member carries `release` so display code can read it without
+ * discriminating.
+ */
+export type LatestRelease =
+  | { status: "published"; release: Release }
+  | { status: "none"; release: null }
+  | { status: "unknown"; release: null };
+
+export async function getLatestRelease(): Promise<LatestRelease> {
+  const result = await get<GitHubRelease>("/releases/latest");
+  if (result.state === "ok") return { status: "published", release: normalize(result.data) };
+  return result.state === "absent"
+    ? { status: "none", release: null }
+    : { status: "unknown", release: null };
 }
 
 export async function getReleases(limit = 20): Promise<Release[]> {
-  const releases = await get<GitHubRelease[]>(`/releases?per_page=${limit}`);
-  if (!releases) return [];
-  return releases.filter((release) => !release.draft).map(normalize);
+  const result = await get<GitHubRelease[]>(`/releases?per_page=${limit}`);
+  if (result.state !== "ok") return [];
+  return result.data.filter((release) => !release.draft).map(normalize);
 }
 
 /**
@@ -105,16 +133,16 @@ export async function getReleases(limit = 20): Promise<Release[]> {
  * Platforms with no asset (Docker) have nothing to download, so they get the
  * releases page.
  */
-export function downloadUrlFor(platformId: PlatformId, release: Release | null): string {
+export function downloadUrlFor(platformId: PlatformId, latest: LatestRelease): string {
   const { assetName } = getPlatform(platformId);
   if (!assetName) return latestReleaseUrl;
-  return assetUrlByName(assetName, release);
+  return assetUrlByName(assetName, latest);
 }
 
-export function assetSizeFor(platformId: PlatformId, release: Release | null): string | null {
+export function assetSizeFor(platformId: PlatformId, latest: LatestRelease): string | null {
   const { assetName } = getPlatform(platformId);
-  if (!assetName || !release) return null;
-  const asset = release.assets.find((candidate) => candidate.name === assetName);
+  if (!assetName || !latest.release) return null;
+  const asset = latest.release.assets.find((candidate) => candidate.name === assetName);
   return asset ? formatBytes(asset.size) : null;
 }
 
@@ -127,16 +155,20 @@ export function assetSizeFor(platformId: PlatformId, release: Release | null): s
  * only as fresh as the last revalidation, which meant that for up to an hour
  * after a release the site handed out the previous version's installer.
  *
- * The never-404 contract still holds, and is now the only thing the fetched
- * release is consulted for: when the API positively reports that the latest
- * release does not carry this asset, send the visitor to the releases page.
- * When `release` is null the API was unreachable, which says nothing about the
- * asset - in that case the constructed link is the better answer, because a
- * link that almost certainly downloads beats a page that certainly does not.
+ * The never-404 contract holds across all three states. GitHub is consulted
+ * only for what it can positively answer: an `unknown` channel means the call
+ * failed, which says nothing about the asset, so the constructed link wins -
+ * a link that almost certainly downloads beats a page that certainly does not.
+ * The two positive absences, a channel with no release at all and a release
+ * that does not carry this asset, would both 404 through the floating link, so
+ * they get the releases page.
  */
-export function assetUrlByName(assetName: string, release: Release | null): string {
-  const missing = release?.assets.some((candidate) => candidate.name === assetName) === false;
-  return missing ? latestReleaseUrl : latestAssetUrl(assetName);
+export function assetUrlByName(assetName: string, latest: LatestRelease): string {
+  if (latest.status === "unknown") return latestAssetUrl(assetName);
+  const carriesAsset =
+    latest.status === "published" &&
+    latest.release.assets.some((candidate) => candidate.name === assetName);
+  return carriesAsset ? latestAssetUrl(assetName) : latestReleaseUrl;
 }
 
 export function formatBytes(bytes: number): string {

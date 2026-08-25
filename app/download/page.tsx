@@ -30,7 +30,8 @@ export const metadata: Metadata = {
 };
 
 export default async function DownloadPage() {
-  const release = await getLatestRelease();
+  const latest = await getLatestRelease();
+  const release = latest.release;
   const docker = getPlatform("docker");
   const published = formatDate(release?.publishedAt ?? null);
 
@@ -51,7 +52,9 @@ export default async function DownloadPage() {
             </>
           ) : (
             <>
-              Builds are published on{" "}
+              {latest.status === "none"
+                ? "No build is published yet, so the buttons below link to "
+                : "Release details are unavailable right now, but the buttons below still download the latest build from "}
               <a
                 href={releasesUrl}
                 target="_blank"
@@ -60,8 +63,7 @@ export default async function DownloadPage() {
               >
                 GitHub Releases
               </a>
-              . If a button below sends you to the releases page, that platform&apos;s asset is
-              not attached to the latest tag yet.
+              .
             </>
           )}
         </p>
@@ -74,8 +76,8 @@ export default async function DownloadPage() {
       */}
       <div className="mt-14 grid gap-4 lg:grid-cols-3 lg:grid-rows-[repeat(8,auto)]">
         {desktopPlatforms.map((platform) => {
-          const href = downloadUrlFor(platform.id, release);
-          const size = assetSizeFor(platform.id, release);
+          const href = downloadUrlFor(platform.id, latest);
+          const size = assetSizeFor(platform.id, latest);
           return (
             <Card
               key={platform.id}
@@ -128,7 +130,7 @@ export default async function DownloadPage() {
                   {platform.alternates.map((alternate) => (
                     <li key={alternate.assetName} className="text-center">
                       <a
-                        href={assetUrlByName(alternate.assetName, release)}
+                        href={assetUrlByName(alternate.assetName, latest)}
                         className="font-mono text-xs text-muted transition-colors duration-150 hover:text-core"
                       >
                         {alternate.label}
