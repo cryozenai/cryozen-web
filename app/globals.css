@@ -20,6 +20,13 @@
   --color-ink: #c9d6e3;
   --color-muted: #7c8da1;
 
+  /*
+   * The one warm colour in a cold palette, and it earns it: the pitch decks
+   * flag every market assumption that has no published benchmark behind it, and
+   * that flag has to read as "check this" rather than as more cyan.
+   */
+  --color-warn: #e0a94a;
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 

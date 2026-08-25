@@ -39,13 +39,14 @@ npm run build            # production build, also type-checks the project
 npm run lint             # eslint
 npm test                 # node --test, the tests under scripts/
 npm run check:node-pins  # .nvmrc, engines.node, and @types/node agree on one major
+npm run check:deck-print # printed pitch decks lost no copy (needs a running server)
 ```
 
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm test`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
 The build step type-checks the whole project, so there is no separate `tsc` job.
-`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks and the download-link contract (see "Keeping downloads correct").
+`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks, the download-link contract (see "Keeping downloads correct"), and the deck-data invariants.
 
 CI deliberately runs **without** a `GITHUB_TOKEN`.
 That keeps the degradation paths in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading, CI would catch it.
@@ -80,6 +81,7 @@ It is an ice-fire scheme: a near-black blue ground, a glacial cyan primary, and 
 | `--color-deep` | `#1E5F8C` | Cold ember shadow |
 | `--color-ink` | `#C9D6E3` | Body text |
 | `--color-muted` | `#7C8DA1` | Secondary text |
+| `--color-warn` | `#E0A94A` | The one warm colour, spent only on the pitch decks' unbenchmarked market assumptions |
 
 Two custom utilities carry the look: `text-flame` (the headline gradient) and `panel` (the hairline card with a cold inner light).
 
@@ -99,18 +101,23 @@ app/
   pricing/            tiers and FAQ
   changelog/          GitHub releases, rendered as markdown
   privacy/ terms/     legal
+  pitch/              the seed decks: index, [deck] route, and their print stylesheet
   opengraph-image.tsx generated social card
   sitemap.ts robots.ts
 components/           header, footer, CTAs, primitives
+  deck/               slide and block renderers, presenting chrome, title-slide mark
 lib/
   site.ts             names, URLs, nav
   platforms.ts        per-platform asset names, requirements, install steps
   releases.ts         GitHub Releases client with graceful fallbacks
   pricing.ts          tiers and FAQ copy
+  decks/              deck copy as typed data, one file per positioning
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
+  check-deck-print.mjs print-fidelity check for the decks; needs Chrome and poppler
   releases.test.mjs   download-link contract test: every asset resolves to a floating latest-release download, never the fetched tag, with the releases-page fallback wherever GitHub reports absence
   release-channel.test.mjs  release-channel contract test: releases and downloads come from the public repo, source links from the product repo
+  decks.test.mjs      deck-data invariants: slide numbering, emphasis markers, sourced market assumptions
 ```
 
 ## Keeping downloads correct
@@ -131,6 +138,31 @@ These must match what `.github/workflows/release.yml` in the product repository 
 If a build script renames an artifact, update `lib/platforms.ts` in the same change, otherwise the button silently falls back to the releases page.
 `scripts/releases.test.mjs` covers the site side of the contract against a stubbed GitHub API: every primary and alternate name resolves to a direct download URL, an asset missing from the latest release and a channel with nothing published both fall back to the releases page rather than a link that 404s, and a failed API call still yields a direct download.
 
+## Pitch decks
+
+`/pitch` lists the two seed decks and `/pitch/enterprise` and `/pitch/developer` present them.
+They are the same two positionings as `cryozen/pitch/*.html`, rebuilt as routes so they use the site's own palette, fonts, logo, and card treatment rather than a second design system that has to be kept in step by hand.
+
+Copy lives in `lib/decks/*.ts` as typed data, not markup.
+A slide is a title plus an ordered list of blocks, and each block kind has exactly one renderer in `components/deck/blocks.tsx`, so changing the raise or a market input never touches a class name.
+Two inline markers work inside any string: `**strong**` and `==accent==`.
+`==` rather than a single `~`, because the decks use `~` for "approximately" (`~$16M ARR`) and one unpaired tilde would have swallowed the rest of a sentence.
+
+Presenting: arrow keys, `PageUp`/`PageDown`, or space page between slides; the rail on the right jumps to one.
+`Notes` (or `n`) reveals each slide's 30-second spoken track, which is hidden by default and never printed.
+`PDF` prints, and each slide becomes one 1280x720 landscape page with the site chrome dropped.
+The print type scale and the layout overrides live in `app/pitch/deck.css`; the `@page` box itself is rendered from `components/deck/deck-shell.tsx`, and the comments in both files record why it cannot live in the stylesheet.
+
+**Run `npm run check:deck-print` after changing deck copy or the print scale.**
+A printed slide is a fixed-height box with `overflow: hidden`, which is what puts one slide on one page and what makes an over-full slide fail silently: the page count still comes out right and the bottom of the slide is simply gone.
+The check renders both decks through headless Chrome and asserts every word of the deck data reached the page it belongs to.
+It needs a server already running (`npm run dev`), Google Chrome, and poppler (`brew install poppler`).
+It is not part of `npm test` or CI for that reason.
+
+The decks are `noindex, nofollow` (set once in `app/pitch/layout.tsx`), absent from `app/sitemap.ts`, and not linked from the nav or footer.
+They carry a "confidential" mark and a live URL is what gets pasted into an investor email, so they are unlisted rather than secret.
+Deleting the `metadata` export in that layout makes them public.
+
 ## Before launch
 
 Open items are marked `TODO(cryozen)` in the source:
@@ -139,6 +171,7 @@ Open items are marked `TODO(cryozen)` in the source:
 - `lib/pricing.ts` — set real prices on the Team and Enterprise tiers. They currently render as "Pricing on request" rather than an invented number.
 - `app/privacy/page.tsx`, `app/terms/page.tsx` — have counsel review.
 - `components/workspace-preview.tsx` — replace the stylized frame with a real screenshot of the running app.
+- `lib/decks/*.ts` — the decks state pre-launch, pre-revenue traction on purpose. Replace the velocity metrics with real adoption numbers once there are any, and re-run `npm run check:deck-print` afterwards.
 
 ## Security headers
 
