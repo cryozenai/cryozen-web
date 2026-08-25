@@ -1,6 +1,7 @@
-// The alternates links are only safe to ship if the never-404 contract holds
-// on every branch, so both the exact-match resolution and the fallback are
-// exercised here against a fixture release rather than trusted from the code.
+// A download button has two jobs: hand back a file rather than a page, and hand
+// back the newest one. Both are exercised here against a fixture release rather
+// than trusted from the code, including the branch where GitHub's API is
+// unreachable, which is the case that used to silently degrade to a page.
 import { strict as assert } from "node:assert";
 import { registerHooks } from "node:module";
 import { dirname, join } from "node:path";
@@ -22,7 +23,7 @@ registerHooks({
 
 const { assetUrlByName, downloadUrlFor } = await import("../lib/releases.ts");
 const { desktopPlatforms } = await import("../lib/platforms.ts");
-const { latestReleaseUrl } = await import("../lib/site.ts");
+const { latestAssetUrl, latestReleaseUrl } = await import("../lib/site.ts");
 
 const allAssetNames = [
   "CryoZen.dmg",
@@ -52,18 +53,35 @@ function release(assetNames) {
   };
 }
 
-test("assetUrlByName resolves each contract asset to its direct download URL", () => {
+test("assetUrlByName resolves each contract asset to a direct download", () => {
   const full = release(allAssetNames);
   for (const name of allAssetNames) {
-    assert.equal(
-      assetUrlByName(name, full),
-      `https://github.com/example/cryozen/releases/download/v1.2.3/${name}`,
-    );
+    assert.equal(assetUrlByName(name, full), latestAssetUrl(name));
   }
 });
 
-test("assetUrlByName falls back to the releases page, never a 404 link", () => {
-  assert.equal(assetUrlByName("CryoZen-Intel.dmg", null), latestReleaseUrl);
+test("the download URL floats to latest rather than pinning the fetched tag", () => {
+  // The fixture release is v1.2.3. Pinning to it means that once v1.2.4 ships,
+  // every visitor served from cache downloads the superseded installer until
+  // the page revalidates.
+  const url = assetUrlByName("CryoZen.dmg", release(allAssetNames));
+  assert.ok(!url.includes("v1.2.3"), `download URL pins a tag: ${url}`);
+  assert.match(url, /\/releases\/latest\/download\/CryoZen\.dmg$/);
+});
+
+test("an unreachable GitHub API still yields a direct download, not a page", () => {
+  // release === null means the fetch failed, which says nothing about whether
+  // the asset exists. Sending the visitor to a page guarantees no download;
+  // the constructed link almost certainly delivers one.
+  assert.equal(assetUrlByName("CryoZen-Intel.dmg", null), latestAssetUrl("CryoZen-Intel.dmg"));
+  for (const platform of desktopPlatforms) {
+    assert.notEqual(downloadUrlFor(platform.id, null), latestReleaseUrl);
+  }
+});
+
+test("an asset the latest release does not carry falls back to the releases page", () => {
+  // The only case where the API's answer is load-bearing: it positively says
+  // the asset is absent, so the floating link would 404.
   const withoutIntel = release(allAssetNames.filter((name) => name !== "CryoZen-Intel.dmg"));
   assert.equal(assetUrlByName("CryoZen-Intel.dmg", withoutIntel), latestReleaseUrl);
 });

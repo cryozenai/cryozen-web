@@ -1,4 +1,4 @@
-import { GITHUB_OWNER, GITHUB_RELEASES_REPO, latestReleaseUrl } from "@/lib/site";
+import { GITHUB_OWNER, GITHUB_RELEASES_REPO, latestAssetUrl, latestReleaseUrl } from "@/lib/site";
 import type { PlatformId } from "@/lib/platforms";
 import { getPlatform } from "@/lib/platforms";
 
@@ -100,14 +100,15 @@ export async function getReleases(limit = 20): Promise<Release[]> {
 }
 
 /**
- * Direct asset URL for a platform, or the releases page when the asset is not
- * published yet. Never returns a URL that is known to 404.
+ * Direct download URL for a platform's primary asset.
+ *
+ * Platforms with no asset (Docker) have nothing to download, so they get the
+ * releases page.
  */
 export function downloadUrlFor(platformId: PlatformId, release: Release | null): string {
   const { assetName } = getPlatform(platformId);
-  if (!assetName || !release) return latestReleaseUrl;
-  const asset = release.assets.find((candidate) => candidate.name === assetName);
-  return asset?.downloadUrl ?? latestReleaseUrl;
+  if (!assetName) return latestReleaseUrl;
+  return assetUrlByName(assetName, release);
 }
 
 export function assetSizeFor(platformId: PlatformId, release: Release | null): string | null {
@@ -118,14 +119,24 @@ export function assetSizeFor(platformId: PlatformId, release: Release | null): s
 }
 
 /**
- * URL for a specific named asset (an alternate format), or the releases page
- * when it is not on the latest release. Same never-404 contract as
- * downloadUrlFor.
+ * Direct download URL for a named asset.
+ *
+ * Returns GitHub's floating `/releases/latest/download/<asset>` link rather
+ * than the pinned `browser_download_url` read from the API, so the button
+ * downloads whatever is newest at the moment of the click. The pinned URL is
+ * only as fresh as the last revalidation, which meant that for up to an hour
+ * after a release the site handed out the previous version's installer.
+ *
+ * The never-404 contract still holds, and is now the only thing the fetched
+ * release is consulted for: when the API positively reports that the latest
+ * release does not carry this asset, send the visitor to the releases page.
+ * When `release` is null the API was unreachable, which says nothing about the
+ * asset - in that case the constructed link is the better answer, because a
+ * link that almost certainly downloads beats a page that certainly does not.
  */
 export function assetUrlByName(assetName: string, release: Release | null): string {
-  if (!release) return latestReleaseUrl;
-  const asset = release.assets.find((candidate) => candidate.name === assetName);
-  return asset?.downloadUrl ?? latestReleaseUrl;
+  const missing = release?.assets.some((candidate) => candidate.name === assetName) === false;
+  return missing ? latestReleaseUrl : latestAssetUrl(assetName);
 }
 
 export function formatBytes(bytes: number): string {
