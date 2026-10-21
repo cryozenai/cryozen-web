@@ -1,4 +1,4 @@
-export const GITHUB_OWNER = "shreejitverma";
+export const GITHUB_OWNER = "cryozenai";
 /** The product source repository (private). */
 export const GITHUB_REPO = "cryozen";
 /**
@@ -43,7 +43,16 @@ export const quickstartUrl = `${githubUrl}/blob/main/QUICKSTART_LOCAL.md`;
 export const deploymentDocsUrl = `${githubUrl}/blob/main/docs/operations/deployment.md`;
 export const configDocsUrl = `${githubUrl}/blob/main/docs/reference/configuration.md`;
 export const issuesUrl = `${githubUrl}/issues`;
-export const ghcrImage = `ghcr.io/${GITHUB_OWNER}/${GITHUB_REPO}`;
+/**
+ * Deliberately not derived from GITHUB_OWNER: container packages did not move
+ * when the repositories were transferred to the cryozenai organisation. The
+ * release workflow pushes to `ghcr.io/<github.repository>`, so every image
+ * published so far, v1.1.0 included, lives under the old shreejitverma
+ * account, while the next release will create a new package under cryozenai.
+ * This names the pre-migration side because it is the only one that can be
+ * pulled today; move it once the package migration lands.
+ */
+export const ghcrImage = "ghcr.io/shreejitverma/cryozen";
 
 export const nav = [
   { href: "/download", label: "Download" },

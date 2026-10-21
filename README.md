@@ -1,6 +1,6 @@
 # cryozen-web
 
-The marketing and download site for [CryoZen](https://github.com/shreejitverma/cryozen), served at **cryozen.ai**.
+The marketing and download site for [CryoZen](https://github.com/cryozenai/cryozen), served at **cryozen.ai**.
 
 It is a Next.js App Router site on Vercel.
 Every download button uses GitHub's floating `/releases/latest/download/<asset>` link, so it serves the newest build the moment a release publishes, without waiting for the site to revalidate.
@@ -57,7 +57,7 @@ That keeps the degradation paths in `lib/releases.ts` under test: if an unreacha
 | --- | --- | --- |
 | `GITHUB_TOKEN` | No | Optional. Lifts the anonymous GitHub API rate limit (60 requests/hour per IP) during builds and revalidation. |
 
-The product repository `shreejitverma/cryozen` is private, but the site never reads it: releases come from the public `shreejitverma/cryozen-releases` repository, which anonymous callers can read.
+The product repository `cryozenai/cryozen` is private, but the site never reads it: releases come from the public `cryozenai/cryozen-releases` repository, which anonymous callers can read.
 A token therefore needs no scopes and only serves to raise the rate limit.
 
 To set one, copy `.env.example` to `.env.local` and fill in the token.
@@ -133,7 +133,7 @@ scripts/
 | Linux (primary) | `CryoZen-x86_64.AppImage` |
 | Linux (alternates) | `cryozen_amd64.deb`, `cryozen.x86_64.rpm`, `CryoZen-Linux-Portable.tar.gz` |
 
-Releases are read from the public `shreejitverma/cryozen-releases` repository (`GITHUB_RELEASES_REPO` in `lib/site.ts`), not the private product repo: the product pipeline publishes identical assets to both, and only the public one can serve anonymous downloads.
+Releases are read from the public `cryozenai/cryozen-releases` repository (`GITHUB_RELEASES_REPO` in `lib/site.ts`), not the private product repo: the product pipeline publishes identical assets to both, and only the public one can serve anonymous downloads.
 These must match what `.github/workflows/release.yml` in the product repository uploads; the product repo's `packaging/README.md` documents `lib/platforms.ts` as part of that release contract.
 If a build script renames an artifact, update `lib/platforms.ts` in the same change, otherwise the button silently falls back to the releases page.
 `scripts/releases.test.mjs` covers the site side of the contract against a stubbed GitHub API: every primary and alternate name resolves to a direct download URL, an asset missing from the latest release and a channel with nothing published both fall back to the releases page rather than a link that 404s, and a failed API call still yields a direct download.
