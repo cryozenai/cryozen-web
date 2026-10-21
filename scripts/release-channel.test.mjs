@@ -121,7 +121,8 @@ test("Windows primary download is the installer with the portable zip as alterna
 
 test("Docker instructions clone the public compose bundle and do not build from source", () => {
   assert.equal(dockerCommands[0], `git clone ${PUBLIC_REPO}.git`);
-  assert.ok(dockerCommands[1].startsWith("cd cryozen-releases"));
+  const cloneDir = new URL(PUBLIC_REPO).pathname.split("/").pop();
+  assert.equal(dockerCommands[1], `cd ${cloneDir} && cp .env.example .env`);
   assert.equal(dockerCommands[2], "docker compose up -d");
   const docker = getPlatform("docker");
   assert.ok(docker.steps.every((step) => !step.includes("--build")));
