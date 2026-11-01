@@ -104,6 +104,7 @@ app/
   changelog/          GitHub releases, rendered as markdown
   privacy/ terms/     legal
   pitch/              the seed decks: index, [deck] route, and their print stylesheet
+  version.json/       the commit this build came from, read by check-production
   opengraph-image.tsx generated social card
   sitemap.ts robots.ts
 components/           header, footer, CTAs, primitives
