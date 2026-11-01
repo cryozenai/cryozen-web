@@ -15,15 +15,15 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const UPDATED = "9 August 2026";
+const UPDATED = "1 November 2026";
 
 export default function PrivacyPage() {
   return (
     <LegalPage eyebrow="Legal" title="Privacy" updated={UPDATED}>
       <LegalSection title="The short version">
         <p>
-          The CryoZen application runs on hardware you control and sends us nothing. This website
-          runs no analytics and sets no tracking cookies. We hold no account for you unless you
+          The CryoZen application runs on hardware you control and sends us nothing. It can contact
+          other services, listed below. This website runs no analytics and sets no tracking cookies. We hold no account for you unless you
           email us.
         </p>
       </LegalSection>
@@ -42,12 +42,17 @@ export default function PrivacyPage() {
           ]}
         />
         <p>
-          Data leaves your machine only through integrations you configure. If you connect a
-          hosted model provider, your prompts go to that provider under their terms. If you
-          connect a mailbox or a calendar, CryoZen talks to that service on your behalf. If you
-          enable web search, queries go to the search backend you configured. Each of those is a
-          choice you make, and each can be disconnected.
+          These are the ways data leaves your machine today:
         </p>
+        <LegalList
+          items={[
+            "Model providers: if you connect a hosted provider, your prompts go to that provider under their terms.",
+            "Mail and calendar: if you connect a mailbox or a calendar, CryoZen talks to that service on your behalf.",
+            "Web search: with the Docker stack, queries go through your own SearXNG proxy, which asks public search engines (Bing, Mojeek, and Presearch by default). If SearXNG is unavailable or returns nothing, as on a desktop build, CryoZen sends the query directly to DuckDuckGo from your machine. You can change the providers and the fallback, or disable search, in settings.",
+            "Rendering libraries: the app's pages load KaTeX and Mermaid from the public jsDelivr CDN on every load, and the in-browser Python runner and emoji images come from the same CDN when used. jsDelivr sees your IP address and browser details, not your conversations. On a host with no internet access these features do not load. Bundling them into the app is planned.",
+            "Local embeddings: if no embedding server is configured, the first use of the built-in embedding model downloads it from the internet.",
+          ]}
+        />
       </LegalSection>
 
       <LegalSection title="This website">

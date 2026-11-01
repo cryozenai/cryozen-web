@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Wordmark } from "@/components/logo";
 import { GitHubIcon } from "@/components/icons";
 import { primaryButton } from "@/components/ui";
-import { githubUrl, nav } from "@/lib/site";
+import { nav, releasesRepoUrl } from "@/lib/site";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -45,10 +45,10 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <a
-            href={githubUrl}
+            href={releasesRepoUrl}
             target="_blank"
             rel="noreferrer"
-            aria-label="CryoZen on GitHub"
+            aria-label="CryoZen releases on GitHub"
             className="hidden rounded-md p-2 text-muted transition-colors duration-150 hover:text-core sm:inline-flex"
           >
             <GitHubIcon className="size-5" />
@@ -100,7 +100,7 @@ export function SiteHeader() {
               </Link>
             ))}
             <a
-              href={githubUrl}
+              href={releasesRepoUrl}
               target="_blank"
               rel="noreferrer"
               className="rounded-md px-2 py-3 text-sm text-ink hover:text-core"

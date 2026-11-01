@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { LegalList, LegalPage, LegalSection } from "@/components/legal";
-import { textLink } from "@/components/ui";
-import { githubUrl, site } from "@/lib/site";
+import { site } from "@/lib/site";
 
 /*
  * TODO(cryozen): have counsel review this before launch. LICENSE.md in the
- * product repository is the controlling document for the software itself; this
- * page governs the website and states the relationship in plain language.
+ * private product repository is the controlling document for the software
+ * itself, and it is not yet published anywhere public. Counsel owns its text
+ * and where it is published; this page only avoids saying anything false.
  */
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/terms" },
 };
 
-const UPDATED = "9 August 2026";
+const UPDATED = "1 November 2026";
 
 export default function TermsPage() {
   return (
@@ -24,18 +24,16 @@ export default function TermsPage() {
       <LegalSection title="Scope">
         <p>
           These terms cover your use of {site.domain} and the builds distributed through it. The
-          software itself is licensed separately: LICENSE.md in the{" "}
-          <a href={githubUrl} target="_blank" rel="noreferrer" className={textLink}>
-            product repository
-          </a>{" "}
-          is the controlling document, and where the two disagree, the license wins.
+          software itself is licensed separately: LICENSE.md in the product repository is the
+          controlling document, and where the two disagree, the license wins. That repository is
+          private, so the license text is not public yet. Questions go to {site.contactEmail}.
         </p>
       </LegalSection>
 
       <LegalSection title="The software is proprietary">
         <p>
-          CryoZen&apos;s source is published so you can read it, audit it, and run it. It is not
-          released under an open source license. Rights to copy, modify, redistribute, or use it
+          CryoZen&apos;s source repository is private. It is not released under an open source
+          license. Rights to copy, modify, redistribute, or use it
           commercially are the rights granted in LICENSE.md and no more.
         </p>
       </LegalSection>

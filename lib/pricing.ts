@@ -44,8 +44,8 @@ export const tiers: Tier[] = [
     tagline: "One shared instance behind your own reverse proxy.",
     features: [
       "Everything in Personal",
-      "Per-user accounts with per-user data isolation",
-      "Administrator controls for models and integrations",
+      "Per-user accounts; isolation between users has open bugs being fixed, so share only with people you trust",
+      "Administrator controls for models and integrations; tool switches have open bugs being fixed",
       "Deployment guidance for servers, GPUs, and proxies",
       "Priority issue triage",
     ],
@@ -60,10 +60,10 @@ export const tiers: Tier[] = [
     name: "Enterprise",
     price: null,
     cadence: null,
-    tagline: "Air-gapped estates, procurement, and a support agreement.",
+    tagline: "Restricted networks, procurement, and a support agreement.",
     features: [
       "Everything in Team",
-      "Air-gapped and offline installation support",
+      "Offline installation support, with known limits until CDN-loaded libraries are bundled",
       "Security review support and deployment hardening",
       "Named contact and an agreed response time",
       "Commercial licensing terms",
@@ -79,7 +79,7 @@ export const faq = [
   {
     question: "Is CryoZen open source?",
     answer:
-      "No. The source is published and readable on GitHub, but it is released under a proprietary license, not an OSI-approved open source license. Read LICENSE.md in the repository for the exact terms.",
+      `No. The source repository is private, and CryoZen is released under a proprietary license, not an OSI-approved open source license. Questions about the terms go to ${site.contactEmail}.`,
   },
   {
     question: "Do I pay per model call?",

@@ -3,11 +3,10 @@ import { Logo } from "@/components/logo";
 import { GitHubIcon } from "@/components/icons";
 import {
   configDocsUrl,
-  deploymentDocsUrl,
   docsUrl,
-  githubUrl,
   issuesUrl,
   quickstartUrl,
+  releasesRepoUrl,
   releasesUrl,
   site,
 } from "@/lib/site";
@@ -25,16 +24,16 @@ const columns = [
   {
     title: "Documentation",
     links: [
-      { label: "Documentation index", href: docsUrl },
-      { label: "Local quickstart", href: quickstartUrl },
-      { label: "Deployment guide", href: deploymentDocsUrl },
+      { label: "Getting started", href: docsUrl },
+      { label: "Install guide", href: "/download" },
+      { label: "Docker quickstart", href: quickstartUrl },
       { label: "Configuration reference", href: configDocsUrl },
     ],
   },
   {
     title: "Company",
     links: [
-      { label: "GitHub", href: githubUrl },
+      { label: "GitHub", href: releasesRepoUrl },
       { label: "Report an issue", href: issuesUrl },
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
@@ -56,10 +55,10 @@ export function SiteFooter() {
             </Link>
             <p className="mt-4 text-sm/6 text-muted">{site.tagline}</p>
             <a
-              href={githubUrl}
+              href={releasesRepoUrl}
               target="_blank"
               rel="noreferrer"
-              aria-label="CryoZen on GitHub"
+              aria-label="CryoZen releases on GitHub"
               className="mt-5 inline-flex rounded-md p-2 text-muted transition-colors duration-150 hover:text-core"
             >
               <GitHubIcon />
@@ -95,7 +94,7 @@ export function SiteFooter() {
           <p>
             &copy; {new Date().getFullYear()} {site.name}. All rights reserved.
           </p>
-          <p>Self-hosted. No telemetry. Your data stays on your hardware.</p>
+          <p>Self-hosted. No telemetry. Your data is stored on your hardware.</p>
         </div>
       </div>
     </footer>

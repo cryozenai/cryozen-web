@@ -1,6 +1,4 @@
 export const GITHUB_OWNER = "cryozenai";
-/** The product source repository (private). */
-export const GITHUB_REPO = "cryozen";
 /**
  * The public release channel. The product repo is private, so its release
  * assets cannot be downloaded anonymously; the release pipeline publishes
@@ -20,7 +18,6 @@ export const site = {
   contactEmail: "hello@cryozen.ai",
 } as const;
 
-export const githubUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`;
 export const releasesRepoUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_RELEASES_REPO}`;
 export const releasesUrl = `${releasesRepoUrl}/releases`;
 export const latestReleaseUrl = `${releasesUrl}/latest`;
@@ -38,11 +35,17 @@ export const latestReleaseUrl = `${releasesUrl}/latest`;
  */
 export const latestAssetUrl = (assetName: string) =>
   `${latestReleaseUrl}/download/${assetName}`;
-export const docsUrl = `${githubUrl}/blob/main/docs/README.md`;
-export const quickstartUrl = `${githubUrl}/blob/main/QUICKSTART_LOCAL.md`;
-export const deploymentDocsUrl = `${githubUrl}/blob/main/docs/operations/deployment.md`;
-export const configDocsUrl = `${githubUrl}/blob/main/docs/reference/configuration.md`;
-export const issuesUrl = `${githubUrl}/issues`;
+/**
+ * Every outbound documentation and support link lands in the public release
+ * channel. The product repository is private, so anything under it answers 404
+ * to a visitor; `scripts/check-links.mjs` fails CI if a page links to one.
+ * The channel has no docs/ tree yet, only a README and the annotated
+ * .env.example, so these name what exists today.
+ */
+export const docsUrl = `${releasesRepoUrl}#readme`;
+export const quickstartUrl = `${releasesRepoUrl}#docker`;
+export const configDocsUrl = `${releasesRepoUrl}/blob/main/.env.example`;
+export const issuesUrl = `${releasesRepoUrl}/issues`;
 /**
  * Deliberately not derived from GITHUB_OWNER: container packages did not move
  * when the repositories were transferred to the cryozenai organisation. The

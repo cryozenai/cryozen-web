@@ -1,6 +1,6 @@
 # cryozen-web
 
-The marketing and download site for [CryoZen](https://github.com/cryozenai/cryozen), served at **cryozen.ai**.
+The marketing and download site for CryoZen, served at **[cryozen.ai](https://cryozen.ai)**.
 
 It is a Next.js App Router site on Vercel.
 Every download button uses GitHub's floating `/releases/latest/download/<asset>` link, so it serves the newest build the moment a release publishes, without waiting for the site to revalidate.
@@ -40,11 +40,13 @@ npm run lint             # eslint
 npm test                 # node --test, the tests under scripts/
 npm run check:node-pins  # .nvmrc, engines.node, and @types/node agree on one major
 npm run check:deck-print # printed pitch decks lost no copy (needs a running server)
+npm run check:links -- http://localhost:3000  # every link on a running site works anonymously
+npm run check:production # the commit live on cryozen.ai equals main
 ```
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm test`, `npm run lint`, and `npm run build` on every pull request and on every push to `main`.
+`.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm test`, `npm run lint`, `npm run build`, and `npm run check:links` against that build on every pull request and on every push to `main`.
 The build step type-checks the whole project, so there is no separate `tsc` job.
 `npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks, the download-link contract (see "Keeping downloads correct"), and the deck-data invariants.
 
@@ -111,13 +113,16 @@ lib/
   platforms.ts        per-platform asset names, requirements, install steps
   releases.ts         GitHub Releases client with graceful fallbacks
   pricing.ts          tiers and FAQ copy
+  facts.ts            measured product facts the decks quote, until a public facts.json exists
   decks/              deck copy as typed data, one file per positioning
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
   check-deck-print.mjs print-fidelity check for the decks; needs Chrome and poppler
   releases.test.mjs   download-link contract test: every asset resolves to a floating latest-release download, never the fetched tag, with the releases-page fallback wherever GitHub reports absence
-  release-channel.test.mjs  release-channel contract test: releases and downloads come from the public repo, source links from the product repo
-  decks.test.mjs      deck-data invariants: slide numbering, emphasis markers, sourced market assumptions
+  release-channel.test.mjs  release-channel contract test: releases, downloads, docs, and support links all land in the public repo
+  decks.test.mjs      deck-data invariants: slide numbering, emphasis markers, sourced market assumptions, measured facts
+  check-links.mjs     crawls a running site and fetches every external link anonymously, with its test alongside
+  check-production.mjs compares the commit production reports at /version.json with main, with its test alongside
 ```
 
 ## Keeping downloads correct
@@ -195,6 +200,9 @@ It also carries `ignore` rules for `@types/node` majors (explained under Local d
 Import the repository into Vercel and set the production domain to `cryozen.ai`.
 `GITHUB_TOKEN` is optional; see "Environment" for what it does.
 The framework preset, build command, and output are all detected automatically.
+
+`.github/workflows/production.yml` runs daily: it fails if the commit production reports at `/version.json` is not main (30 minutes' grace after a merge), or if any link on the live site fails anonymously.
+The project's git link must name `cryozenai/cryozen-web`; read it with `vercel api /v9/projects/cryozen-web` and fix it with `vercel git connect https://github.com/cryozenai/cryozen-web`.
 
 ### When the Vercel check fails with "Account is blocked"
 

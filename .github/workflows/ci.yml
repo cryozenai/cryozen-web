@@ -51,3 +51,11 @@ jobs:
       # fallback path lib/releases.ts implements.
       - name: Build
         run: npm run build
+
+      # Against the build just made, with no credentials, so a link only an owner
+      # can open fails here rather than on the live site.
+      - name: Check links anonymously
+        run: |
+          npx next start --port 3100 &
+          until curl --silent --fail --output /dev/null http://localhost:3100/; do sleep 1; done
+          npm run check:links -- http://localhost:3100
