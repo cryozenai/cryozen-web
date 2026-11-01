@@ -64,7 +64,7 @@ const guarantees = [
   },
   {
     title: "What can leave your machine",
-    body: "Prompts go to a hosted model you connect, and mail goes to a mailbox you connect. Web search goes to public search engines. The app also loads some libraries from the jsDelivr CDN, which sees your IP address, until they are bundled in a later release.",
+    body: "The main ways: prompts go to a hosted model you connect, and mail, calendar, and contacts go to accounts you connect. Web search goes to public search engines, and research fetches pages from the sites that host them. MCP servers, webhooks, and agent shell commands reach whatever you point them at. Models download from their source, including the built-in embedding model on first use. The app also loads some libraries from the jsDelivr CDN, which sees your IP address, until they are bundled in a later release. The privacy policy has the details.",
   },
 ];
 
@@ -125,7 +125,7 @@ export default async function HomePage() {
             CryoZen runs chat, autonomous agents, document search, and a mail, calendar, and
             contacts client as one application on your own machine. Point it at local models or
             your own API keys. Your data is stored on your machine, and the next section says
-            exactly what can leave it.
+            what can leave it.
           </p>
 
           <div className="mt-10">

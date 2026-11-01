@@ -17,6 +17,7 @@ jobs:
   verify:
     name: Lint and build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -57,5 +58,5 @@ jobs:
       - name: Check links anonymously
         run: |
           npx next start --port 3100 &
-          until curl --silent --fail --output /dev/null http://localhost:3100/; do sleep 1; done
+          curl --silent --show-error --fail --output /dev/null --max-time 10 --retry 60 --retry-delay 1 --retry-connrefused --retry-all-errors http://localhost:3100/
           npm run check:links -- http://localhost:3100

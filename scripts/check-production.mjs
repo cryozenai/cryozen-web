@@ -3,7 +3,7 @@
 // for 68 days after the repository moved to the cryozenai organisation and
 // nothing noticed, because a deployment that never starts cannot fail.
 //
-// Usage: node scripts/check-production.mjs [site-url]
+// Usage: node scripts/check-production.mjs
 import { pathToFileURL } from "node:url";
 
 const SITE_URL = "https://cryozen.ai";
@@ -43,7 +43,7 @@ export async function checkProduction({
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    const { ok, message } = await checkProduction({ siteUrl: process.argv[2] ?? SITE_URL });
+    const { ok, message } = await checkProduction();
     (ok ? console.log : console.error)(message);
     process.exit(ok ? 0 : 1);
   } catch (error) {

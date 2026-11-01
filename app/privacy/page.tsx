@@ -23,7 +23,7 @@ export default function PrivacyPage() {
       <LegalSection title="The short version">
         <p>
           The CryoZen application runs on hardware you control and sends us nothing. It can contact
-          other services, listed below. This website runs no analytics and sets no tracking cookies. We hold no account for you unless you
+          other services, and the main ones are listed below. This website runs no analytics and sets no tracking cookies. We hold no account for you unless you
           email us.
         </p>
       </LegalSection>
@@ -42,13 +42,17 @@ export default function PrivacyPage() {
           ]}
         />
         <p>
-          These are the ways data leaves your machine today:
+          These are the main ways data leaves your machine today. The list is not exhaustive: any service you connect, or that an agent you run can reach, receives what is sent to it.
         </p>
         <LegalList
           items={[
             "Model providers: if you connect a hosted provider, your prompts go to that provider under their terms.",
-            "Mail and calendar: if you connect a mailbox or a calendar, CryoZen talks to that service on your behalf.",
+            "Mail, calendar, contacts, and linked accounts: if you connect a mailbox, a calendar, a contacts server, or a Google or Microsoft account, CryoZen talks to that service on your behalf.",
             "Web search: with the Docker stack, queries go through your own SearXNG proxy, which asks public search engines (Bing, Mojeek, and Presearch by default). If SearXNG is unavailable or returns nothing, as on a desktop build, CryoZen sends the query directly to DuckDuckGo from your machine. You can change the providers and the fallback, or disable search, in settings.",
+            "Research and web pages: research fetches the pages it finds from the sites that host them, and those sites see your IP address. YouTube links you give it are fetched from YouTube.",
+            "Agent tools: an MCP server you connect over the network receives the tool calls sent to it, and shell commands an agent runs can reach whatever your machine can.",
+            "Webhooks: a webhook you configure receives the events you subscribe it to.",
+            "Remote model hosts and downloads: serving a model over SSH sends commands to that host, and downloading a model fetches it from its source, such as Hugging Face or Ollama.",
             "Rendering libraries: the app's pages load KaTeX and Mermaid from the public jsDelivr CDN on every load, and the in-browser Python runner and emoji images come from the same CDN when used. jsDelivr sees your IP address and browser details, not your conversations. On a host with no internet access these features do not load. Bundling them into the app is planned.",
             "Local embeddings: if no embedding server is configured, the first use of the built-in embedding model downloads it from the internet.",
           ]}
