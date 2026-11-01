@@ -18,7 +18,7 @@ import {
   formatDate,
   getLatestRelease,
 } from "@/lib/releases";
-import { ghcrImage, releasesRepoUrl, deploymentDocsUrl, releasesUrl } from "@/lib/site";
+import { ghcrImage, releasesRepoUrl, configDocsUrl, releasesUrl } from "@/lib/site";
 
 export const revalidate = 3600;
 
@@ -178,8 +178,8 @@ export default async function DownloadPage() {
               integrations page.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <ButtonLink href={deploymentDocsUrl} variant="secondary">
-                Deployment guide
+              <ButtonLink href={configDocsUrl} variant="secondary">
+                Configuration reference
               </ButtonLink>
               <ButtonLink href={releasesRepoUrl} variant="secondary">
                 Compose bundle on GitHub
@@ -202,11 +202,18 @@ export default async function DownloadPage() {
           </p>
         </Card>
         <Card className="p-6">
-          <h3 className="text-sm font-semibold text-core">Self-contained, and your data stays put</h3>
+          <h3 className="text-sm font-semibold text-core">
+            What a desktop build includes, and what it does not
+          </h3>
           <p className="mt-3 text-sm/6 text-muted">
-            Every desktop build bundles its own runtime - no Python, no dependencies, no first-run
-            setup. Your data lives in your user folder, so upgrading is replacing the app, and
-            uninstalling never touches your data.
+            Every desktop build bundles its own Python runtime. Your data lives in your user folder,
+            so upgrading is replacing the app, and uninstalling never touches your data.
+          </p>
+          <p className="mt-3 text-sm/6 text-muted">
+            SearXNG and ChromaDB come with the Docker stack, not the desktop builds. Without them,
+            web search goes directly to DuckDuckGo, and document search is unavailable unless you run
+            ChromaDB yourself. Some features still assume the Docker port and data path, including
+            model auto-stop and image editing; that fix is planned.
           </p>
         </Card>
       </div>

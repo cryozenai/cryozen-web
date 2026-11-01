@@ -7,8 +7,9 @@
  * change it here too or the download button falls back to the releases page.
  *
  * Since the self-contained installers (product repo `packaging/`), every
- * desktop build bundles Python and all dependencies: nothing is required on
- * the user's machine, and user data lives in the platform's per-user data
+ * desktop build bundles Python and its Python dependencies, so there is no
+ * runtime to install. The SearXNG and ChromaDB services are not bundled; only
+ * the Docker stack runs them. User data lives in the platform's per-user data
  * directory, never inside the install.
  */
 import { GITHUB_RELEASES_REPO, releasesRepoUrl } from "@/lib/site";
@@ -50,7 +51,7 @@ export const platforms: Platform[] = [
       "A self-contained app: drag to Applications and launch. The server starts locally and CryoZen opens in your browser.",
     requirements: [
       "macOS 13 Ventura or newer (Apple Silicon; Intel build below)",
-      "Nothing else - Python is bundled",
+      "No Python install needed - it is bundled",
     ],
     steps: [
       "Open CryoZen.dmg and drag CryoZen to Applications.",
@@ -67,7 +68,7 @@ export const platforms: Platform[] = [
     fileLabel: "Installer (.exe)",
     summary:
       "A standard installer: Program Files, a Start Menu shortcut, and an entry in Apps & Features. Prefer the portable zip to run from a folder without installing.",
-    requirements: ["Windows 10 or newer (64-bit x64)", "Nothing else - Python is bundled"],
+    requirements: ["Windows 10 or newer (64-bit x64)", "No Python install needed - it is bundled"],
     steps: [
       "Run CryoZen-Setup-x64.exe and follow the prompts. Silent install for scripts: CryoZen-Setup-x64.exe /S",
       "If SmartScreen appears on an unsigned build, choose More info, then Run anyway. Signed builds do not prompt.",
@@ -88,7 +89,7 @@ export const platforms: Platform[] = [
     fileLabel: "AppImage (x86_64)",
     summary:
       "A single self-contained executable that runs on any distribution. Also available as .deb, .rpm, and a portable tarball.",
-    requirements: ["A 64-bit distribution with glibc", "Nothing else - Python is bundled"],
+    requirements: ["A 64-bit distribution with glibc", "No Python install needed - it is bundled"],
     steps: [
       "Make it executable: chmod +x CryoZen-x86_64.AppImage",
       "Run it: ./CryoZen-x86_64.AppImage",
@@ -107,7 +108,7 @@ export const platforms: Platform[] = [
     assetName: null,
     fileLabel: "Container image",
     summary:
-      "The recommended path for servers, GPUs, and anything long-running. Pulls the published image (linux/amd64 and linux/arm64); no build step.",
+      "The recommended path for servers, GPUs, and anything long-running. Runs the full stack, including SearXNG and ChromaDB, from the published image (linux/amd64 and linux/arm64); no build step.",
     requirements: ["Docker with Compose v2", "A host you control"],
     steps: [
       dockerCommands[0],

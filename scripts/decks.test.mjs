@@ -6,11 +6,25 @@
  * rather than someone's published figure.
  */
 import { strict as assert } from "node:assert";
+import { registerHooks } from "node:module";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { developerDeck } from "../lib/decks/developer.ts";
-import { enterpriseDeck } from "../lib/decks/enterprise.ts";
-import { numberedSlideCount } from "../lib/decks/types.ts";
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier.startsWith("@/")) {
+      const mapped = pathToFileURL(join(root, `${specifier.slice(2)}.ts`)).href;
+      return nextResolve(mapped, context);
+    }
+    return nextResolve(specifier, context);
+  },
+});
+
+const { developerDeck } = await import("../lib/decks/developer.ts");
+const { enterpriseDeck } = await import("../lib/decks/enterprise.ts");
+const { numberedSlideCount } = await import("../lib/decks/types.ts");
 
 const decks = [enterpriseDeck, developerDeck];
 
@@ -24,6 +38,20 @@ function everyString(value, out = []) {
 }
 
 for (const deck of decks) {
+  test(`${deck.slug}: quotes the measured product facts, not older ones`, () => {
+    const strings = everyString(deck);
+    const metrics = deck.slides
+      .flatMap((slide) => slide.blocks ?? [])
+      .filter((block) => block.kind === "metrics")
+      .flatMap((block) => block.items);
+    const metric = (label) => metrics.find((item) => item.label === label)?.value;
+
+    assert.equal(metric("automated tests passing"), "3,207");
+    assert.equal(metric("boots today, verified"), "v1.1.0");
+    assert.equal(metric("API modules / services"), "51 / 94");
+    assert.ok(!strings.some((text) => /\bv1\.0\.0\b|\b2,826\b/.test(text)), "stale number");
+  });
+
   test(`${deck.slug}: slide ids are unique and URL-safe`, () => {
     const ids = deck.slides.map((slide) => slide.id);
     assert.equal(new Set(ids).size, ids.length, "duplicate slide id");

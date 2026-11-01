@@ -1,8 +1,7 @@
 // The product repo is private, so the site must read releases from and link
-// downloads to the public cryozen-releases channel, while the source links in
-// the header/footer/terms keep pointing at the product repo. These tests drive
-// the public lib interfaces (fetch target, URL exports, platform contract)
-// rather than inspecting source text.
+// downloads to the public cryozen-releases channel, and docs and support links
+// must land there too. These tests drive the public lib interfaces (fetch target,
+// URL exports, platform contract) rather than inspecting source text.
 import { strict as assert } from "node:assert";
 import { registerHooks } from "node:module";
 import { dirname, join } from "node:path";
@@ -22,7 +21,8 @@ registerHooks({
 
 const { getLatestRelease, getReleases, downloadUrlFor } = await import("../lib/releases.ts");
 const { getPlatform, dockerCommands } = await import("../lib/platforms.ts");
-const { githubUrl, releasesRepoUrl, releasesUrl, latestReleaseUrl } = await import("../lib/site.ts");
+const site = await import("../lib/site.ts");
+const { releasesRepoUrl, releasesUrl, latestReleaseUrl } = site;
 
 const PUBLIC_REPO = "https://github.com/cryozenai/cryozen-releases";
 const PRIVATE_REPO = "https://github.com/cryozenai/cryozen";
@@ -72,8 +72,18 @@ test("release metadata is fetched from the public cryozen-releases repo API", as
   });
 });
 
-test("release links target the public channel; source links keep the product repo", async () => {
-  assert.equal(githubUrl, PRIVATE_REPO);
+test("docs and support links land in the public channel, never the private repo", () => {
+  const urls = [site.docsUrl, site.quickstartUrl, site.configDocsUrl, site.issuesUrl];
+  for (const url of urls) {
+    assert.ok(url.startsWith(PUBLIC_REPO), `leaves the public channel: ${url}`);
+  }
+  for (const item of site.nav) {
+    const external = item.href.startsWith("http");
+    assert.ok(!external || item.href.startsWith(PUBLIC_REPO), `nav leaks: ${item.href}`);
+  }
+});
+
+test("release links target the public channel", async () => {
   assert.equal(releasesRepoUrl, PUBLIC_REPO);
   assert.equal(releasesUrl, `${PUBLIC_REPO}/releases`);
   assert.equal(latestReleaseUrl, `${PUBLIC_REPO}/releases/latest`);

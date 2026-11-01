@@ -1,0 +1,35 @@
+name: Production
+
+# A deployment that never starts cannot fail, so nothing else notices when
+# production stops following main or a link goes dead between pull requests.
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Production matches main
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      # Both scripts use only Node built-ins, so there is nothing to install.
+      - name: Production serves main's commit
+        run: npm run check:production
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Every link on the live site works anonymously
+        if: always()
+        run: npm run check:links -- https://cryozen.ai

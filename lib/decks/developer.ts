@@ -1,3 +1,4 @@
+import { productFacts } from "@/lib/facts";
 import type { Deck } from "./types";
 
 const NB = " ";
@@ -24,7 +25,7 @@ export const developerDeck: Deck = {
       kind: "title",
       id: "title",
       meaning: "preserved · composed",
-      version: "v1.0.0",
+      version: productFacts.version,
       title: `Your entire AI${NB}workspace. ==Self-hosted.== One command.`,
       lede: "Private agents, RAG, deep research, and model serving, plus your mail, calendar, and notes. **Nothing leaves your machine.**",
       foot: "seed deck · confidential · 2026",
@@ -320,10 +321,10 @@ export const developerDeck: Deck = {
           items: [
             { value: "6", unit: " wks", label: "solo, to a working product" },
             { value: "266", unit: "K", label: "lines of application code" },
-            { value: "2,826", label: "automated tests passing" },
+            { value: productFacts.testsPassing, label: "automated tests passing" },
             { value: "15", label: "integrated surfaces" },
             { value: "51 / 94", label: "API modules / services" },
-            { value: "v1.0.0", label: "boots today, verified" },
+            { value: productFacts.version, label: "boots today, verified" },
           ],
         },
         {
@@ -433,7 +434,7 @@ export const developerDeck: Deck = {
         },
         {
           kind: "lede",
-          text: "**Why this founder:** seven years in systems where a wrong answer costs money in microseconds, and nobody ships a prototype. That is the discipline behind 2,826 passing tests and a product that boots on the first try. Add real LLM productization inside a bank and a record of teaching 2,500+ engineers, which is the same work as building a community.",
+          text: `**Why this founder:** seven years in systems where a wrong answer costs money in microseconds, and nobody ships a prototype. That is the discipline behind ${productFacts.testsPassing} passing tests and a product that boots on the first try. Add real LLM productization inside a bank and a record of teaching 2,500+ engineers, which is the same work as building a community.`,
         },
         {
           kind: "milestones",
@@ -515,7 +516,7 @@ export const developerDeck: Deck = {
         },
         {
           kind: "signoff",
-          text: "CryoZen · seed deck · confidential · built on a verified, running v1.0.0",
+          text: `CryoZen · seed deck · confidential · built on a verified, running ${productFacts.version}`,
         },
       ],
     },

@@ -79,7 +79,7 @@ export function DownloadCta({
 
       <p className="text-xs text-muted">
         {platform
-          ? `${size ? `${size} · ` : ""}Free to download. Runs entirely on your machine.`
+          ? `${size ? `${size} · ` : ""}Free to download. The server runs on your machine.`
           : "Available for macOS, Windows, Linux, and Docker."}
       </p>
 

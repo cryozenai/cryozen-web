@@ -29,15 +29,15 @@ const features = [
   },
   {
     title: "Agents with real tools",
-    body: "Give a model shell access, file access, web search, and MCP servers so it can finish multi-step work, inside a workspace boundary that confines what it can touch.",
+    body: "Give a model shell access, file access, web search, and MCP servers so it can finish multi-step work. File tools stay inside a workspace folder you choose. Shell commands start there but are not confined to it.",
   },
   {
     title: "Research that cites its sources",
-    body: "An engine that searches, crawls, and synthesizes a cited report, backed by its own SearXNG instance so queries never reach a third-party search engine.",
+    body: "An engine that searches, crawls, and synthesizes a cited report. With Docker, queries go through your own SearXNG proxy, which asks public engines on your behalf. If that returns nothing, or there is no SearXNG, CryoZen asks DuckDuckGo directly.",
   },
   {
     title: "Your documents, indexed locally",
-    body: "PDFs, Office files, and text go into a local vector store for retrieval-augmented generation, plus long-term semantic memory that carries across conversations.",
+    body: "With Docker, PDFs, Office files, and text go into a local ChromaDB vector store for retrieval-augmented generation, and long-term memory carries across conversations. Desktop builds do not include ChromaDB, so document search needs one you run yourself, and memory recall uses keywords only.",
   },
   {
     title: "Mail, calendar, and contacts",
@@ -60,11 +60,11 @@ const guarantees = [
   },
   {
     title: "No telemetry",
-    body: "No analytics, no phone-home, no usage beacons. There is no build of CryoZen that reports on you.",
+    body: "No analytics and no usage beacons. CryoZen sends us nothing.",
   },
   {
-    title: "Data leaves only when you say so",
-    body: "Connect a hosted model or an external mailbox and traffic goes there. Connect nothing and nothing leaves.",
+    title: "What can leave your machine",
+    body: "The main ways: prompts go to a hosted model you connect, and mail, calendar, and contacts go to accounts you connect. Web search goes to public search engines, and research fetches pages from the sites that host them. MCP servers, webhooks, and agent shell commands reach whatever you point them at. Models download from their source, including the built-in embedding model on first use. The app also loads some libraries from the jsDelivr CDN, which sees your IP address, until they are bundled in a later release. The privacy policy has the details.",
   },
 ];
 
@@ -75,7 +75,7 @@ const audiences = [
   },
   {
     label: "Teams",
-    body: "A shared instance behind your own reverse proxy, with per-user accounts and per-user data.",
+    body: "A shared instance behind your own reverse proxy, with per-user accounts. Some features still cross user boundaries while fixes land, so share it only with people you trust.",
   },
   {
     label: "Developers",
@@ -124,8 +124,8 @@ export default async function HomePage() {
           <p className="mt-6 max-w-2xl text-lg/8 text-muted text-pretty">
             CryoZen runs chat, autonomous agents, document search, and a mail, calendar, and
             contacts client as one application on your own machine. Point it at local models or
-            your own API keys. Nothing leaves unless you configure an integration that sends it
-            there.
+            your own API keys. Your data is stored on your machine, and the next section says
+            what can leave it.
           </p>
 
           <div className="mt-10">
@@ -146,9 +146,9 @@ export default async function HomePage() {
       <section className="py-16">
         <Container>
           <SectionHeading
-            eyebrow="Private by construction"
-            title="Not a promise in a policy. A property of where it runs."
-            description="CryoZen is a server you start on your own hardware. The guarantees below are structural, not contractual."
+            eyebrow="Where your data goes"
+            title="Stored on your hardware, with the exceptions stated."
+            description="CryoZen is a server you start on your own hardware. This is what that means today."
           />
           <div className="mt-12 grid gap-4 sm:grid-cols-2">
             {guarantees.map((item) => (
@@ -173,8 +173,8 @@ export default async function HomePage() {
         <Container>
           <SectionHeading
             eyebrow="What it does"
-            title="Everything below ships in the application today."
-            description="Not a roadmap. These are the surfaces you get on first launch."
+            title="What is in the application today."
+            description="These surfaces are in the current release. Some have open bugs we are fixing, and search and document features need the Docker stack to work as described."
           />
           <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
@@ -217,7 +217,7 @@ export default async function HomePage() {
           <SectionHeading
             eyebrow="Install it"
             title="macOS, Windows, Linux, and Docker."
-            description="Desktop builds run a local server and open CryoZen in your browser. Docker is the path for servers and GPUs."
+            description="Desktop builds run a local server and open CryoZen in your browser. Docker adds SearXNG and ChromaDB, and is the path for servers and GPUs."
           />
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {platforms.map((platform) => (
@@ -250,13 +250,13 @@ export default async function HomePage() {
               Run it tonight on the machine in front of you.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base/7 text-muted text-pretty">
-              Download a build, or clone the repository and bring it up with Docker Compose in
-              three commands.
+              Download a build, or clone the release repository and bring it up with Docker Compose
+              in three commands.
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
               <ButtonLink href="/download">Download CryoZen</ButtonLink>
               <ButtonLink href={quickstartUrl} variant="secondary">
-                Read the quickstart
+                Read the Docker quickstart
               </ButtonLink>
             </div>
             <p className="mt-6 text-xs text-muted">

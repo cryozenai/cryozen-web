@@ -1,3 +1,4 @@
+import { productFacts } from "@/lib/facts";
 import type { Deck } from "./types";
 
 const NB = " ";
@@ -24,7 +25,7 @@ export const enterpriseDeck: Deck = {
       kind: "title",
       id: "title",
       meaning: "preserved · composed",
-      version: "v1.0.0",
+      version: productFacts.version,
       title: "The AI platform for firms that ==can't send data to the cloud.==",
       lede: "Agents, RAG, and model serving that run entirely inside your perimeter. **On-prem. Auditable. Zero data egress.**",
       foot: "seed deck · confidential · 2026",
@@ -326,10 +327,10 @@ export const enterpriseDeck: Deck = {
           items: [
             { value: "6", unit: " wks", label: "solo, to a working product" },
             { value: "266", unit: "K", label: "lines of application code" },
-            { value: "2,826", label: "automated tests passing" },
+            { value: productFacts.testsPassing, label: "automated tests passing" },
             { value: "51 / 94", label: "API modules / services" },
             { value: "15", label: "integrated surfaces" },
-            { value: "v1.0.0", label: "boots today, verified" },
+            { value: productFacts.version, label: "boots today, verified" },
           ],
         },
         {
@@ -523,7 +524,7 @@ export const enterpriseDeck: Deck = {
         },
         {
           kind: "signoff",
-          text: "CryoZen · seed deck · confidential · built on a verified, running v1.0.0",
+          text: `CryoZen · seed deck · confidential · built on a verified, running ${productFacts.version}`,
         },
       ],
     },
