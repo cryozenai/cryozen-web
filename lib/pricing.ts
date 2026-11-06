@@ -63,7 +63,7 @@ export const tiers: Tier[] = [
     tagline: "Restricted networks, procurement, and a support agreement.",
     features: [
       "Everything in Team",
-      "Offline installation support, with known limits until CDN-loaded libraries are bundled",
+      "Offline installation support",
       "Security review support and deployment hardening",
       "Named contact and an agreed response time",
       "Commercial licensing terms",
