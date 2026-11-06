@@ -64,7 +64,7 @@ const guarantees = [
   },
   {
     title: "What can leave your machine",
-    body: "The main ways: prompts go to a hosted model you connect, and mail, calendar, and contacts go to accounts you connect. Web search goes to public search engines, and research fetches pages from the sites that host them. MCP servers, webhooks, and agent shell commands reach whatever you point them at. Models download from their source, including the built-in embedding model on first use. The app also loads some libraries from the jsDelivr CDN, which sees your IP address, until they are bundled in a later release. The privacy policy has the details.",
+    body: "The main ways: prompts go to a hosted model you connect, and mail, calendar, and contacts go to accounts you connect. Web search goes to public search engines, and research fetches pages from the sites that host them. MCP servers, webhooks, and agent shell commands reach whatever you point them at. Models download from their source, including the built-in embedding model on first use. Version 1.2.0 bundles its rendering libraries; 1.1.0 and earlier load some from the jsDelivr CDN, which sees your IP address. The privacy policy has the details.",
   },
 ];
 

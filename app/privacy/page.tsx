@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const UPDATED = "1 November 2026";
+const UPDATED = "6 November 2026";
 
 export default function PrivacyPage() {
   return (
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
             "Agent tools: an MCP server you connect over the network receives the tool calls sent to it, and shell commands an agent runs can reach whatever your machine can.",
             "Webhooks: a webhook you configure receives the events you subscribe it to.",
             "Remote model hosts and downloads: serving a model over SSH sends commands to that host, and downloading a model fetches it from its source, such as Hugging Face or Ollama.",
-            "Rendering libraries: the app's pages load KaTeX and Mermaid from the public jsDelivr CDN on every load, and the in-browser Python runner and emoji images come from the same CDN when used. jsDelivr sees your IP address and browser details, not your conversations. On a host with no internet access these features do not load. Bundling them into the app is planned.",
+            "Rendering libraries: from v1.2.0, math, diagrams, and emoji are bundled with the app, so its pages load nothing from a CDN and render without internet access. Version 1.1.0 and earlier load KaTeX and Mermaid from the public jsDelivr CDN on every load, and the in-browser Python runner and emoji images come from the same CDN when used. jsDelivr sees your IP address and browser details, not your conversations. On a host with no internet access, these features do not load in those versions.",
             "Local embeddings: if no embedding server is configured, the first use of the built-in embedding model downloads it from the internet.",
           ]}
         />
