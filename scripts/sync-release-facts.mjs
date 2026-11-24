@@ -11,14 +11,11 @@ async function fetchText(path) {
   return response.text();
 }
 
-const facts = await fetchText("facts.json");
+const [facts, compose] = await Promise.all([fetchText("facts.json"), fetchText("docker-compose.yml")]);
 JSON.parse(facts);
-await writeFile(new URL("../lib/release-facts.json", import.meta.url), facts);
-console.log("Updated lib/release-facts.json");
-
-const compose = await fetchText("docker-compose.yml");
 if (!/^services:\s*$/m.test(compose)) {
   throw new Error("docker-compose.yml from the release channel has no top-level services key");
 }
+await writeFile(new URL("../lib/release-facts.json", import.meta.url), facts);
 await writeFile(new URL("../lib/release-compose.yml", import.meta.url), compose);
-console.log("Updated lib/release-compose.yml");
+console.log("Updated lib/release-facts.json and lib/release-compose.yml");

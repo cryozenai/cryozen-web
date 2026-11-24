@@ -1317,7 +1317,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     files: ["docs/operations/deployment.md"],
     reason: "Record SESSION_SECRET in the Compose override, since the published Compose file does not forward it from .env.",
     pattern: "Generate a secret and record it in `.env`:",
-    replacement: "Generate a secret and set it as `SESSION_SECRET` in `docker-compose.override.yml`, as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), because the published `docker-compose.yml` does not forward it from `.env`:",
+    replacement: "Generate a secret and, on Docker Compose, set it as `SESSION_SECRET` in `docker-compose.override.yml`, as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), because the published `docker-compose.yml` does not forward it from `.env`:",
   },
   {
     // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.
@@ -1331,7 +1331,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "OAUTH_REDIRECT_BASE_URL=https://your_domain_here",
       "```",
     ].join("\n"),
-    replacement: "Set `OAUTH_REDIRECT_BASE_URL` to your externally reachable origin, such as `https://your_domain_here`, in `docker-compose.override.yml` as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), so the redirect lands back on the application.",
+    replacement: "Set `OAUTH_REDIRECT_BASE_URL` to your externally reachable origin, such as `https://your_domain_here`; on Docker Compose, put it in `docker-compose.override.yml` as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), so the redirect lands back on the application.",
   },
   {
     // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.

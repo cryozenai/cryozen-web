@@ -133,7 +133,7 @@ Once the proxy is in front of the app, change three settings:
   Writes from the app's own pages pass the cross-origin check without it in current browsers. A browser too old to send `Sec-Fetch-Site` is checked by comparing `Origin` with the request's host, so a proxy that rewrites `Host` should also pass `X-Forwarded-Host`, or the origin should be listed here.
 - **`SESSION_SECRET`**: a fixed high-entropy value. Leave it unset and the application generates a new random secret on every boot, which invalidates any OAuth authorization already in flight.
 
-Generate a secret and set it as `SESSION_SECRET` in `docker-compose.override.yml`, as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), because the published `docker-compose.yml` does not forward it from `.env`:
+Generate a secret and, on Docker Compose, set it as `SESSION_SECRET` in `docker-compose.override.yml`, as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), because the published `docker-compose.yml` does not forward it from `.env`:
 
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"
@@ -142,7 +142,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 The stable public origin matters beyond cookies.
 Social sign-in requires you to register an exact redirect URI with each provider, and the application builds that URI from the incoming request, so it has to match what the provider has on file: `https://your_domain_here/api/auth/oauth/callback/google` and the same shape for every other provider.
 OAuth against remote Model Context Protocol (MCP) servers registers a separate redirect URI that defaults to `http://localhost:7000/api/mcp/oauth/callback`, which is wrong for any deployment behind a proxy.
-Set `OAUTH_REDIRECT_BASE_URL` to your externally reachable origin, such as `https://your_domain_here`, in `docker-compose.override.yml` as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), so the redirect lands back on the application.
+Set `OAUTH_REDIRECT_BASE_URL` to your externally reachable origin, such as `https://your_domain_here`; on Docker Compose, put it in `docker-compose.override.yml` as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), so the redirect lands back on the application.
 
 The application sends a Content Security Policy on every response, and it allows scripts only from its own origin and a per-request nonce.
 Do not add a proxy that rewrites or strips those headers, and do not attempt to frame the interface: responses carry `X-Frame-Options: DENY` and `frame-ancestors 'none'`.
