@@ -49,7 +49,7 @@ export default function TourPage() {
           <span className="text-primary">{tourPage.eyebrow}</span>
           verified on {manifest.version}
         </p>
-        <h1 className="mt-5 text-4xl/[1.06] font-semibold tracking-[-0.03em] text-core sm:text-5xl/[1.05] lg:text-6xl/[1.04]">
+        <h1 className="mt-5 text-[clamp(1.75rem,8vw,2.25rem)]/[1.08] font-semibold tracking-[-0.03em] text-core sm:text-5xl/[1.05] lg:text-6xl/[1.04]">
           <span className="block text-balance">{tourPage.title[0]}</span>
           <span className="text-flame block pb-[0.12em] text-balance">{tourPage.title[1]}</span>
         </h1>

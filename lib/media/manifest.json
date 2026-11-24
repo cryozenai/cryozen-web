@@ -5,7 +5,7 @@
     {
       "id": "first-run",
       "title": "Create the admin account on first run",
-      "duration": 15.6,
+      "duration": 14,
       "width": 1280,
       "height": 800,
       "poster": {
@@ -33,7 +33,7 @@
           "label": "Set a password"
         },
         {
-          "at": 6.6,
+          "at": 7.8,
           "label": "Create Admin Account"
         },
         {
@@ -235,7 +235,7 @@
     {
       "id": "calendar",
       "title": "Plan the week in Calendar",
-      "duration": 17.2,
+      "duration": 20.2,
       "width": 1280,
       "height": 800,
       "poster": {
@@ -267,7 +267,7 @@
           "label": "Week view"
         },
         {
-          "at": 7.1,
+          "at": 7,
           "label": "Quick add in plain words"
         },
         {
@@ -275,16 +275,16 @@
           "label": "Review and Create"
         },
         {
-          "at": 14.1,
+          "at": 16.1,
           "label": "On the calendar"
         }
       ],
-      "transcript": "Calendar opens from the sidebar and is dragged to the top edge to fill the screen, then switched to the Week view showing the seeded Northwind meetings. In Quick add, the text Lunch w/ Mira, with the date of Thursday, 12:30pm-1:30pm, Cafe Mango is typed and Enter is pressed. CryoZen turns it into an event form with the title, date, times, and location filled in; the short wait for the model is trimmed. Create adds the event, and it appears on Thursday in the week grid."
+      "transcript": "Calendar opens from the sidebar and is dragged to the top edge to fill the screen, then switched to the Week view showing the seeded Northwind meetings. In Quick add, the text Lunch w/ Mira, with the date of Thursday, 12:30pm-1:30pm, Cafe Mango is typed and Enter is pressed. CryoZen turns it into an event form with the title, date, times, and location filled in; the short wait for the model is trimmed. Create adds the event; the week grid is scrolled down to the afternoon, where it appears on Thursday."
     },
     {
       "id": "compute",
       "title": "See which models fit your hardware",
-      "duration": 15.7,
+      "duration": 17.4,
       "width": 1280,
       "height": 800,
       "poster": {
@@ -308,19 +308,19 @@
           "label": "Open Compute"
         },
         {
-          "at": 2.4,
+          "at": 2.5,
           "label": "Scan / Download reads your hardware"
         },
         {
-          "at": 5.3,
+          "at": 5.4,
           "label": "Edit the hardware profile"
         },
         {
-          "at": 9.2,
+          "at": 9.3,
           "label": "Apply"
         },
         {
-          "at": 12.5,
+          "at": 12.7,
           "label": "Filter by quantization"
         }
       ],
@@ -370,7 +370,7 @@
     {
       "id": "search",
       "title": "Find any conversation with Ctrl+K",
-      "duration": 13.1,
+      "duration": 12.7,
       "width": 1280,
       "height": 800,
       "poster": {
@@ -402,11 +402,11 @@
           "label": "Jump to the chat"
         },
         {
-          "at": 7,
+          "at": 7.1,
           "label": "Search again"
         }
       ],
-      "transcript": "From an empty chat, Ctrl+K opens conversation search. Typing handshake finds the earlier TCP handshake conversation with the match highlighted, and clicking the result opens that chat. Ctrl+K again, typing digest, and clicking the match jumps to the conversation about naming a weekly digest email."
+      "transcript": "From an empty chat, Ctrl+K opens conversation search. Typing handshake finds the earlier TCP handshake conversation with the match highlighted, and clicking the result opens that chat. Ctrl+K again and typing digest lists the matching messages from the conversation about naming a weekly digest email, with the word highlighted."
     }
   ]
 }
