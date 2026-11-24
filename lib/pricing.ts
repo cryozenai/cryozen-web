@@ -10,7 +10,7 @@ import { site } from "@/lib/site";
 export interface Tier {
   id: string;
   name: string;
-  /** e.g. "$12" — null renders as "Pricing on request". */
+  /** e.g. "$12" - null renders as "Pricing on request". */
   price: string | null;
   cadence: string | null;
   tagline: string;
@@ -25,13 +25,14 @@ export const tiers: Tier[] = [
     name: "Personal",
     price: "Free",
     cadence: null,
-    tagline: "One person, one machine, every feature in the application.",
+    tagline: "A self-hosted workspace for one person.",
     features: [
       "Chat, agents, research, and document search",
       "Mail, calendar, contacts, tasks, and automations",
       "Local model backends and your own provider API keys",
-      "Image generation, gallery, and the layer editor",
-      "HTTP API tokens and outbound webhooks",
+      "Image gallery and layer editor",
+      "Scoped bearer tokens for the /api/v1 HTTP API, the CryoZen CLI, and signed outbound webhooks",
+      "Agent token setup in Settings for Claude and Codex. Use the HTTP API to create other scoped tokens and configure outbound webhooks.",
       "Community support through GitHub issues",
     ],
     cta: { label: "Download CryoZen", href: "/download" },
@@ -44,8 +45,9 @@ export const tiers: Tier[] = [
     tagline: "One shared instance behind your own reverse proxy.",
     features: [
       "Everything in Personal",
-      "Per-user accounts; isolation between users has open bugs being fixed, so share only with people you trust",
-      "Administrator controls for models and integrations; tool switches have open bugs being fixed",
+      "Per-user accounts with owner-scoped data for mail, calendars, notes, and other supported features",
+      "Shared, admin-managed contacts, global model and search credentials, and compute serving",
+      "Multi-user isolation is still being hardened, so share an instance only with people you trust",
       "Deployment guidance for servers, GPUs, and proxies",
       "Priority issue triage",
     ],
@@ -84,12 +86,12 @@ export const faq = [
   {
     question: "Do I pay per model call?",
     answer:
-      "Not to us. CryoZen talks to model backends you choose. Local backends cost you nothing but electricity, and hosted providers bill you directly on your own API keys.",
+      "Not to us. CryoZen talks to model backends you choose. Local backends run on your hardware. Hosted providers bill you directly when you use your own API keys.",
   },
   {
     question: "Where is my data stored?",
     answer:
-      "On the machine running CryoZen. The server binds to 127.0.0.1 by default, credentials are encrypted at rest, and the application sends no telemetry.",
+      "On the machine running CryoZen. The server binds to 127.0.0.1 by default and sends no telemetry. Stored provider keys, mail passwords, and linked-account tokens are encrypted. CardDAV contact credentials are stored in plain text. Features that use remote providers send the data needed for that request.",
   },
   {
     question: "What happens if I stop paying?",

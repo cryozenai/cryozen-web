@@ -72,11 +72,16 @@ test("release metadata is fetched from the public cryozen-releases repo API", as
   });
 });
 
-test("docs and support links land in the public channel, never the private repo", () => {
+test("docs and support links stay on-site or land in the public channel, never the private repo", () => {
   const urls = [site.docsUrl, site.quickstartUrl, site.configDocsUrl, site.issuesUrl];
   for (const url of urls) {
-    assert.ok(url.startsWith(PUBLIC_REPO), `leaves the public channel: ${url}`);
+    const internal = url.startsWith("/");
+    assert.ok(internal || url.startsWith(PUBLIC_REPO), `leaves the public channel: ${url}`);
   }
+  assert.ok(
+    site.issuesUrl.startsWith(PUBLIC_REPO),
+    `issuesUrl leaves the public channel: ${site.issuesUrl}`,
+  );
   for (const item of site.nav) {
     const external = item.href.startsWith("http");
     assert.ok(!external || item.href.startsWith(PUBLIC_REPO), `nav leaks: ${item.href}`);

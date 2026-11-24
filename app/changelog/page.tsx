@@ -12,7 +12,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "Changelog",
   description: "Every CryoZen release, straight from GitHub Releases.",
-  alternates: { canonical: "/changelog" },
+  alternates: { canonical: "/changelog", types: { "application/atom+xml": "/changelog/feed.xml" } },
 };
 
 /*
@@ -96,7 +96,7 @@ export default async function ChangelogPage() {
       ) : (
         <div className="mx-auto mt-14 max-w-3xl space-y-4">
           {releases.map((release) => (
-            <Card key={release.tag} className="p-7 sm:p-9">
+            <Card key={release.tag} id={release.tag} className="p-7 sm:p-9">
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="font-mono text-lg font-semibold text-core">{release.tag}</h2>
                 {release.prerelease ? (

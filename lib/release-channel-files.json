@@ -1,0 +1,9 @@
+[
+  ".env.example",
+  ".gitignore",
+  "README.md",
+  "config/searxng/settings.yml",
+  "docker-compose.yml",
+  "facts.json",
+  "licenses/odysseus-MIT-LICENSE.txt"
+]
