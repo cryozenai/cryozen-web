@@ -218,10 +218,10 @@
         },
         {
           "at": 20.7,
-          "label": "Preview or restore"
+          "label": "Older versions"
         }
       ],
-      "transcript": "Library opens from the sidebar, the Release notes 1.4 draft document is expanded, and Open docks the document editor beside the chat. The request Add an Upgrade notes section at the end: back up the database, run the migration, then restart the service, with a one-line reply, is sent; with a document open the chat runs in Agent mode, and the model writes the new section into the document, which is accepted if it is offered for review. The model wait is trimmed. The version badge now shows a new version, and the version history panel lists the latest version and v1 with their line differences and a Restore button."
+      "transcript": "Library opens from the sidebar, the Release notes 1.4 draft document is expanded, and Open docks the document editor beside the chat. The request Add an Upgrade notes section at the end: back up the database, run the migration, then restart the service, with a one-line reply, is sent; with a document open the chat runs in Agent mode, and the model writes the new section into the document, which is accepted if it is offered for review. The model wait is trimmed. The version badge now shows a new version, and the version history panel lists v2 and v1 with their line differences; the pointer moves over v1 and a Restore button, which would bring an older version back as a new version, without clicking."
     },
     {
       "id": "memory",
