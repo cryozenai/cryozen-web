@@ -21,7 +21,7 @@ import {
   closing,
   featurePage,
   hero,
-  heroSlots,
+  heroSurfaces,
   inside,
   ledgerKey,
   privacy,
@@ -30,7 +30,7 @@ import {
   tourPage,
   tourTeaser,
 } from "@/lib/home/copy";
-import { egressLedger, firstCapture, tour, tourChapters } from "@/lib/home/derive";
+import { egressLedger, tour, tourChapters } from "@/lib/home/derive";
 import { getCapture } from "@/lib/media/index";
 import type { PlatformId } from "@/lib/platforms";
 import { getSurface, surfaces } from "@/lib/product/surfaces";
@@ -54,12 +54,12 @@ const twoDigits = (value: number) => String(value).padStart(2, "0");
 /* ---------------------------------- hero --------------------------------- */
 
 export function Hero({ releaseTag, download }: { releaseTag: string | null; download: DownloadProps }) {
-  const items: SwitcherItem[] = heroSlots.map((slot) => {
-    const surface = getSurface(slot.surface);
+  const items: SwitcherItem[] = heroSurfaces.map((id) => {
+    const surface = getSurface(id);
     return {
       id: surface.id,
       tab: surface.name,
-      capture: firstCapture(slot.captures),
+      capture: getCapture(surface.capture),
       heading: surface.tagline,
       // The hero shows only how far data goes; the full detail is one click
       // away on the tour and the feature page, and would crowd the fold here.

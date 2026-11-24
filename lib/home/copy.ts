@@ -21,20 +21,15 @@ export const hero = {
   switcherLabel: "Product surfaces",
 } as const;
 
-export interface HeroSlot {
-  surface: SurfaceId;
-  /** Recordings for this slot, preferred first. With none on disk it shows a static frame. */
-  captures: readonly string[];
-}
-
-export const heroSlots: readonly HeroSlot[] = [
+/** The hero's tabs, in order. Each plays its own surface's recording. */
+export const heroSurfaces: readonly SurfaceId[] = [
   // Only recordings that passed independent video QA for v1.2.0. Research and
   // agents return here once their re-records pass (see the capture README).
-  { surface: "chat", captures: ["chat"] },
-  { surface: "websearch", captures: ["websearch"] },
-  { surface: "documents", captures: ["documents"] },
-  { surface: "mail", captures: ["mail"] },
-  { surface: "compute", captures: ["compute"] },
+  "chat",
+  "websearch",
+  "documents",
+  "mail",
+  "compute",
 ];
 
 /* ---------------------------------- start -------------------------------- */

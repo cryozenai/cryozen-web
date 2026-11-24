@@ -7,8 +7,6 @@
  * is handed, so `scripts/home.test.mjs` checks it against worked examples
  * rather than against the live content.
  */
-import { getCapture } from "@/lib/media/index";
-import type { Capture } from "@/lib/media/types";
 import { surfaces } from "@/lib/product/surfaces";
 import { groupLabels } from "@/lib/product/types";
 import type { PrivacyReach, Surface, SurfaceGroup } from "@/lib/product/types";
@@ -102,22 +100,6 @@ export function egressLedger<S extends { privacy: { leaves: PrivacyReach } }>(
     reach,
     surfaces: all.filter((surface) => surface.privacy.leaves === reach),
   }));
-}
-
-/**
- * The first of `ids` that has a recording, or null. A slot lists the take it
- * wants and what may stand in for it, so a page gains the preferred recording
- * the moment its files land and never needs a code change to do so.
- */
-export function firstCapture(
-  ids: readonly string[],
-  lookup: (id: string) => Capture | null = getCapture,
-): Capture | null {
-  for (const id of ids) {
-    const capture = lookup(id);
-    if (capture !== null) return capture;
-  }
-  return null;
 }
 
 /**

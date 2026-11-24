@@ -163,7 +163,7 @@ To add, remove, or correct a product claim, edit the surface and update the orac
 Recordings are real captures of the pinned release, produced in the product repository by `scripts/marketing-captures`.
 Each one is five files in `public/media/<version>/` (`.webm`, `.mp4`, `.avif`, `.webp`, `.vtt`) and one entry in `lib/media/manifest.json`.
 A surface plays the recording whose id is the surface id, and a page shows a static frame for any recording that is not there, so adding or replacing a recording is a file copy and a manifest entry with no code change.
-`heroSlots` and `chapters` in `lib/home/copy.ts` list, for each frame on the home page, the recordings it may show in order of preference.
+`chapters` in `lib/home/copy.ts` lists, for each kind of work on the home page, the recordings its frame may show in order of preference; each hero tab plays its own surface's recording.
 A recording whose waiting time was sped up carries `realDuration` in the manifest, and every player prints "Shortened: real run ..." beside it.
 `npm test` fails if the manifest names a file that is not on disk.
 

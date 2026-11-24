@@ -29,7 +29,6 @@ registerHooks({
 
 const {
   egressLedger,
-  firstCapture,
   groupOrder,
   publicSurface,
   relatedSurfaces,
@@ -155,15 +154,6 @@ test("egressLedger files every surface under its reach, narrowest first", () => 
   );
 });
 
-test("firstCapture takes the preferred recording, then the stand-in, then nothing", () => {
-  const recorded = { coderun: { id: "coderun" }, mail: { id: "mail" } };
-  const lookup = (id) => recorded[id] ?? null;
-  assert.equal(firstCapture(["chat", "coderun"], lookup).id, "coderun", "falls back while chat is missing");
-  assert.equal(firstCapture(["mail", "coderun"], lookup).id, "mail", "the preferred take wins once it exists");
-  assert.equal(firstCapture(["agents"], lookup), null);
-  assert.equal(firstCapture([], lookup), null);
-});
-
 test("publicSurface drops the private evidence paths and nothing else", () => {
   const surface = findSurface("chat");
   assert.ok(surface.evidence.length > 0, "the fixture has evidence to drop");
@@ -206,16 +196,14 @@ test("every kind of work has a home chapter, and the copy names only real surfac
       assert.equal(shown.group, group.group, `${group.group}: its frame shows ${frame.surface}`);
     }
   }
-  for (const slot of copy.heroSlots) assert.ok(findSurface(slot.surface), slot.surface);
+  for (const id of copy.heroSurfaces) assert.ok(findSurface(id), id);
   assert.ok(findSurface(copy.tourTeaser.surface));
   for (const id of Object.keys(copy.extraCaptures)) assert.ok(findSurface(id), id);
 });
 
-test("a hero tab plays only its own surface's recording, so its reach line describes what is shown", () => {
-  for (const slot of copy.heroSlots) {
-    const own = findSurface(slot.surface).capture;
-    assert.notEqual(own, null, `${slot.surface}: a hero tab needs a shipped recording`);
-    for (const capture of slot.captures) assert.equal(capture, own, `${slot.surface} plays ${capture}`);
+test("every hero tab is a surface whose recording ships", () => {
+  for (const id of copy.heroSurfaces) {
+    assert.notEqual(findSurface(id).capture, null, `${id}: a hero tab needs a shipped recording`);
   }
 });
 
