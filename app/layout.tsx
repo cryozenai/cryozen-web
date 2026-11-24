@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     "private AI assistant",
     "Ollama",
     "AI agents",
-    "document search",
+    "deep research",
     "CryoZen",
   ],
   openGraph: {

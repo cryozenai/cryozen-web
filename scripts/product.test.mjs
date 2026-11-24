@@ -55,7 +55,6 @@ const CLAIMABLE = [
   "research",
   "websearch",
   "documents",
-  "knowledge",
   "memory",
   "notes",
   "mail",
@@ -101,9 +100,11 @@ const NOT_CLAIMABLE = [
       /text[- ]to[- ]image|\bimage generation\b|\bgenerat\w+ (an? |new |your )?(image|picture|photo|artwork)s?\b/i,
   },
   {
-    claim: "Office or EPUB indexing",
-    only: ["knowledge"],
-    pattern: /\b(office|epub|word|docx?|powerpoint|pptx?|excel|xlsx?|spreadsheets?)\b/i,
+    // Chat retrieval over an index of the user's files cannot be switched on
+    // from the v1.2.0 UI, so the surface was withdrawn and nothing may claim it.
+    claim: "answers from an index of your own files",
+    pattern:
+      /\bRAG\b|\bretriev\w+|\bvector (store|index|search)\b|\bindex(es|ed|ing)? (your|their|the) (own )?(files?|documents?|folders?)\b|\b(answers?|ask\w*|search\w*|chat\w*)\b[^.]*\b(from|over|across|with) your (own )?(files|documents)\b/i,
   },
   {
     claim: "linked-account mirrors in Mail or Calendar",
@@ -250,13 +251,29 @@ test("no surface claims a capability v1.2.0 does not ship", () => {
   assert.deepEqual(surfaces.flatMap(overclaims), []);
 });
 
+test("no surface says webhooks or contacts belong to one account", () => {
+  // Both are instance-wide and admin-managed in v1.2.0; the release notes say otherwise and are wrong.
+  for (const id of ["api", "calendar"]) {
+    const { teams } = getSurface(id);
+    assert.match(teams, /shared across the instance/, id);
+  }
+  assert.doesNotMatch(getSurface("api").teams, /belong to the account/);
+});
+
 test("the overclaim check catches each kind of false claim", () => {
   const base = getSurface("agents");
   const withSummary = (id, summary) => ({ ...getSurface(id), summary });
   const cases = [
     [withSummary("chat", "Dictate a message with your voice."), "voice input or read-aloud"],
     [withSummary("images", "Generate images from a text prompt."), "a text-to-image generation UI"],
-    [withSummary("knowledge", "Index PDFs and Word files."), "Office or EPUB indexing"],
+    [
+      withSummary("chat", "Turn on RAG and get answers from your documents."),
+      "answers from an index of your own files",
+    ],
+    [
+      withSummary("memory", "It retrieves passages from a local vector store."),
+      "answers from an index of your own files",
+    ],
     [withSummary("mail", "See your Gmail inbox beside your chat."), "linked-account mirrors"],
     [
       { ...base, summary: "It asks for your approval before every tool call." },
