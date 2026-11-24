@@ -2,8 +2,8 @@
 // Syncs user-facing documentation from a pinned CryoZen product repo ref into
 // content/docs/*.md, rewriting links, pruning unsynced index sections, applying
 // explicit transforms for banned terms and private-repo-only blocks, and failing
-// if any banned term, private source-repo URL, or `docker compose ... --build`
-// command survives.
+// if any transform matches nothing in its file, or if any banned term, private
+// source-repo URL, or `docker compose ... --build` command survives.
 //
 // Usage:
 //   PRODUCT_REPO=/path/to/cryozen node scripts/sync-docs.mjs [--ref v1.2.0]
@@ -52,10 +52,11 @@ function buildPrivateRepoUrlRegex(sourceRepo) {
 
 function buildSourceRepoRegex(sourceRepo) {
   // Match github.com/<owner>/<repo> anywhere (including inside code blocks),
-  // without false-matching sibling repos such as <repo>-releases or <repo>-web.
+  // without false-matching sibling repos such as <repo>-releases or <repo>-web,
+  // and including a sentence-final URL whose trailing `.` is punctuation.
   const escaped = escapeRegExp(sourceRepo);
   return new RegExp(
-    `github\\.com/${escaped}(?:\\.git)?(?=$|[^A-Za-z0-9_.-])`,
+    `github\\.com/${escaped}(?:\\.git)?(?=$|[^A-Za-z0-9_.-]|\\.(?![A-Za-z0-9_-]))`,
     "i",
   );
 }
@@ -822,6 +823,149 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "Internal lifecycle and release-verification scripts under `scripts/` (`scripts/cryozen_ops.py` and `scripts/cryozen_release_verify.py`) apply only to source builds, which are not public; for public container deployments, pull the published image from [/download#docker](/download#docker).",
     ].join("\n"),
   },
+  {
+    // The index map points at the deployment guide, whose only public path is Docker Compose.
+    id: "readme-start-here-deployment-public",
+    files: ["docs/README.md"],
+    reason: "Describe the deployment guide by its public Docker Compose path instead of source-only launchers and systemd.",
+    pattern:
+      "- [Deployment guide](operations/deployment.md): choose between Docker Compose, the native launchers, and systemd, and put an instance behind a reverse proxy.",
+    replacement:
+      "- [Deployment guide](operations/deployment.md): deploy the published image with Docker Compose, and put an instance behind a reverse proxy.",
+  },
+  {
+    // Only the Compose path is public; desktop packages cover the workstation case.
+    id: "deployment-intro-public-path",
+    files: ["docs/operations/deployment.md"],
+    reason: "Introduce the page by its public Docker Compose path instead of three paths, two of which need a source checkout.",
+    pattern: [
+      "This page covers running CryoZen on a machine you intend to keep running: which of the three deployment paths to pick, the exact commands each one takes, and what to configure before the instance is reachable by anything other than your own browser.",
+      "It is written for whoever operates the box.",
+      "Every path binds to `127.0.0.1` by default,",
+    ].join("\n"),
+    replacement: [
+      "This page covers running CryoZen on a machine you intend to keep running: the public Docker Compose path, the exact commands it takes, and what to configure before the instance is reachable by anything other than your own browser.",
+      "It is written for whoever operates the box.",
+      "The Compose stack binds to `127.0.0.1` by default,",
+    ].join("\n"),
+  },
+  {
+    // The path table recommends the native launcher and systemd, which only exist in the source checkout.
+    id: "deployment-choosing-path-public",
+    files: ["docs/operations/deployment.md"],
+    reason: "Replace the three-path table with the public Compose path, the desktop packages, and a source-checkout note.",
+    pattern: [
+      "Three paths ship in the repository, and they differ in what they bring with them rather than in what the application can do:",
+      "",
+      "| Path | What it is for | Bundled services | Default URL |",
+      "| --- | --- | --- | --- |",
+      "| Docker Compose | A server that should come back up on its own, with search and the vector store included. | CryoZen, ChromaDB, SearXNG, ntfy | `http://127.0.0.1:7000` |",
+      "| Native launcher | A workstation, and any machine whose GPU must be visible to the model server. | CryoZen only | `http://127.0.0.1:7000` on Linux and Windows, `http://127.0.0.1:7860` on macOS |",
+      "| systemd service | A Linux host where CryoZen should start at boot without Docker. | CryoZen only | `http://127.0.0.1:7000` |",
+      "",
+      "Pick Docker Compose unless something rules it out.",
+      "Pick a native launcher on macOS, because Docker Desktop runs a Linux virtual machine with no access to the Metal GPU, and the built-in model server needs that GPU to serve local models.",
+      "Pick systemd when you want the native runtime and a supervised process, and you are willing to run ChromaDB yourself or do without the vector store.",
+    ].join("\n"),
+    replacement: [
+      "Docker Compose is the public deployment path for a server that should come back up on its own: it pulls the published `ghcr.io/cryozenai/cryozen` image, runs CryoZen with ChromaDB, SearXNG, and ntfy, and serves `http://127.0.0.1:7000`.",
+      "On macOS, Docker Desktop runs a Linux virtual machine with no access to the Metal GPU, so the built-in model server cannot serve local models from the Compose stack there.",
+      "For a single workstation, download a desktop package on [the download page](/download); it bundles Python and its dependencies but not ChromaDB or SearXNG.",
+      "The native launcher and systemd paths require a source checkout, which is not public.",
+    ].join("\n"),
+  },
+  {
+    // Hardening advice for the launcher and systemd unit only applies to a source checkout.
+    id: "deployment-harden-bind-compose-only",
+    files: ["docs/operations/deployment.md"],
+    reason: "Keep the bind-address hardening advice to the public Compose path.",
+    pattern: [
+      "Every launcher, the Compose port mapping, and the systemd unit bind to `127.0.0.1`, and that is the correct default.",
+      "To reach the instance from another device, do not change the bind address.",
+      "Put a reverse proxy or a private network in front of it and leave the application on loopback.",
+      "",
+      "If you accept the risk and want the application itself on a LAN interface, set `APP_BIND=0.0.0.0` in `.env` for the Compose and launcher paths, or `--host 0.0.0.0` in the systemd unit.",
+    ].join("\n"),
+    replacement: [
+      "The Compose port mapping binds to `127.0.0.1`, and that is the correct default.",
+      "To reach the instance from another device, do not change the bind address.",
+      "Put a reverse proxy or a private network in front of it and leave the application on loopback.",
+      "",
+      "If you accept the risk and want the application itself on a LAN interface, set `APP_BIND=0.0.0.0` in `.env`.",
+    ].join("\n"),
+  },
+  {
+    // Launcher terminals and the cryozen-ui systemd unit only exist on a source checkout.
+    id: "troubleshooting-logs-native-systemd-source-only",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Replace native launcher and systemd log locations with a source-checkout note.",
+    pattern: [
+      "- **Native launcher**: the terminal running `start.sh`, `start-linux.sh`, `start-macos.sh`, or `launch-windows.ps1`. Nothing is written to disk, so keep the window open while you reproduce a problem.",
+      "- **systemd**: `journalctl -u cryozen-ui -f`.",
+    ].join("\n"),
+    replacement:
+      "- **Native launcher and systemd**: both paths require a source checkout, which is not public.",
+  },
+  {
+    // The port probe and CRYOZEN_PORT override belong to the source-checkout launcher scripts.
+    id: "troubleshooting-port-in-use-source-only",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Replace the source-only launcher port-conflict section with a source-checkout note.",
+    pattern: [
+      "Something is already listening on the port the launcher wants, most often a previous run you did not stop.",
+      "The launchers probe the port before doing any work and refuse to start, rather than letting a second process attach to the same database.",
+      "",
+      "Find the listener and decide whether to stop it:",
+      "",
+      "```bash",
+      "lsof -nP -iTCP:7000 -sTCP:LISTEN",
+      "```",
+      "",
+      "On macOS, port 7000 is usually held by the AirPlay Receiver, which is why `start-macos.sh` defaults to 7860 instead.",
+      "Turn AirPlay Receiver off in System Settings, or leave it alone and use the default.",
+      "",
+      "Run on a different port without editing anything:",
+      "",
+      "```bash",
+      "CRYOZEN_PORT=7900 ./start-macos.sh",
+      "```",
+      "",
+      "To make the change permanent, set `APP_PORT` in `.env`, which every launcher and the Compose file read.",
+    ].join("\n"),
+    replacement:
+      "The launcher scripts that print this message require a source checkout, which is not public.",
+  },
+  {
+    // A user-managed virtual environment only exists on a source checkout.
+    id: "troubleshooting-chromadb-client-source-only",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Replace the virtual-environment pip install for chromadb-client with a source-checkout note.",
+    pattern:
+      "If the message is `ChromaDB integration is not installed`, the Python package is missing from the environment, and `pip install chromadb-client` inside your virtual environment resolves it.",
+    replacement:
+      "If the message is `ChromaDB integration is not installed`, the Python package is missing from the environment, and installing it requires a source checkout, which is not public.",
+  },
+  {
+    // requirements-optional.txt and a user-managed virtual environment only exist on a source checkout.
+    id: "troubleshooting-optional-deps-source-only",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Replace the virtual-environment pip install of requirements-optional.txt with a source-checkout note.",
+    pattern: [
+      "The optional dependency set lives in `requirements-optional.txt`, and each entry records the feature it unlocks.",
+      "Install the whole set inside your virtual environment with `pip install -r requirements-optional.txt`, and note that it includes PyMuPDF, which is licensed under the AGPL and carries obligations for a network-served application.",
+    ].join("\n"),
+    replacement:
+      "Installing the optional dependency set from `requirements-optional.txt` requires a source checkout, which is not public.",
+  },
+  {
+    // Support issues land in the public release channel (lib/site.ts issuesUrl).
+    id: "troubleshooting-issue-public-channel",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Point the support-issue sentence at the public release channel issues instead of the private repository.",
+    pattern: "Then open an issue at [the repository](https://github.com/cryozenai/cryozen).",
+    replacement:
+      "Then open an issue at [the public release channel](https://github.com/cryozenai/cryozen-releases/issues).",
+  },
 ];
 
 export const DEFAULT_TRANSFORMS = [...BANNED_TRANSFORMS, ...PUBLIC_INSTALL_TRANSFORMS];
@@ -995,21 +1139,17 @@ function rewriteLinks(markdown, sourcePath, sourceRepo = DEFAULT_SOURCE_REPO) {
 function applyTransforms(markdown, sourcePath, transforms) {
   let result = markdown;
   const applied = [];
+  const missed = [];
   for (const rule of transforms) {
-    if (rule.files !== "*" && !rule.files.includes(sourcePath)) continue;
-    if (typeof rule.pattern === "string") {
-      if (result.includes(rule.pattern)) {
-        result = result.replaceAll(rule.pattern, rule.replacement);
-        applied.push({ id: rule.id, file: sourcePath, reason: rule.reason });
-      }
-    } else if (rule.pattern instanceof RegExp) {
-      if (rule.pattern.test(result)) {
-        result = result.replace(rule.pattern, rule.replacement);
-        applied.push({ id: rule.id, file: sourcePath, reason: rule.reason });
-      }
+    if (!rule.files.includes(sourcePath)) continue;
+    if (result.includes(rule.pattern)) {
+      result = result.replaceAll(rule.pattern, rule.replacement);
+      applied.push({ id: rule.id, file: sourcePath, reason: rule.reason });
+    } else {
+      missed.push({ id: rule.id, file: sourcePath, reason: rule.reason });
     }
   }
-  return { markdown: result, applied };
+  return { markdown: result, applied, missed };
 }
 
 function findBannedMatches(text, bannedTerms) {
@@ -1101,6 +1241,12 @@ export function syncDocs({
     }
 
     const transformed = applyTransforms(body, entry.source, transforms);
+    if (transformed.missed.length > 0) {
+      const detail = transformed.missed
+        .map((miss) => `${miss.file}: [${miss.id}] matched nothing: ${miss.reason}`)
+        .join("\n");
+      throw new Error(`Transform check failed (source text changed at ${ref}?):\n${detail}`);
+    }
     body = transformed.markdown;
     appliedTransforms.push(...transformed.applied);
 
@@ -1162,9 +1308,8 @@ export function syncDocs({
 function parseArgs(argv) {
   const options = {
     productRepo: process.env.PRODUCT_REPO || "",
-    ref: process.env.PRODUCT_REF || DEFAULT_REF,
+    ref: DEFAULT_REF,
     outDir: DEFAULT_OUT_DIR,
-    factsPath: DEFAULT_FACTS_PATH,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -1174,8 +1319,6 @@ function parseArgs(argv) {
       options.ref = argv[++i];
     } else if (arg === "--out" && argv[i + 1]) {
       options.outDir = argv[++i];
-    } else if (arg === "--facts" && argv[i + 1]) {
-      options.factsPath = argv[++i];
     } else {
       throw new Error(`Unknown or incomplete argument: ${arg}`);
     }

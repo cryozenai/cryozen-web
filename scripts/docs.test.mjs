@@ -14,7 +14,14 @@ import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+import { extractLeadParagraph, extractToc, remarkHeadingIds } from "../lib/docs/slugger.ts";
 import {
+  DEFAULT_TRANSFORMS,
   DOC_ALLOWLIST,
   findDockerComposeBuildMatches,
   findSourceRepoMatches,
@@ -64,7 +71,7 @@ function createFixtureGitRepo(filesByPath, tag = "v9.9.9") {
   return { repoDir, commit };
 }
 
-function baseFixtureFiles(overrides = {}) {
+function baseFixtureFiles(overrides = {}, { omitTransform } = {}) {
   const defaults = {
     "docs/README.md": [
       "# CryoZen documentation",
@@ -122,7 +129,20 @@ function baseFixtureFiles(overrides = {}) {
       "",
     ].join("\n"),
   };
-  return { ...defaults, ...overrides };
+  const files = { ...defaults, ...overrides };
+  // Each transform must match its file, so the fixture carries every pattern
+  // in a section of its own after the file's test-specific content.
+  const patternsByFile = new Map();
+  for (const rule of DEFAULT_TRANSFORMS) {
+    if (rule.id === omitTransform) continue;
+    for (const file of rule.files) {
+      patternsByFile.set(file, [...(patternsByFile.get(file) ?? []), rule.pattern]);
+    }
+  }
+  for (const [file, patterns] of patternsByFile) {
+    files[file] = `${files[file]}\n## Transform fixtures\n\n${patterns.join("\n\n")}\n`;
+  }
+  return files;
 }
 
 function listMarkdownFiles(dir) {
@@ -138,47 +158,18 @@ function listMarkdownFiles(dir) {
   return results;
 }
 
-function slugifyHeading(text) {
-  return text
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, "")
-    .replace(/\s+/g, "-");
-}
+const HTML_ENTITIES = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#x27;": "'" };
 
-function headingIdsInMarkdown(body) {
-  const counts = new Map();
-  const ids = new Set();
-  let inFence = false;
-  let fenceChar = "";
-
-  for (const line of body.split(/\r?\n/)) {
-    const fence = /^\s*(`{3,}|~{3,})/.exec(line);
-    if (fence) {
-      const ch = fence[1][0];
-      if (!inFence) {
-        inFence = true;
-        fenceChar = ch;
-      } else if (ch === fenceChar) {
-        inFence = false;
-        fenceChar = "";
-      }
-      continue;
-    }
-    if (inFence) continue;
-    const match = /^#{1,6}\s+(.+?)\s*$/.exec(line);
-    if (!match) continue;
-    const plain = match[1]
-      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-      .replace(/`([^`]*)`/g, "$1")
-      .replace(/(\*\*|__|\*|_|~~)/g, "")
-      .trim();
-    const base = slugifyHeading(plain) || "section";
-    const seen = counts.get(base) ?? 0;
-    counts.set(base, seen + 1);
-    ids.add(seen === 0 ? base : `${base}-${seen}`);
-  }
-  return ids;
+/** Headings as react-markdown renders them with the plugins DocsMarkdown uses. */
+function renderedHeadings(body) {
+  const html = renderToStaticMarkup(
+    createElement(Markdown, { remarkPlugins: [remarkGfm, remarkHeadingIds] }, body),
+  );
+  return [...html.matchAll(/<h([1-6]) id="([^"]*)">([\s\S]*?)<\/h\1>/g)].map((match) => ({
+    level: Number(match[1]),
+    id: match[2],
+    text: match[3].replace(/<[^>]+>/g, "").replace(/&(?:amp|lt|gt|quot|#x27);/g, (e) => HTML_ENTITIES[e]),
+  }));
 }
 
 test("sync-docs rewrites links, prunes unsynced index sections, unlinks private targets, and reports transforms", () => {
@@ -192,6 +183,7 @@ test("sync-docs rewrites links, prunes unsynced index sections, unlinks private 
   );
 
   assert.match(stdout, /Synced 10 docs from v9\.9\.9/);
+  assert.match(stdout, new RegExp(`Applied transforms \\(${DEFAULT_TRANSFORMS.length}\\):`));
   assert.match(stdout, /upgrading-old-ghcr-image/);
   assert.match(stdout, /readme-upgrading-previous-name/);
   assert.match(stdout, /private-repo-url/);
@@ -214,7 +206,11 @@ test("sync-docs rewrites links, prunes unsynced index sections, unlinks private 
   );
 
   const troubleshootingMd = readFileSync(join(outDir, "operations", "troubleshooting.md"), "utf8");
-  assert.ok(!troubleshootingMd.includes("github.com/cryozenai/cryozen"));
+  assert.deepEqual(findSourceRepoMatches(troubleshootingMd, "cryozenai/cryozen"), []);
+  assert.match(
+    troubleshootingMd,
+    /open an issue at \[the public release channel\]\(https:\/\/github\.com\/cryozenai\/cryozen-releases\/issues\)/,
+  );
   assert.match(troubleshootingMd, /File an issue in the private repo or/);
   assert.match(troubleshootingMd, /see the file\./);
 
@@ -383,9 +379,16 @@ test("published content/docs links resolve to synced docs and never link to gith
       `${filePath} must not pass --build to docker compose`,
     );
 
-    const body = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+    // The page renders the body without its leading H1 (lib/docs/index.ts).
+    const body = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").replace(/^#\s+.+?\r?\n+/, "");
     const route = entry.slug === "" ? "/docs" : `/docs/${entry.slug}`;
-    headingsByRoute.set(route, headingIdsInMarkdown(body));
+    const headings = renderedHeadings(body);
+    headingsByRoute.set(route, new Set(headings.map((heading) => heading.id)));
+    assert.deepEqual(
+      extractToc(body),
+      headings.filter((heading) => heading.level === 2 || heading.level === 3),
+      `${filePath} table of contents must match the rendered h2 and h3 headings`,
+    );
   }
 
   const deploymentMd = readFileSync(join(CONTENT_DOCS_DIR, "operations", "deployment.md"), "utf8");
@@ -429,4 +432,87 @@ test("published content/docs links resolve to synced docs and never link to gith
       }
     }
   }
+});
+
+test("sync-docs fails loudly when a transform matches nothing in its file", () => {
+  const { repoDir } = createFixtureGitRepo(
+    baseFixtureFiles({}, { omitTransform: "troubleshooting-port-in-use-source-only" }),
+    "v9.9.9",
+  );
+  const outDir = makeTempDir("cryozen-docs-fail-transform-miss-");
+
+  assert.throws(
+    () =>
+      syncDocs({
+        productRepo: repoDir,
+        ref: "v9.9.9",
+        outDir,
+        factsPath: FACTS_PATH,
+      }),
+    /Transform check failed[\s\S]*docs\/operations\/troubleshooting\.md: \[troubleshooting-port-in-use-source-only\] matched nothing/,
+  );
+  assert.equal(existsSync(join(outDir, "index.md")), false, "failed sync must not write partial output");
+});
+
+test("sync-docs fails loudly on a sentence-final bare private repo URL", () => {
+  const { repoDir } = createFixtureGitRepo(
+    baseFixtureFiles({
+      "docs/guides/api-access.md": "# API access\n\nThe code lives at https://github.com/cryozenai/cryozen.\n",
+    }),
+    "v9.9.9",
+  );
+  const outDir = makeTempDir("cryozen-docs-fail-bare-url-");
+
+  assert.throws(
+    () =>
+      syncDocs({
+        productRepo: repoDir,
+        ref: "v9.9.9",
+        outDir,
+        factsPath: FACTS_PATH,
+      }),
+    /Private source repo check failed[\s\S]*docs\/guides\/api-access\.md:\d+ matched private source repo[^\n]*The code lives at/,
+  );
+  assert.equal(existsSync(join(outDir, "index.md")), false, "failed sync must not write partial output");
+});
+
+test("findSourceRepoMatches matches the private repo but not sibling repos", () => {
+  const repo = "cryozenai/cryozen";
+  for (const text of [
+    "see https://github.com/cryozenai/cryozen.",
+    "git clone https://github.com/cryozenai/cryozen.git",
+    "git clone https://github.com/cryozenai/cryozen.git.",
+    "<https://github.com/cryozenai/cryozen>",
+    "https://github.com/cryozenai/cryozen/issues",
+  ]) {
+    assert.equal(findSourceRepoMatches(text, repo).length, 1, `expected a match in ${JSON.stringify(text)}`);
+  }
+  for (const text of [
+    "https://github.com/cryozenai/cryozen-releases.",
+    "https://github.com/cryozenai/cryozen.web",
+    "https://github.com/cryozenai/cryozen_web",
+  ]) {
+    assert.deepEqual(findSourceRepoMatches(text, repo), [], `expected no match in ${JSON.stringify(text)}`);
+  }
+});
+
+test("docs table of contents and lead text keep intraword underscores", () => {
+  const body = [
+    "Read `.env` with `load_dotenv(encoding=\"utf-8-sig\")` from the CRYOZEN_DATA_DIR root.",
+    "",
+    "## SESSION_SECRET",
+    "",
+    "## Why *emphasis* and `code_span`",
+    "",
+  ].join("\n");
+
+  assert.equal(
+    extractLeadParagraph(body),
+    'Read .env with load_dotenv(encoding="utf-8-sig") from the CRYOZEN_DATA_DIR root.',
+  );
+  // GitHub anchors keep `_`, so `## SESSION_SECRET` links as #session_secret.
+  assert.deepEqual(extractToc(body), [
+    { level: 2, text: "SESSION_SECRET", id: "session_secret" },
+    { level: 2, text: "Why emphasis and code_span", id: "why-emphasis-and-code_span" },
+  ]);
 });

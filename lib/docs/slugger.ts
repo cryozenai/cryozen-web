@@ -1,3 +1,7 @@
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
+
 export interface TocItem {
   level: 2 | 3;
   text: string;
@@ -17,17 +21,17 @@ interface MdastNode {
 
 /**
  * Normalizes heading text into a GitHub-compatible anchor ID.
- * Keeps Unicode letters/digits, spaces, and hyphens, then converts spaces to `-`.
+ * Keeps Unicode letters/digits, `_`, spaces, and hyphens, then converts spaces to `-`.
  */
 export function slugifyHeading(text: string): string {
   return text
     .trim()
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, "")
+    .replace(/[^\p{L}\p{N}\s_-]/gu, "")
     .replace(/\s+/g, "-");
 }
 
-export function createSlugger() {
+function createSlugger() {
   const counts = new Map<string, number>();
   return (text: string): string => {
     const base = slugifyHeading(text) || "section";
@@ -75,50 +79,29 @@ export function remarkHeadingIds() {
   };
 }
 
-function stripInlineMarkdown(raw: string): string {
-  return raw
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/`([^`]*)`/g, "$1")
-    .replace(/(\*\*|__|\*|_|~~)/g, "")
-    .trim();
+/** Parses markdown with the same remark plugins `DocsMarkdown` renders with. */
+function parseDocMarkdown(markdown: string): MdastNode {
+  const processor = unified().use(remarkParse).use(remarkGfm).use(remarkHeadingIds);
+  return processor.runSync(processor.parse(markdown)) as MdastNode;
 }
 
 /**
- * Extracts h2 and h3 headings for the on-page table of contents using the same
- * slug sequence as `remarkHeadingIds`.
+ * Extracts h2 and h3 headings for the on-page table of contents, taking each
+ * heading's text and `id` from the same parse `remarkHeadingIds` annotates.
  */
 export function extractToc(markdown: string): TocItem[] {
-  const slug = createSlugger();
   const items: TocItem[] = [];
-  const lines = markdown.split(/\r?\n/);
-  let inFence = false;
-  let fenceChar = "";
-
-  for (const line of lines) {
-    const fence = /^\s*(`{3,}|~{3,})/.exec(line);
-    if (fence) {
-      const ch = fence[1][0];
-      if (!inFence) {
-        inFence = true;
-        fenceChar = ch;
-      } else if (ch === fenceChar) {
-        inFence = false;
-        fenceChar = "";
-      }
-      continue;
-    }
-    if (inFence) continue;
-
-    const match = /^(#{1,6})\s+(.+?)\s*$/.exec(line);
-    if (!match) continue;
-    const level = match[1].length;
-    const text = stripInlineMarkdown(match[2].replace(/\s+#+\s*$/, ""));
-    const id = slug(text);
-    if (level === 2 || level === 3) {
-      items.push({ level, text, id });
-    }
-  }
-
+  walkMdast(parseDocMarkdown(markdown), (node) => {
+    if (node.type !== "heading" || (node.depth !== 2 && node.depth !== 3)) return;
+    const id = node.data?.hProperties?.id;
+    if (typeof id !== "string") return;
+    items.push({ level: node.depth, text: mdastToText(node), id });
+  });
   return items;
+}
+
+/** Returns the plain text of the first top-level paragraph, or "" when there is none. */
+export function extractLeadParagraph(markdown: string): string {
+  const paragraph = parseDocMarkdown(markdown).children?.find((node) => node.type === "paragraph");
+  return paragraph ? mdastToText(paragraph).replace(/\s+/g, " ").trim() : "";
 }

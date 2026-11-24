@@ -13,7 +13,7 @@ It is organized by what you are trying to do, so start from the section that mat
 
 If you have not run CryoZen yet:
 
-- [Deployment guide](/docs/operations/deployment): choose between Docker Compose, the native launchers, and systemd, and put an instance behind a reverse proxy.
+- [Deployment guide](/docs/operations/deployment): deploy the published image with Docker Compose, and put an instance behind a reverse proxy.
 - [Configuration reference](/docs/reference/configuration): every environment variable you can set, with its real default.
 
 ## Use the application

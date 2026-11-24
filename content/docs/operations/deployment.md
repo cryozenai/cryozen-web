@@ -6,23 +6,16 @@ commit: "f358e1dc7f53603abdf3f3d7ae2face02bd939ca"
 ---
 # Deployment
 
-This page covers running CryoZen on a machine you intend to keep running: which of the three deployment paths to pick, the exact commands each one takes, and what to configure before the instance is reachable by anything other than your own browser.
+This page covers running CryoZen on a machine you intend to keep running: the public Docker Compose path, the exact commands it takes, and what to configure before the instance is reachable by anything other than your own browser.
 It is written for whoever operates the box.
-Every path binds to `127.0.0.1` by default, so publishing the instance is always a decision you make on purpose, and the reverse proxy, health check, and hardening sections below describe what that decision requires.
+The Compose stack binds to `127.0.0.1` by default, so publishing the instance is always a decision you make on purpose, and the reverse proxy, health check, and hardening sections below describe what that decision requires.
 
 ## Choosing a deployment path
 
-Three paths ship in the repository, and they differ in what they bring with them rather than in what the application can do:
-
-| Path | What it is for | Bundled services | Default URL |
-| --- | --- | --- | --- |
-| Docker Compose | A server that should come back up on its own, with search and the vector store included. | CryoZen, ChromaDB, SearXNG, ntfy | `http://127.0.0.1:7000` |
-| Native launcher | A workstation, and any machine whose GPU must be visible to the model server. | CryoZen only | `http://127.0.0.1:7000` on Linux and Windows, `http://127.0.0.1:7860` on macOS |
-| systemd service | A Linux host where CryoZen should start at boot without Docker. | CryoZen only | `http://127.0.0.1:7000` |
-
-Pick Docker Compose unless something rules it out.
-Pick a native launcher on macOS, because Docker Desktop runs a Linux virtual machine with no access to the Metal GPU, and the built-in model server needs that GPU to serve local models.
-Pick systemd when you want the native runtime and a supervised process, and you are willing to run ChromaDB yourself or do without the vector store.
+Docker Compose is the public deployment path for a server that should come back up on its own: it pulls the published `ghcr.io/cryozenai/cryozen` image, runs CryoZen with ChromaDB, SearXNG, and ntfy, and serves `http://127.0.0.1:7000`.
+On macOS, Docker Desktop runs a Linux virtual machine with no access to the Metal GPU, so the built-in model server cannot serve local models from the Compose stack there.
+For a single workstation, download a desktop package on [the download page](/download); it bundles Python and its dependencies but not ChromaDB or SearXNG.
+The native launcher and systemd paths require a source checkout, which is not public.
 
 ## Deploy with Docker Compose
 
@@ -213,11 +206,11 @@ CryoZen runs shell commands, reads and writes files, and holds mail and provider
 Treat a reachable instance as an administrative surface.
 The [threat model](/security) states what is protected and what is out of scope.
 
-Every launcher, the Compose port mapping, and the systemd unit bind to `127.0.0.1`, and that is the correct default.
+The Compose port mapping binds to `127.0.0.1`, and that is the correct default.
 To reach the instance from another device, do not change the bind address.
 Put a reverse proxy or a private network in front of it and leave the application on loopback.
 
-If you accept the risk and want the application itself on a LAN interface, set `APP_BIND=0.0.0.0` in `.env` for the Compose and launcher paths, or `--host 0.0.0.0` in the systemd unit.
+If you accept the risk and want the application itself on a LAN interface, set `APP_BIND=0.0.0.0` in `.env`.
 Before you do, confirm four settings:
 
 - **`AUTH_ENABLED`**: leave it at its default of `true`. Setting it `false` removes authentication from every route.

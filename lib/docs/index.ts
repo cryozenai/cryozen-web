@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { extractToc, type TocItem } from "./slugger";
+import { extractLeadParagraph, extractToc, type TocItem } from "./slugger";
 
 export interface DocLink {
   slug: string;
@@ -83,27 +83,8 @@ function stripLeadingH1(markdown: string): string {
 }
 
 function extractDescription(markdown: string, fallback: string): string {
-  const lines = markdown.split(/\r?\n/);
-  const paragraph: string[] = [];
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      if (paragraph.length > 0) break;
-      continue;
-    }
-    if (/^(#|```|~~~|\||[-*]\s)/.test(trimmed)) {
-      if (paragraph.length > 0) break;
-      continue;
-    }
-    paragraph.push(trimmed);
-  }
-  if (paragraph.length === 0) return fallback;
-  const plain = paragraph
-    .join(" ")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/`([^`]*)`/g, "$1")
-    .replace(/(\*\*|__|\*|_)/g, "")
-    .trim();
+  const plain = extractLeadParagraph(markdown);
+  if (!plain) return fallback;
   return plain.length > 160 ? `${plain.slice(0, 157).trimEnd()}...` : plain;
 }
 

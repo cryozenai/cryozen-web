@@ -17,8 +17,7 @@ The application logs to standard output and standard error rather than to a file
 Read them the way your path expects:
 
 - **Docker Compose**: `docker compose logs -f cryozen`, and name another service to inspect it, as in `docker compose logs searxng`.
-- **Native launcher**: the terminal running `start.sh`, `start-linux.sh`, `start-macos.sh`, or `launch-windows.ps1`. Nothing is written to disk, so keep the window open while you reproduce a problem.
-- **systemd**: `journalctl -u cryozen-ui -f`.
+- **Native launcher and systemd**: both paths require a source checkout, which is not public.
 
 Two other log sources exist alongside those.
 The `./logs` directory in the Compose directory is bind-mounted into the container and holds application-level logs.
@@ -29,25 +28,7 @@ Raise the verbosity of a command-line tool for one run with `LOG_LEVEL=DEBUG`, w
 
 ## The launcher exits with "Port is already in use"
 
-Something is already listening on the port the launcher wants, most often a previous run you did not stop.
-The launchers probe the port before doing any work and refuse to start, rather than letting a second process attach to the same database.
-
-Find the listener and decide whether to stop it:
-
-```bash
-lsof -nP -iTCP:7000 -sTCP:LISTEN
-```
-
-On macOS, port 7000 is usually held by the AirPlay Receiver, which is why `start-macos.sh` defaults to 7860 instead.
-Turn AirPlay Receiver off in System Settings, or leave it alone and use the default.
-
-Run on a different port without editing anything:
-
-```bash
-CRYOZEN_PORT=7900 ./start-macos.sh
-```
-
-To make the change permanent, set `APP_PORT` in `.env`, which every launcher and the Compose file read.
+The launcher scripts that print this message require a source checkout, which is not public.
 
 ## The container starts but the page will not load
 
@@ -234,7 +215,7 @@ On a native install, start a ChromaDB instance and leave the defaults alone:
 docker run -d --name chromadb -p 127.0.0.1:8100:8000 chromadb/chroma
 ```
 
-If the message is `ChromaDB integration is not installed`, the Python package is missing from the environment, and `pip install chromadb-client` inside your virtual environment resolves it.
+If the message is `ChromaDB integration is not installed`, the Python package is missing from the environment, and installing it requires a source checkout, which is not public.
 
 ## A feature reports a missing optional dependency
 
@@ -246,8 +227,7 @@ Two are common enough to name:
 - **The Playwright browser MCP server**: it logs a warning at startup and the server is skipped. It runs through `npx`, so the first connection has to download the package. Run `npx -y @playwright/mcp@latest --version` once to cache it, then restart CryoZen and reconnect the server.
 - **`python-magic`**: uploads fall back to basic content-type detection, which is less precise about file types. Install `python-magic` and the system `libmagic` library if you need the stronger detection.
 
-The optional dependency set lives in `requirements-optional.txt`, and each entry records the feature it unlocks.
-Install the whole set inside your virtual environment with `pip install -r requirements-optional.txt`, and note that it includes PyMuPDF, which is licensed under the AGPL and carries obligations for a network-served application.
+Installing the optional dependency set from `requirements-optional.txt` requires a source checkout, which is not public.
 
 ## An MCP server will not start
 
@@ -398,4 +378,4 @@ Collect three things before you ask for help, because they answer most of the fi
 - **The startup logs**: the first 100 lines after a restart, where optional dependencies, disabled providers, and configuration warnings are reported.
 
 Redact tokens, passwords, and mail addresses from anything you paste.
-Then open an issue at the repository.
+Then open an issue at [the public release channel](https://github.com/cryozenai/cryozen-releases/issues).

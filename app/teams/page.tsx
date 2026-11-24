@@ -69,7 +69,7 @@ export default function TeamsPage() {
         <SectionHeading title="Deployment checklist" align="left" />
         <Card className="mt-6 p-5 sm:p-7">
           <ul className="list-disc space-y-3 pl-5 text-sm/6 text-muted marker:text-primary/60">
-            <li>Keep <InlineCode>APP_BIND=127.0.0.1</InlineCode> for Compose or native launchers. Keep the systemd host on loopback too.</li>
+            <li>Keep <InlineCode>APP_BIND=127.0.0.1</InlineCode> in the Compose <InlineCode>.env</InlineCode>.</li>
             <li>Put an HTTPS reverse proxy in front of the app on your private network and forward <InlineCode>X-Forwarded-Proto</InlineCode>.</li>
             <li>Set a persistent high-entropy <InlineCode>SESSION_SECRET</InlineCode> for OAuth state. Pass it into the container environment when using Compose.</li>
             <li>Once HTTPS works, set <InlineCode>SECURE_COOKIES=true</InlineCode> and set <InlineCode>ALLOWED_ORIGINS</InlineCode> to your HTTPS origin.</li>
