@@ -114,6 +114,7 @@ lib/
   site.ts             names, URLs, nav
   platforms.ts        per-platform asset names, requirements, install steps
   releases.ts         GitHub Releases client with graceful fallbacks
+  release-notes.ts    unlinks release-note links into the private source repo, which 404 for visitors
   pricing.ts          tiers and FAQ copy
   facts.ts            measured product facts the decks quote
   release-facts.json  exact snapshot of the public release facts

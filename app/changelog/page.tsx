@@ -3,6 +3,7 @@ import Markdown from "react-markdown";
 import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ButtonLink, Card, Container, Eyebrow, textLink } from "@/components/ui";
+import { rehypeUnlinkPrivateSource } from "@/lib/release-notes";
 import { formatBytes, formatDate, getReleases } from "@/lib/releases";
 import { releasesUrl } from "@/lib/site";
 
@@ -119,7 +120,11 @@ export default async function ChangelogPage() {
 
               {release.body ? (
                 <div className="mt-4">
-                  <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                  <Markdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeUnlinkPrivateSource]}
+                    components={markdownComponents}
+                  >
                     {release.body}
                   </Markdown>
                 </div>
