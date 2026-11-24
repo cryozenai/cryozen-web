@@ -6,7 +6,6 @@ import { strict as assert } from "node:assert";
 import { registerHooks } from "node:module";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
-import facts from "../lib/release-facts.json" with { type: "json" };
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,8 +24,8 @@ const { getPlatform, dockerCommands } = await import("../lib/platforms.ts");
 const site = await import("../lib/site.ts");
 const { releasesRepoUrl, releasesUrl, latestReleaseUrl } = site;
 
-const PUBLIC_REPO = `https://github.com/${facts.repos.channel}`;
-const PRIVATE_REPO = `https://github.com/${facts.repos.source}`;
+const PUBLIC_REPO = "https://github.com/cryozenai/cryozen-releases";
+const PRIVATE_REPO = "https://github.com/cryozenai/cryozen";
 
 const desktopAssets = ["macos", "windows", "linux"].map((id) => ({
   name: getPlatform(id).assetName,
@@ -67,8 +66,8 @@ test("release metadata is fetched from the public cryozen-releases repo API", as
     await getReleases(5);
     assert.equal(latest.release?.tag, "v9.9.9");
     assert.deepEqual(calls, [
-      `https://api.github.com/repos/${facts.repos.channel}/releases/latest`,
-      `https://api.github.com/repos/${facts.repos.channel}/releases?per_page=5`,
+      "https://api.github.com/repos/cryozenai/cryozen-releases/releases/latest",
+      "https://api.github.com/repos/cryozenai/cryozen-releases/releases?per_page=5",
     ]);
   });
 });

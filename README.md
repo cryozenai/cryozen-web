@@ -154,16 +154,8 @@ If an installer filename changes upstream, update `lib/platforms.ts` in the same
 
 ## Docker installation
 
-Run the following commands to start the public Compose bundle with the published `ghcr.io/cryozenai/cryozen` image.
-
-```sh
-git clone https://github.com/cryozenai/cryozen-releases.git
-cd cryozen-releases && cp .env.example .env
-docker compose up -d
-```
-
-Open `http://localhost:7000`.
-If macOS AirPlay is using port 7000, set `APP_PORT` to a free port in `.env` before starting Compose and open CryoZen on that port.
+The download page (`app/download/page.tsx`, served at `/download`) lists the Docker commands, image, and port, all derived from `lib/release-facts.json`.
+It also covers the `APP_PORT` override for when macOS AirPlay holds port 7000.
 
 ## Pitch decks
 
