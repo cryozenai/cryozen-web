@@ -71,6 +71,12 @@ export default function TeamsPage() {
           <ul className="list-disc space-y-3 pl-5 text-sm/6 text-muted marker:text-primary/60">
             <li>Keep <InlineCode>APP_BIND=127.0.0.1</InlineCode> in the Compose <InlineCode>.env</InlineCode>.</li>
             <li>Put an HTTPS reverse proxy in front of the app on your private network and forward <InlineCode>X-Forwarded-Proto</InlineCode>.</li>
+            <li>
+              Set <InlineCode>FORWARDED_ALLOW_IPS</InlineCode> for the <InlineCode>cryozen</InlineCode> service in a{" "}
+              <InlineCode>docker-compose.override.yml</InlineCode>: the Compose network gateway for a proxy on the same host, or the proxy&apos;s address otherwise.
+              Without it, OAuth sign-in builds <InlineCode>http://</InlineCode> redirect URIs and fails. See{" "}
+              <Link href="/docs/operations/deployment#put-cryozen-behind-a-reverse-proxy-with-https" className={textLink}>putting CryoZen behind a reverse proxy</Link>.
+            </li>
             <li>Set a persistent high-entropy <InlineCode>SESSION_SECRET</InlineCode> for OAuth state. Pass it into the container environment when using Compose.</li>
             <li>Once HTTPS works, set <InlineCode>SECURE_COOKIES=true</InlineCode> and set <InlineCode>ALLOWED_ORIGINS</InlineCode> to your HTTPS origin.</li>
             <li>Keep a protected copy of your backups off the host and verify that you can restore them.</li>
