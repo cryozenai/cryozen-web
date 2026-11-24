@@ -54,7 +54,22 @@ The `cryozen` service waits for SearXNG to pass its health check before it start
 Read the logs with `docker compose logs -f cryozen`.
 
 Note that `docker-compose.yml` forwards an explicit list of environment variables into the container.
-A variable you add to `.env` reaches the application only if that list names it, so social sign-in credentials and any other variable absent from the list also need an entry under the service's `environment:` key.
+A variable you add to `.env` reaches the application only if that list names it or Compose itself reads it, as with `APP_BIND`, `APP_PORT`, `SECURE_COOKIES`, and `ALLOWED_ORIGINS`.
+Variables absent from the list, including `SESSION_SECRET`, `OAUTH_REDIRECT_BASE_URL`, `FORWARDED_ALLOW_IPS`, and the social sign-in client IDs and secrets, go in a `docker-compose.override.yml` next to `docker-compose.yml`.
+Keep only the lines you need, then run `docker compose up -d`:
+
+```yaml
+services:
+  cryozen:
+    environment:
+      - SESSION_SECRET=your_generated_secret_here
+      - OAUTH_REDIRECT_BASE_URL=https://your_domain_here
+      - FORWARDED_ALLOW_IPS=your_compose_gateway_address_here
+      - GOOGLE_CLIENT_ID=your_client_id_here
+      - GOOGLE_CLIENT_SECRET=your_client_secret_here
+```
+
+Compose reads the override automatically while `COMPOSE_FILE` is unset; if you set `COMPOSE_FILE` for a GPU overlay, add `docker-compose.override.yml` to that list too.
 
 ## Deploy with the native launcher
 
@@ -69,25 +84,16 @@ Source builds and the `systemd` service unit files (`cryozen-ui.service` and `in
 CryoZen does not terminate TLS.
 To reach it over HTTPS, run a proxy in front of it and keep the application itself on loopback.
 
-Run the proxy on the same host as CryoZen where you can, and keep `APP_BIND=127.0.0.1` so only processes on the host can reach the published port.
+Run the proxy on the same host as CryoZen and keep `APP_BIND=127.0.0.1`, so only processes on the host can reach the published port.
 The application needs `X-Forwarded-Proto` to build the `https://` callback URLs that OAuth sign-in depends on, and uvicorn trusts forwarded headers only from the addresses in `FORWARDED_ALLOW_IPS`, which defaults to `127.0.0.1`.
-Under Docker Compose the proxy's connection reaches the container from the Compose network's gateway even when the proxy runs on the same host, so set `FORWARDED_ALLOW_IPS` for the `cryozen` service whenever a reverse proxy terminates HTTPS, or the application will build `http://` redirect URIs and every OAuth flow will fail.
-For a proxy on the same host, use the gateway address of the Compose network, which is named after the Compose directory (`cryozen-releases` by default):
+Under Docker Compose the proxy's connection reaches the container from the Compose network's gateway, so set `FORWARDED_ALLOW_IPS` for the `cryozen` service to that gateway address whenever a reverse proxy terminates HTTPS, or the application will build `http://` redirect URIs and every OAuth flow will fail.
+The network is named after the Compose directory (`cryozen-releases` by default), and this prints its gateway:
 
 ```bash
 docker network inspect cryozen-releases_default --format '{{(index .IPAM.Config 0).Gateway}}'
 ```
 
-For a proxy on a different machine, use that machine's address.
-The published `docker-compose.yml` does not pass that variable through from `.env`, so create a `docker-compose.override.yml` next to it and run `docker compose up -d`:
-
-```yaml
-services:
-  cryozen:
-    environment:
-      - FORWARDED_ALLOW_IPS=your_gateway_or_proxy_address_here
-```
-
+Put the address in `docker-compose.override.yml` as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), because the published `docker-compose.yml` does not pass `FORWARDED_ALLOW_IPS` through from `.env`.
 A desktop package serves on the host itself, so a proxy on the same machine is trusted at the `127.0.0.1` default.
 
 This nginx server block terminates TLS and forwards the headers CryoZen needs:
@@ -127,7 +133,7 @@ Once the proxy is in front of the app, change three settings:
   Writes from the app's own pages pass the cross-origin check without it in current browsers. A browser too old to send `Sec-Fetch-Site` is checked by comparing `Origin` with the request's host, so a proxy that rewrites `Host` should also pass `X-Forwarded-Host`, or the origin should be listed here.
 - **`SESSION_SECRET`**: a fixed high-entropy value. Leave it unset and the application generates a new random secret on every boot, which invalidates any OAuth authorization already in flight.
 
-Generate a secret and record it in `.env`:
+Generate a secret and set it as `SESSION_SECRET` in `docker-compose.override.yml`, as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), because the published `docker-compose.yml` does not forward it from `.env`:
 
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"
@@ -136,11 +142,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 The stable public origin matters beyond cookies.
 Social sign-in requires you to register an exact redirect URI with each provider, and the application builds that URI from the incoming request, so it has to match what the provider has on file: `https://your_domain_here/api/auth/oauth/callback/google` and the same shape for every other provider.
 OAuth against remote Model Context Protocol (MCP) servers registers a separate redirect URI that defaults to `http://localhost:7000/api/mcp/oauth/callback`, which is wrong for any deployment behind a proxy.
-Set `OAUTH_REDIRECT_BASE_URL` to your externally reachable origin so the redirect lands back on the application:
-
-```ini
-OAUTH_REDIRECT_BASE_URL=https://your_domain_here
-```
+Set `OAUTH_REDIRECT_BASE_URL` to your externally reachable origin, such as `https://your_domain_here`, in `docker-compose.override.yml` as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), so the redirect lands back on the application.
 
 The application sends a Content Security Policy on every response, and it allows scripts only from its own origin and a per-request nonce.
 Do not add a proxy that rewrites or strips those headers, and do not attempt to frame the interface: responses carry `X-Frame-Options: DENY` and `frame-ancestors 'none'`.

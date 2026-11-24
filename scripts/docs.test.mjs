@@ -21,17 +21,21 @@ import remarkGfm from "remark-gfm";
 
 import { extractLeadParagraph, extractToc, remarkHeadingIds } from "../lib/docs/slugger.ts";
 import {
+  composeEnvNames,
   DEFAULT_TRANSFORMS,
   DOC_ALLOWLIST,
+  findComposeEnvMismatches,
   findDockerComposeBuildMatches,
   findSourceOnlyMatches,
   findSourceRepoMatches,
+  settingNamesFromReference,
   syncDocs,
 } from "./sync-docs.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CONTENT_DOCS_DIR = join(ROOT, "content", "docs");
 const FACTS_PATH = join(ROOT, "lib", "release-facts.json");
+const RELEASE_COMPOSE_PATH = join(ROOT, "lib", "release-compose.yml");
 
 const tempDirs = [];
 
@@ -352,6 +356,10 @@ test("published content/docs links resolve to synced docs and never link to gith
   const files = listMarkdownFiles(CONTENT_DOCS_DIR);
   assert.equal(files.length, DOC_ALLOWLIST.length);
 
+  const composeNames = composeEnvNames(readFileSync(RELEASE_COMPOSE_PATH, "utf8"));
+  const settingNames = settingNamesFromReference(
+    readFileSync(join(CONTENT_DOCS_DIR, "reference", "configuration.md"), "utf8"),
+  );
   const headingsByRoute = new Map();
   for (const entry of DOC_ALLOWLIST) {
     const filePath =
@@ -383,6 +391,11 @@ test("published content/docs links resolve to synced docs and never link to gith
       findSourceOnlyMatches(content, Object.values(facts.install.data_dirs)),
       [],
       `${filePath} must not hand visitors source-checkout-only content`,
+    );
+    assert.deepEqual(
+      findComposeEnvMismatches(content, composeNames, settingNames),
+      [],
+      `${filePath} must not tell Compose users to set an unforwarded variable in .env`,
     );
 
     // The page renders the body without its leading H1 (lib/docs/index.ts).
@@ -570,5 +583,63 @@ test("findSourceOnlyMatches flags source-only prose and code, except allowlisted
   assert.deepEqual(
     findSourceOnlyMatches(text, desktopDirs).map((hit) => hit.line),
     [1, 4, 6, 9],
+  );
+});
+
+test("sync-docs fails loudly when docs tell Compose users to set an unforwarded variable in .env", () => {
+  const { repoDir } = createFixtureGitRepo(
+    baseFixtureFiles({
+      "docs/reference/configuration.md": [
+        "# Configuration reference",
+        "",
+        "| Variable | Default | Effect |",
+        "| --- | --- | --- |",
+        "| `SESSION_SECRET` | Unset | Signs OAuth state. |",
+        "| `SECURE_COOKIES` | `false` | Marks the session cookie Secure. |",
+        "",
+      ].join("\n"),
+      "docs/guides/api-access.md": [
+        "# API access",
+        "",
+        "Set `SECURE_COOKIES=true` in `.env` once HTTPS works.",
+        "Put `SESSION_SECRET` in `.env` before you restart.",
+        "",
+      ].join("\n"),
+    }),
+    "v9.9.9",
+  );
+  const outDir = makeTempDir("cryozen-docs-fail-compose-env-");
+
+  assert.throws(
+    () => syncDocs({ productRepo: repoDir, ref: "v9.9.9", outDir, factsPath: FACTS_PATH }),
+    /^Error: Compose \.env check failed:\ndocs\/guides\/api-access\.md:\d+ tells Compose users to set SESSION_SECRET in \.env[^\n]*$/,
+  );
+  assert.equal(existsSync(join(outDir, "index.md")), false, "failed sync must not write partial output");
+});
+
+test("the published Compose file decides which settings work from .env", () => {
+  const composeNames = composeEnvNames(readFileSync(RELEASE_COMPOSE_PATH, "utf8"));
+  const settingNames = new Set(["SESSION_SECRET", "SECURE_COOKIES", "APP_BIND", "FORWARDED_ALLOW_IPS"]);
+
+  for (const name of ["SECURE_COOKIES", "ALLOWED_ORIGINS", "APP_BIND", "APP_PORT", "COMPOSE_FILE"]) {
+    assert.ok(composeNames.has(name), `${name} reaches the stack from .env`);
+  }
+  for (const name of ["SESSION_SECRET", "OAUTH_REDIRECT_BASE_URL", "FORWARDED_ALLOW_IPS", "GOOGLE_CLIENT_ID"]) {
+    assert.equal(composeNames.has(name), false, `${name} is not forwarded by the published Compose file`);
+  }
+
+  const text = [
+    "Record the output as `SESSION_SECRET` in `.env`.",
+    "Change the host side with `APP_BIND` in `.env`.",
+    "Set `SESSION_SECRET` in `docker-compose.override.yml`, because Compose does not forward it from `.env`.",
+    "Start Ollama with `OLLAMA_HOST=0.0.0.0:11434` and set this in `.env`:",
+    "Set `FORWARDED_ALLOW_IPS=172.18.0.1` in your `.env`. Then restart.",
+  ].join("\n");
+  assert.deepEqual(
+    findComposeEnvMismatches(text, composeNames, settingNames).map((hit) => [hit.line, hit.name]),
+    [
+      [1, "SESSION_SECRET"],
+      [5, "FORWARDED_ALLOW_IPS"],
+    ],
   );
 });

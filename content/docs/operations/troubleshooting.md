@@ -130,17 +130,17 @@ Set a fixed secret and restart:
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Record the output as `SESSION_SECRET` in `.env`.
+On Docker Compose, record the output as `SESSION_SECRET` in `docker-compose.override.yml`, as [the deployment guide](/docs/operations/deployment#deploy-with-docker-compose) shows, because the published `docker-compose.yml` does not forward it from `.env`.
 This affects the OAuth sign-in flow, provider linking, and delegated account connection, all of which store state in that cookie between the redirect out and the callback back.
 It does not affect ordinary email and password sessions, which are stored separately.
 
 If sign-in fails without a restart, the redirect URI is the next thing to check.
 The application builds the callback from the incoming request, so it must match what the provider has registered: `https://your_domain_here/api/auth/oauth/callback/google`, and the same shape per provider.
 Behind a reverse proxy, the request has to carry `X-Forwarded-Proto` or the application builds an `http://` URI that the provider rejects.
-Uvicorn trusts those headers only from the addresses in `FORWARDED_ALLOW_IPS`, which defaults to `127.0.0.1`, and under Docker Compose even a proxy on the same host connects from the Compose network's gateway, so set `FORWARDED_ALLOW_IPS` in a `docker-compose.override.yml` as [the deployment guide](/docs/operations/deployment#put-cryozen-behind-a-reverse-proxy-with-https) shows.
+Uvicorn trusts those headers only from the addresses in `FORWARDED_ALLOW_IPS`, which defaults to `127.0.0.1`, and under Docker Compose the proxy connects from the Compose network's gateway, so set `FORWARDED_ALLOW_IPS` to that gateway address in `docker-compose.override.yml` as [the deployment guide](/docs/operations/deployment#put-cryozen-behind-a-reverse-proxy-with-https) shows.
 
 A provider whose client id is not set is disabled rather than broken, and its button does not appear on the login page.
-On the Compose path, remember that `docker-compose.yml` forwards a fixed list of variables into the container, and the social sign-in credentials are not on it, so add them to the service's `environment:` key as well as `.env`.
+On the Compose path, `docker-compose.yml` forwards a fixed list of variables into the container and the social sign-in credentials are not on it, so set them in `docker-compose.override.yml` as [the deployment guide](/docs/operations/deployment#deploy-with-docker-compose) shows.
 
 ## The model list is empty and chat returns "No model endpoint configured"
 

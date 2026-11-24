@@ -50,7 +50,8 @@ Generate a value with:
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-Store the result in `.env` or your secret manager, keep it out of version control, and keep it stable across restarts.
+Store the result in your secret manager or, on Docker Compose, in `docker-compose.override.yml` as [the deployment guide](/docs/operations/deployment#deploy-with-docker-compose) shows, because the published `docker-compose.yml` does not forward it from `.env`.
+Keep it out of version control and stable across restarts.
 Rotating it invalidates in-flight OAuth handshakes only, so a user who is mid-consent has to start that flow again, and signed-in sessions are untouched.
 
 | Variable | Default | What it does |

@@ -115,7 +115,8 @@ CryoZen negotiates both Basic and Digest authentication, so servers that require
 
 Linking an account is different from the connections above: instead of storing a password, CryoZen holds a delegated OAuth token and mirrors your mail, calendar, tasks, and contacts into local storage on a schedule.
 
-An administrator must first register an OAuth application with the provider and set its client ID and secret in `.env`, because a self-hosted instance has no shared application to use.
+An administrator must first register an OAuth application with the provider and set its client ID and secret, because a self-hosted instance has no shared application to use.
+On Docker Compose they go in `docker-compose.override.yml`, as [the deployment guide](/docs/operations/deployment#deploy-with-docker-compose) shows.
 [The configuration reference](/docs/reference/configuration) lists the variables, and the provider needs a stable HTTPS callback URL, which means a reverse proxy.
 
 Once configured, each user links their own account:
@@ -138,7 +139,7 @@ It never sends mail or writes calendar entries through a linked account.
 Linking an account is about data.
 Signing in with a provider is about identity, and it is configured separately.
 
-An administrator sets client credentials for Google, Microsoft, or GitHub in `.env`.
+An administrator sets client credentials for Google, Microsoft, or GitHub; on Docker Compose they go in `docker-compose.override.yml`, as [the deployment guide](/docs/operations/deployment#deploy-with-docker-compose) shows.
 The login page then shows a button for each configured provider.
 
 Because CryoZen defaults to a closed signup policy, a provider identity cannot create an account on its own.

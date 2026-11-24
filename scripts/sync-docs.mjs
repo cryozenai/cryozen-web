@@ -5,7 +5,8 @@
 // if any transform matches nothing in its file, or if any banned term, private
 // source-repo URL, `docker compose ... --build` command, or source-checkout-only
 // content (launcher scripts, systemd, the cryozen-ui unit, ~/.cryozen) survives
-// outside the explicit allowlist.
+// outside the explicit allowlist, or if the docs tell Compose users to set a
+// variable in `.env` that lib/release-compose.yml never reads.
 //
 // Usage:
 //   PRODUCT_REPO=/path/to/cryozen node scripts/sync-docs.mjs [--ref v1.2.0]
@@ -19,6 +20,7 @@ const DEFAULT_REF = "v1.2.0";
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_OUT_DIR = join(REPO_ROOT, "content", "docs");
 const DEFAULT_FACTS_PATH = join(REPO_ROOT, "lib", "release-facts.json");
+const DEFAULT_COMPOSE_PATH = join(REPO_ROOT, "lib", "release-compose.yml");
 
 /**
  * User-facing allowlist mapped from source path in the product repository to
@@ -1256,32 +1258,23 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     // The image runs `uvicorn cryozen:app` (Dockerfile at v1.2.0), which reads FORWARDED_ALLOW_IPS (default 127.0.0.1); the published docker-compose.yml publishes a bridge port and does not pass the variable through, so a proxy connects from the network gateway and an override file sets it.
     id: "deployment-proxy-forwarded-allow-ips-compose",
     files: ["docs/operations/deployment.md"],
-    reason: "Configure trusted proxy addresses for any Compose reverse proxy through an override file instead of a uvicorn flag or the same-host default.",
+    reason: "Configure the trusted Compose gateway for the same-host reverse proxy through the override file instead of a uvicorn flag or the loopback default.",
     pattern: [
       "Run the proxy on the same host as CryoZen where you can.",
       "Uvicorn trusts forwarded headers from `127.0.0.1` by default, and it needs `X-Forwarded-Proto` to build the `https://` callback URLs that OAuth sign-in depends on.",
       "If the proxy runs on a different machine, start uvicorn with `--forwarded-allow-ips` naming that machine's address, or the application will build `http://` redirect URIs and every OAuth flow will fail.",
     ].join("\n"),
     replacement: [
-      "Run the proxy on the same host as CryoZen where you can, and keep `APP_BIND=127.0.0.1` so only processes on the host can reach the published port.",
+      "Run the proxy on the same host as CryoZen and keep `APP_BIND=127.0.0.1`, so only processes on the host can reach the published port.",
       "The application needs `X-Forwarded-Proto` to build the `https://` callback URLs that OAuth sign-in depends on, and uvicorn trusts forwarded headers only from the addresses in `FORWARDED_ALLOW_IPS`, which defaults to `127.0.0.1`.",
-      "Under Docker Compose the proxy's connection reaches the container from the Compose network's gateway even when the proxy runs on the same host, so set `FORWARDED_ALLOW_IPS` for the `cryozen` service whenever a reverse proxy terminates HTTPS, or the application will build `http://` redirect URIs and every OAuth flow will fail.",
-      "For a proxy on the same host, use the gateway address of the Compose network, which is named after the Compose directory (`cryozen-releases` by default):",
+      "Under Docker Compose the proxy's connection reaches the container from the Compose network's gateway, so set `FORWARDED_ALLOW_IPS` for the `cryozen` service to that gateway address whenever a reverse proxy terminates HTTPS, or the application will build `http://` redirect URIs and every OAuth flow will fail.",
+      "The network is named after the Compose directory (`cryozen-releases` by default), and this prints its gateway:",
       "",
       "```bash",
       "docker network inspect cryozen-releases_default --format '{{(index .IPAM.Config 0).Gateway}}'",
       "```",
       "",
-      "For a proxy on a different machine, use that machine's address.",
-      "The published `docker-compose.yml` does not pass that variable through from `.env`, so create a `docker-compose.override.yml` next to it and run `docker compose up -d`:",
-      "",
-      "```yaml",
-      "services:",
-      "  cryozen:",
-      "    environment:",
-      "      - FORWARDED_ALLOW_IPS=your_gateway_or_proxy_address_here",
-      "```",
-      "",
+      "Put the address in `docker-compose.override.yml` as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), because the published `docker-compose.yml` does not pass `FORWARDED_ALLOW_IPS` through from `.env`.",
       "A desktop package serves on the host itself, so a proxy on the same machine is trusted at the `127.0.0.1` default.",
     ].join("\n"),
   },
@@ -1289,9 +1282,102 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     // The image runs `uvicorn cryozen:app` (Dockerfile at v1.2.0), which reads FORWARDED_ALLOW_IPS (default 127.0.0.1); the published docker-compose.yml publishes a bridge port and does not pass the variable through, so a proxy connects from the network gateway and an override file sets it.
     id: "troubleshooting-proxy-forwarded-allow-ips-compose",
     files: ["docs/operations/troubleshooting.md"],
-    reason: "Name the Compose override setting that any reverse proxy needs instead of a uvicorn flag or the same-host default.",
+    reason: "Name the Compose override setting the same-host reverse proxy needs instead of a uvicorn flag or the loopback default.",
     pattern: "Uvicorn trusts those headers from `127.0.0.1` only, so a proxy on a different host needs `--forwarded-allow-ips` naming its address.",
-    replacement: "Uvicorn trusts those headers only from the addresses in `FORWARDED_ALLOW_IPS`, which defaults to `127.0.0.1`, and under Docker Compose even a proxy on the same host connects from the Compose network's gateway, so set `FORWARDED_ALLOW_IPS` in a `docker-compose.override.yml` as [the deployment guide](deployment.md#put-cryozen-behind-a-reverse-proxy-with-https) shows.",
+    replacement: "Uvicorn trusts those headers only from the addresses in `FORWARDED_ALLOW_IPS`, which defaults to `127.0.0.1`, and under Docker Compose the proxy connects from the Compose network's gateway, so set `FORWARDED_ALLOW_IPS` to that gateway address in `docker-compose.override.yml` as [the deployment guide](deployment.md#put-cryozen-behind-a-reverse-proxy-with-https) shows.",
+  },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.
+    id: "deployment-compose-override-env",
+    files: ["docs/operations/deployment.md"],
+    reason: "Show one docker-compose.override.yml for the variables the published Compose file does not forward from .env.",
+    pattern: "A variable you add to `.env` reaches the application only if that list names it, so social sign-in credentials and any other variable absent from the list also need an entry under the service's `environment:` key.",
+    replacement: [
+      "A variable you add to `.env` reaches the application only if that list names it or Compose itself reads it, as with `APP_BIND`, `APP_PORT`, `SECURE_COOKIES`, and `ALLOWED_ORIGINS`.",
+      "Variables absent from the list, including `SESSION_SECRET`, `OAUTH_REDIRECT_BASE_URL`, `FORWARDED_ALLOW_IPS`, and the social sign-in client IDs and secrets, go in a `docker-compose.override.yml` next to `docker-compose.yml`.",
+      "Keep only the lines you need, then run `docker compose up -d`:",
+      "",
+      "```yaml",
+      "services:",
+      "  cryozen:",
+      "    environment:",
+      "      - SESSION_SECRET=your_generated_secret_here",
+      "      - OAUTH_REDIRECT_BASE_URL=https://your_domain_here",
+      "      - FORWARDED_ALLOW_IPS=your_compose_gateway_address_here",
+      "      - GOOGLE_CLIENT_ID=your_client_id_here",
+      "      - GOOGLE_CLIENT_SECRET=your_client_secret_here",
+      "```",
+      "",
+      "Compose reads the override automatically while `COMPOSE_FILE` is unset; if you set `COMPOSE_FILE` for a GPU overlay, add `docker-compose.override.yml` to that list too.",
+    ].join("\n"),
+  },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.
+    id: "deployment-session-secret-override",
+    files: ["docs/operations/deployment.md"],
+    reason: "Record SESSION_SECRET in the Compose override, since the published Compose file does not forward it from .env.",
+    pattern: "Generate a secret and record it in `.env`:",
+    replacement: "Generate a secret and set it as `SESSION_SECRET` in `docker-compose.override.yml`, as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), because the published `docker-compose.yml` does not forward it from `.env`:",
+  },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.
+    id: "deployment-oauth-redirect-base-override",
+    files: ["docs/operations/deployment.md"],
+    reason: "Point OAUTH_REDIRECT_BASE_URL at the Compose override instead of a .env line the container never sees.",
+    pattern: [
+      "Set `OAUTH_REDIRECT_BASE_URL` to your externally reachable origin so the redirect lands back on the application:",
+      "",
+      "```ini",
+      "OAUTH_REDIRECT_BASE_URL=https://your_domain_here",
+      "```",
+    ].join("\n"),
+    replacement: "Set `OAUTH_REDIRECT_BASE_URL` to your externally reachable origin, such as `https://your_domain_here`, in `docker-compose.override.yml` as shown under [Deploy with Docker Compose](#deploy-with-docker-compose), so the redirect lands back on the application.",
+  },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.
+    id: "troubleshooting-session-secret-override",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Record SESSION_SECRET in the Compose override, since the published Compose file does not forward it from .env.",
+    pattern: "Record the output as `SESSION_SECRET` in `.env`.",
+    replacement: "On Docker Compose, record the output as `SESSION_SECRET` in `docker-compose.override.yml`, as [the deployment guide](deployment.md#deploy-with-docker-compose) shows, because the published `docker-compose.yml` does not forward it from `.env`.",
+  },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.
+    id: "troubleshooting-oauth-credentials-override",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Point the social sign-in credentials at the Compose override instead of editing the published docker-compose.yml.",
+    pattern: "On the Compose path, remember that `docker-compose.yml` forwards a fixed list of variables into the container, and the social sign-in credentials are not on it, so add them to the service's `environment:` key as well as `.env`.",
+    replacement: "On the Compose path, `docker-compose.yml` forwards a fixed list of variables into the container and the social sign-in credentials are not on it, so set them in `docker-compose.override.yml` as [the deployment guide](deployment.md#deploy-with-docker-compose) shows.",
+  },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.
+    id: "config-session-secret-override",
+    files: ["docs/reference/configuration.md"],
+    reason: "Name the Compose override as the place for SESSION_SECRET on Docker Compose.",
+    pattern: "Store the result in `.env` or your secret manager, keep it out of version control, and keep it stable across restarts.",
+    replacement: [
+      "Store the result in your secret manager or, on Docker Compose, in `docker-compose.override.yml` as [the deployment guide](../operations/deployment.md#deploy-with-docker-compose) shows, because the published `docker-compose.yml` does not forward it from `.env`.",
+      "Keep it out of version control and stable across restarts.",
+    ].join("\n"),
+  },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.
+    id: "integrations-linking-credentials-override",
+    files: ["docs/guides/integrations.md"],
+    reason: "Point the account-linking OAuth credentials at the Compose override instead of .env.",
+    pattern: "An administrator must first register an OAuth application with the provider and set its client ID and secret in `.env`, because a self-hosted instance has no shared application to use.",
+    replacement: [
+      "An administrator must first register an OAuth application with the provider and set its client ID and secret, because a self-hosted instance has no shared application to use.",
+      "On Docker Compose they go in `docker-compose.override.yml`, as [the deployment guide](../operations/deployment.md#deploy-with-docker-compose) shows.",
+    ].join("\n"),
+  },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file; SESSION_SECRET, OAUTH_REDIRECT_BASE_URL, FORWARDED_ALLOW_IPS, and OAuth client credentials are not on it.
+    id: "integrations-signin-credentials-override",
+    files: ["docs/guides/integrations.md"],
+    reason: "Point the sign-in OAuth credentials at the Compose override instead of .env.",
+    pattern: "An administrator sets client credentials for Google, Microsoft, or GitHub in `.env`.",
+    replacement: "An administrator sets client credentials for Google, Microsoft, or GitHub; on Docker Compose they go in `docker-compose.override.yml`, as [the deployment guide](../operations/deployment.md#deploy-with-docker-compose) shows.",
   },
 ];
 
@@ -1571,6 +1657,44 @@ export function findDockerComposeBuildMatches(text) {
   return matches;
 }
 
+// Variables Compose itself reads from `.env` without naming them in the file.
+const COMPOSE_OWN_ENV = ["COMPOSE_FILE"];
+// Variables the published image reads that the configuration reference does not
+// list, because uvicorn rather than CryoZen reads them.
+const IMAGE_ENV_SETTINGS = ["FORWARDED_ALLOW_IPS"];
+
+/** Names a `.env` file can set for the published Compose stack: every `${NAME}` it interpolates. */
+export function composeEnvNames(composeText) {
+  return new Set([...COMPOSE_OWN_ENV, ...[...composeText.matchAll(/\$\{([A-Z][A-Z0-9_]*)/g)].map((m) => m[1])]);
+}
+
+/** CryoZen settings: the first-column names of the configuration reference tables, plus image-level ones. */
+export function settingNamesFromReference(configurationMarkdown) {
+  return new Set([
+    ...IMAGE_ENV_SETTINGS,
+    ...[...configurationMarkdown.matchAll(/^\| `([A-Z][A-Z0-9_]*)`/gm)].map((m) => m[1]),
+  ]);
+}
+
+/**
+ * Sentences that tell readers to set a CryoZen setting in `.env` that the
+ * published Compose stack never reads, unless the sentence points at
+ * `docker-compose.override.yml` instead.
+ */
+export function findComposeEnvMismatches(text, composeNames, settingNames) {
+  const matches = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    for (const sentence of lines[i].split(/(?<=\.)\s+/)) {
+      if (!sentence.includes("`.env`") || sentence.includes("docker-compose.override.yml")) continue;
+      for (const [, name] of sentence.matchAll(/`([A-Z][A-Z0-9_]{2,})(?:=[^`]*)?`/g)) {
+        if (settingNames.has(name) && !composeNames.has(name)) matches.push({ line: i + 1, name, text: sentence.trim() });
+      }
+    }
+  }
+  return matches;
+}
+
 export function findSourceOnlyMatches(text, desktopDataDirs) {
   const matches = [];
   const lines = text.split(/\r?\n/);
@@ -1603,6 +1727,7 @@ export function syncDocs({
   ref = DEFAULT_REF,
   outDir = DEFAULT_OUT_DIR,
   factsPath = DEFAULT_FACTS_PATH,
+  composePath = DEFAULT_COMPOSE_PATH,
   transforms = DEFAULT_TRANSFORMS,
 } = {}) {
   if (!productRepo) {
@@ -1613,6 +1738,7 @@ export function syncDocs({
   const bannedTerms = Array.isArray(facts.banned) ? facts.banned : [];
   const sourceRepo = typeof facts.repos?.source === "string" ? facts.repos.source.trim() : "";
   const desktopDataDirs = Object.values(facts.install?.data_dirs ?? {});
+  const composeNames = composeEnvNames(readFileSync(composePath, "utf8"));
   const commit = gitCommitSha(productRepo, ref);
 
   const prepared = [];
@@ -1684,6 +1810,18 @@ export function syncDocs({
       outPath: outputFileForSlug(outDir, entry.slug),
       content: fullContent,
     });
+  }
+
+  const configurationDoc = prepared.find((doc) => doc.slug === "reference/configuration");
+  const settingNames = settingNamesFromReference(configurationDoc.content);
+  const composeEnvHits = prepared.flatMap((doc) =>
+    findComposeEnvMismatches(doc.content, composeNames, settingNames).map((hit) => ({ ...hit, source: doc.source })),
+  );
+  if (composeEnvHits.length > 0) {
+    const detail = composeEnvHits
+      .map((hit) => `${hit.source}:${hit.line} tells Compose users to set ${hit.name} in .env, which lib/release-compose.yml does not read: ${hit.text}`)
+      .join("\n");
+    throw new Error(`Compose .env check failed:\n${detail}`);
   }
 
   rmSync(outDir, { recursive: true, force: true });
