@@ -48,7 +48,7 @@ npm run check:production # the commit live on cryozen.ai equals main
 
 `.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm test`, `npm run lint`, `npm run build`, and `npm run check:links` against that build on every pull request and on every push to `main`.
 The build step type-checks the whole project, so there is no separate `tsc` job.
-`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks, the download-link contract (see "Keeping downloads correct"), and the deck-data invariants.
+`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks, the download-link contract (see "Keeping downloads correct"), the deck-data invariants, and the product-claim contract.
 
 CI deliberately runs **without** a `GITHUB_TOKEN`.
 That keeps the degradation paths in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading, CI would catch it.
@@ -110,6 +110,8 @@ app/
   sitemap.ts robots.ts
 components/           header, footer, CTAs, primitives
   deck/               slide and block renderers, presenting chrome, title-slide mark
+  media/              app-frame (window chrome around a capture) and product-video (the client player: poster first, video only in view, play/pause, captions)
+  tour/               chapter: a capture beside its synced step list, prerequisites, privacy note, docs link, and transcript
 lib/
   site.ts             names, URLs, nav
   platforms.ts        per-platform asset names, requirements, install steps
@@ -119,6 +121,8 @@ lib/
   facts.ts            measured product facts the decks quote
   release-facts.json  exact snapshot of the public release facts
   decks/              deck copy as typed data, one file per positioning
+  product/            what the site claims CryoZen does, as typed data: one surface per capability, in tour order
+  media/              the capture manifest, its loader and validator, and the step-sync logic the tour uses
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
   check-deck-print.mjs print-fidelity check for the decks; needs Chrome and poppler
@@ -127,6 +131,7 @@ scripts/
   release-facts.test.mjs checks the facts contract and scans for banned strings
   release-channel.test.mjs  release-channel contract test: releases, downloads, docs, and support links all land in the public repo
   decks.test.mjs      deck-data invariants: slide numbering, emphasis markers, sourced market assumptions, measured facts
+  product.test.mjs    product-claim contract test: the surfaces are exactly the claimable set and claim nothing the release does not ship, plus the capture manifest and step-sync logic
   check-links.mjs     crawls a running site and fetches every external link anonymously, with its test alongside
   check-production.mjs compares the commit production reports at /version.json with main, with its test alongside
 ```
