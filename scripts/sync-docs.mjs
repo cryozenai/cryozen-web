@@ -1379,6 +1379,25 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     pattern: "An administrator sets client credentials for Google, Microsoft, or GitHub in `.env`.",
     replacement: "An administrator sets client credentials for Google, Microsoft, or GitHub; on Docker Compose they go in `docker-compose.override.yml`, as [the deployment guide](../operations/deployment.md#deploy-with-docker-compose) shows.",
   },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file and does not mount .env into the container.
+    id: "config-intro-compose-env-file",
+    files: ["docs/reference/configuration.md"],
+    reason: "Qualify the .env source for Docker Compose, where Compose reads .env and forwards only the variables docker-compose.yml lists.",
+    pattern: "Values already present in the process environment win over `.env`, because `load_dotenv` does not overwrite existing keys.",
+    replacement: [
+      "Values already present in the process environment win over `.env`, because `load_dotenv` does not overwrite existing keys.",
+      "On Docker Compose, the `.env` next to `docker-compose.yml` is read by Compose rather than by the application, so it reaches CryoZen only for the variables `docker-compose.yml` forwards; set any other variable in `docker-compose.override.yml`, as [the deployment guide](../operations/deployment.md#deploy-with-docker-compose) shows.",
+    ].join("\n"),
+  },
+  {
+    // lib/release-compose.yml (the public cryozen-releases docker-compose.yml) forwards a fixed environment list with no env_file and does not mount .env into the container.
+    id: "config-precedence-compose-env-file",
+    files: ["docs/reference/configuration.md"],
+    reason: "Qualify the .env precedence entry for Docker Compose, where the application never reads that file.",
+    pattern: "- **`.env` file**: read once from the repository root at `cryozen.py` with `encoding=\"utf-8-sig\"`, which tolerates the UTF-8 byte order mark that Windows Notepad adds.",
+    replacement: "- **`.env` file**: read once from the repository root at `cryozen.py` with `encoding=\"utf-8-sig\"`, which tolerates the UTF-8 byte order mark that Windows Notepad adds. On Docker Compose the application never reads this file, and only the variables `docker-compose.yml` forwards reach it, as described at the top of this page.",
+  },
 ];
 
 /**

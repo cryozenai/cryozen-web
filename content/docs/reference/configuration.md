@@ -9,6 +9,7 @@ commit: "f358e1dc7f53603abdf3f3d7ae2face02bd939ca"
 This page lists every environment variable that CryoZen reads, grouped by the concern it controls, with the default the code actually applies and the effect of changing it.
 Configuration comes from two places: a `.env` file in the repository root, which `cryozen.py` loads at import with `load_dotenv(encoding="utf-8-sig")`, and the process environment inherited from your shell or container runtime.
 Values already present in the process environment win over `.env`, because `load_dotenv` does not overwrite existing keys.
+On Docker Compose, the `.env` next to `docker-compose.yml` is read by Compose rather than by the application, so it reaches CryoZen only for the variables `docker-compose.yml` forwards; set any other variable in `docker-compose.override.yml`, as [the deployment guide](/docs/operations/deployment#deploy-with-docker-compose) shows.
 Any legacy variable prefixed with the project's previous name is mirrored onto the matching `CRYOZEN_*` name once at startup by `_alias_legacy_env()` in `services/constants.py`, so pre-rename installs keep working without edits, and an explicitly set `CRYOZEN_*` value always beats its legacy twin.
 Variables marked compose-only are consumed by `docker-compose.yml` or the Docker entrypoint and are never read by Python; variables marked test-only affect development tooling.
 
@@ -294,7 +295,7 @@ Treat them as platform detail, not configuration.
 Configuration resolves in this order, highest priority first:
 
 - **Process environment**: values exported by your shell or container runtime. `load_dotenv` does not overwrite them.
-- **`.env` file**: read once from the repository root at `cryozen.py` with `encoding="utf-8-sig"`, which tolerates the UTF-8 byte order mark that Windows Notepad adds.
+- **`.env` file**: read once from the repository root at `cryozen.py` with `encoding="utf-8-sig"`, which tolerates the UTF-8 byte order mark that Windows Notepad adds. On Docker Compose the application never reads this file, and only the variables `docker-compose.yml` forwards reach it, as described at the top of this page.
 - **Code default**: the fallback in the `os.getenv` call listed in each table above.
 
 Several settings have a higher-priority source than the environment altogether.
