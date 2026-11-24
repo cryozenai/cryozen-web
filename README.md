@@ -130,6 +130,7 @@ lib/
   facts.ts            measured product facts the decks quote
   release-facts.json  exact snapshot of the public release facts
   release-compose.yml exact snapshot of the public release channel's docker-compose.yml
+  release-channel-files.json list of every file the public release channel ships
   decks/              deck copy as typed data, one file per positioning
   product/            what the site claims CryoZen does, as typed data: one surface per capability, in tour order
   media/              the capture manifest, its loader and validator, and the step-sync logic the tour uses
@@ -137,7 +138,7 @@ scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
   check-deck-print.mjs print-fidelity check for the decks; needs Chrome and poppler
   releases.test.mjs   download-link contract test: every asset resolves to a floating latest-release download, never the fetched tag, with the releases-page fallback wherever GitHub reports absence
-  sync-release-facts.mjs refreshes the vendored facts and compose file from the public channel
+  sync-release-facts.mjs refreshes the vendored facts, compose file, and channel file list from the public channel
   sync-docs.mjs       regenerates content/docs from a pinned product ref; docs.test.mjs covers it
   pages.test.mjs      Atom feed and JSON-LD contract test
   release-facts.test.mjs checks the facts contract and scans for banned strings
@@ -165,7 +166,8 @@ The public release channel publishes installers, release notes, and SHA-256 chec
 `lib/release-facts.json` is a byte-for-byte copy of the release channel's [facts.json](https://github.com/cryozenai/cryozen-releases/blob/main/facts.json).
 The site derives the release channel, organization, Docker image, install commands, ports, and desktop data directories from that snapshot.
 `lib/release-compose.yml` is a byte-for-byte copy of the channel's `docker-compose.yml`; the docs sync reads it to check which variables Compose forwards from `.env`.
-Run `npm run sync:facts` to refresh both snapshots and review the resulting diff before committing it.
+`lib/release-channel-files.json` lists every file in the channel; the docs sync reads it to reject Compose files and host-run scripts the channel does not ship.
+Run `npm run sync:facts` to refresh all three snapshots and review the resulting diff before committing it.
 If an installer filename changes upstream, update `lib/platforms.ts` in the same change.
 `scripts/release-facts.test.mjs` checks that the site agrees with the snapshot and rejects any banned string in the site source or README.
 
@@ -186,7 +188,7 @@ Do not edit them by hand; change the sync script's link rewrites or transform ta
 node scripts/sync-docs.mjs --product /path/to/cryozen --ref v1.2.0
 ```
 
-The script prints every transform it applied and fails if a transform matches nothing, if a banned string from `lib/release-facts.json`, a private-repo URL, a `docker compose ... --build` command, or source-checkout-only content survives, or if the docs tell Compose users to set a variable in `.env` that `lib/release-compose.yml` never reads.
+The script prints every transform it applied and fails if a transform matches nothing, if a banned string from `lib/release-facts.json`, a private-repo URL, a `docker compose ... --build` command, or source-checkout-only content survives, if the docs reference a Compose file or host-run script that `lib/release-channel-files.json` does not list, or if the docs tell Compose users to set a variable in `.env` that `lib/release-compose.yml` never reads.
 The comment at the top of the script and `scripts/docs.test.mjs` are the detailed reference.
 Page order and sidebar groups live in `lib/docs/index.ts`; a newly synced page also needs an entry there.
 

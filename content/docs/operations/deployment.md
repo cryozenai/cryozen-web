@@ -147,7 +147,7 @@ Set `OAUTH_REDIRECT_BASE_URL` to your externally reachable origin, such as `http
 The application sends a Content Security Policy on every response, and it allows scripts only from its own origin and a per-request nonce.
 Do not add a proxy that rewrites or strips those headers, and do not attempt to frame the interface: responses carry `X-Frame-Options: DENY` and `frame-ancestors 'none'`.
 
-## Enable GPU passthrough in Docker
+## GPUs and Docker
 
 The GPU Compose overlays and the GPU diagnostic scripts ship in the source checkout, which is not public, and the published `docker-compose.yml` passes no GPU into the container.
 To use a GPU with the public stack, run your model server, such as Ollama, on the host outside Docker and connect CryoZen to it through `host.docker.internal`, as [Integrations](/docs/guides/integrations#local-models) describes.

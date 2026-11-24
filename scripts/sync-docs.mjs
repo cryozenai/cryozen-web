@@ -1405,8 +1405,10 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     // lib/release-channel-files.json: the public cryozen-releases tree has no docker/gpu.*.yml, docker-compose.gpu-*.yml, or cli/check-docker-*.sh, and lib/release-compose.yml passes no GPU device.
     id: "deployment-gpu-overlays-source-only",
     files: ["docs/operations/deployment.md"],
-    reason: "Replace the GPU overlay and diagnostic-script instructions, whose files are not in the public release channel, with a source-checkout note and the public alternatives.",
+    reason: "Retitle the GPU section and replace the GPU overlay and diagnostic-script instructions, whose files are not in the public release channel, with a source-checkout note and the public alternatives.",
     pattern: [
+      "## Enable GPU passthrough in Docker",
+      "",
       "The GPU overlay files pass the host GPU into the `cryozen` container.",
       "They do not install a compute stack: the image stays slim, so you still install vLLM or llama-cpp-python through the Compute dependencies panel before a model can serve on the GPU.",
       "",
@@ -1438,6 +1440,8 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "Prefer the overlay workflow anywhere you drive Compose from a shell, because the merged files are maintained copies rather than the source of truth.",
     ].join("\n"),
     replacement: [
+      "## GPUs and Docker",
+      "",
       "The GPU Compose overlays and the GPU diagnostic scripts ship in the source checkout, which is not public, and the published `docker-compose.yml` passes no GPU into the container.",
       "To use a GPU with the public stack, run your model server, such as Ollama, on the host outside Docker and connect CryoZen to it through `host.docker.internal`, as [Integrations](../guides/integrations.md#local-models) describes.",
       "Desktop packages from [the download page](/download) run without Docker.",
