@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { getAllDocs, hrefForSlug } from "@/lib/docs";
 import { site } from "@/lib/site";
 
 const routes = [
@@ -13,7 +14,12 @@ const routes = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return routes.map((route) => ({
+  const docs = getAllDocs().map((doc) => ({
+    path: hrefForSlug(doc.slug),
+    priority: 0.5,
+    changeFrequency: "monthly" as const,
+  }));
+  return [...routes, ...docs].map((route) => ({
     url: `${site.url}${route.path}`,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
