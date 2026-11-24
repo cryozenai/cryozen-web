@@ -28,11 +28,13 @@ export interface HeroSlot {
 }
 
 export const heroSlots: readonly HeroSlot[] = [
+  // Only recordings that passed independent video QA for v1.2.0. Research and
+  // agents return here once their re-records pass (see the capture README).
   { surface: "chat", captures: ["chat", "coderun"] },
-  { surface: "research", captures: ["research"] },
-  { surface: "agents", captures: ["agents"] },
+  { surface: "websearch", captures: ["websearch"] },
   { surface: "documents", captures: ["documents"] },
   { surface: "mail", captures: ["mail"] },
+  { surface: "compute", captures: ["compute"] },
 ];
 
 /* ---------------------------------- start -------------------------------- */
