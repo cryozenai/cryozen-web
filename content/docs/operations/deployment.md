@@ -69,17 +69,26 @@ Source builds and the `systemd` service unit files (`cryozen-ui.service` and `in
 CryoZen does not terminate TLS.
 To reach it over HTTPS, run a proxy in front of it and keep the application itself on loopback.
 
-Run the proxy on the same host as CryoZen where you can.
-Uvicorn trusts forwarded headers from `127.0.0.1` by default, and it needs `X-Forwarded-Proto` to build the `https://` callback URLs that OAuth sign-in depends on.
-If the proxy runs on a different machine, set `FORWARDED_ALLOW_IPS` for the `cryozen` service to that machine's address, or the application will build `http://` redirect URIs and every OAuth flow will fail.
+Run the proxy on the same host as CryoZen where you can, and keep `APP_BIND=127.0.0.1` so only processes on the host can reach the published port.
+The application needs `X-Forwarded-Proto` to build the `https://` callback URLs that OAuth sign-in depends on, and uvicorn trusts forwarded headers only from the addresses in `FORWARDED_ALLOW_IPS`, which defaults to `127.0.0.1`.
+Under Docker Compose the proxy's connection reaches the container from the Compose network's gateway even when the proxy runs on the same host, so set `FORWARDED_ALLOW_IPS` for the `cryozen` service whenever a reverse proxy terminates HTTPS, or the application will build `http://` redirect URIs and every OAuth flow will fail.
+For a proxy on the same host, use the gateway address of the Compose network, which is named after the Compose directory (`cryozen-releases` by default):
+
+```bash
+docker network inspect cryozen-releases_default --format '{{(index .IPAM.Config 0).Gateway}}'
+```
+
+For a proxy on a different machine, use that machine's address.
 The published `docker-compose.yml` does not pass that variable through from `.env`, so create a `docker-compose.override.yml` next to it and run `docker compose up -d`:
 
 ```yaml
 services:
   cryozen:
     environment:
-      - FORWARDED_ALLOW_IPS=your_proxy_address_here
+      - FORWARDED_ALLOW_IPS=your_gateway_or_proxy_address_here
 ```
+
+A desktop package serves on the host itself, so a proxy on the same machine is trusted at the `127.0.0.1` default.
 
 This nginx server block terminates TLS and forwards the headers CryoZen needs:
 
