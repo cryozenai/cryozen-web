@@ -48,7 +48,7 @@ npm run check:production # the commit live on cryozen.ai equals main
 
 `.github/workflows/ci.yml` runs `npm ci`, `npm run check:node-pins`, `npm test`, `npm run lint`, `npm run build`, and `npm run check:links` against that build on every pull request and on every push to `main`.
 The build step type-checks the whole project, so there is no separate `tsc` job.
-`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks, the download-link contract (see "Keeping downloads correct"), and the deck-data invariants.
+`npm test` is `node --test` over `scripts/`, with no test dependency of its own; it covers the repository's own checks, the download-link contract (see "Keeping downloads correct"), the deck-data invariants, and the product-claim contract.
 
 CI deliberately runs **without** a `GITHUB_TOKEN`.
 That keeps the degradation paths in `lib/releases.ts` under test: if an unreachable GitHub API ever started failing the build instead of degrading, CI would catch it.
