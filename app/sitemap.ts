@@ -1,10 +1,18 @@
 import type { MetadataRoute } from "next";
 import { getAllDocs, hrefForSlug } from "@/lib/docs";
+import { surfaceIds } from "@/lib/product/surfaces";
 import { site } from "@/lib/site";
 
 const routes = [
   { path: "/", priority: 1, changeFrequency: "monthly" as const },
   { path: "/download", priority: 0.9, changeFrequency: "weekly" as const },
+  { path: "/tour", priority: 0.9, changeFrequency: "monthly" as const },
+  { path: "/features", priority: 0.8, changeFrequency: "monthly" as const },
+  ...surfaceIds.map((id) => ({
+    path: `/features/${id}`,
+    priority: 0.7,
+    changeFrequency: "monthly" as const,
+  })),
   { path: "/pricing", priority: 0.7, changeFrequency: "monthly" as const },
   { path: "/changelog", priority: 0.6, changeFrequency: "weekly" as const },
   { path: "/teams", priority: 0.7, changeFrequency: "monthly" as const },

@@ -37,11 +37,17 @@ export function DownloadCta({
   links,
   sizes,
   intelHref,
+  align = "center",
+  secondary = { href: "/download", label: "All platforms" },
 }: {
   links: DownloadLinks;
   sizes: Partial<Record<PlatformId, string | null>>;
   /** Intel macOS build, shown as a caption when the detected platform is macOS. */
   intelHref?: string;
+  /** `start` lines the block up with a left-aligned column instead of centring it. */
+  align?: "center" | "start";
+  /** The second button. The first always downloads. */
+  secondary?: { href: string; label: string };
 }) {
   // Null on the server and during hydration, then the detected platform.
   const platform = useSyncExternalStore(subscribe, detectPlatform, serverSnapshot);
@@ -50,8 +56,10 @@ export function DownloadCta({
   const heroButton = `${primaryButton} inline-flex gap-2.5 px-6 py-3.5 shadow-[0_0_50px_-12px_var(--color-primary)]`;
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="flex flex-wrap items-center justify-center gap-3">
+    <div className={`flex flex-col gap-3 ${align === "center" ? "items-center" : "items-start"}`}>
+      <div
+        className={`flex flex-wrap items-center gap-3 ${align === "center" ? "justify-center" : ""}`}
+      >
         {platform ? (
           <a
             href={links[platform]}
@@ -69,11 +77,8 @@ export function DownloadCta({
           </Link>
         )}
 
-        <Link
-          href="/download"
-          className={`${secondaryButton} inline-flex gap-2 px-6 py-3.5`}
-        >
-          All platforms
+        <Link href={secondary.href} className={`${secondaryButton} inline-flex gap-2 px-6 py-3.5`}>
+          {secondary.label}
         </Link>
       </div>
 

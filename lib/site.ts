@@ -15,7 +15,7 @@ export const site = {
   url: "https://cryozen.ai",
   tagline: "Your AI workspace, on hardware you control.",
   description:
-    "CryoZen is a self-hosted AI workspace: chat, autonomous agents with real tools, document search, and a mail, calendar, and contacts client in one application. Local models or your own API keys. No telemetry.",
+    "CryoZen is a self-hosted AI workspace: chat, autonomous agents with real tools, deep research, living documents, and a mail and calendar client in one application. Local models or your own API keys. No telemetry.",
   // TODO(cryozen): confirm this mailbox exists before the site goes live.
   contactEmail: "hello@cryozen.ai",
 } as const;
@@ -48,9 +48,16 @@ export const configDocsUrl = "/docs/reference/configuration";
 export const issuesUrl = `${releasesRepoUrl}/issues`;
 export const ghcrImage = releaseFacts.image;
 
+/**
+ * The header's links, in the site's reading order: see it, read what it does,
+ * learn it, run it for a team, check it, price it. Download is the header's
+ * button rather than a link here, and the mobile menu adds it back.
+ */
 export const nav = [
-  { href: "/download", label: "Download" },
+  { href: "/tour", label: "Tour" },
+  { href: "/features", label: "Features" },
+  { href: "/docs", label: "Docs" },
+  { href: "/teams", label: "Teams" },
+  { href: "/security", label: "Security" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/changelog", label: "Changelog" },
-  { href: docsUrl, label: "Docs" },
 ] as const;

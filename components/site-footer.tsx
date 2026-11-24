@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { GitHubIcon } from "@/components/icons";
+import { footerNote } from "@/lib/home/copy";
 import {
   configDocsUrl,
-  docsUrl,
   issuesUrl,
   quickstartUrl,
   releasesRepoUrl,
@@ -16,16 +16,19 @@ const columns = [
     title: "Product",
     links: [
       { label: "Download", href: "/download" },
+      { label: "Tour", href: "/tour" },
+      { label: "Features", href: "/features" },
       { label: "Pricing", href: "/pricing" },
       { label: "Changelog", href: "/changelog" },
-      { label: "Releases", href: releasesUrl },
+      { label: "Release feed (Atom)", href: "/changelog/feed.xml" },
     ],
   },
   {
     title: "Documentation",
     links: [
-      { label: "Getting started", href: docsUrl },
-      { label: "Install guide", href: "/download" },
+      { label: "Docs", href: "/docs" },
+      { label: "Teams", href: "/teams" },
+      { label: "Security", href: "/security" },
       { label: "Docker quickstart", href: quickstartUrl },
       { label: "Configuration reference", href: configDocsUrl },
     ],
@@ -34,6 +37,7 @@ const columns = [
     title: "Company",
     links: [
       { label: "GitHub", href: releasesRepoUrl },
+      { label: "Releases", href: releasesUrl },
       { label: "Report an issue", href: issuesUrl },
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
@@ -44,9 +48,9 @@ const columns = [
 export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-hairline bg-surface/40">
-      <div className="mx-auto w-full max-w-6xl px-6 py-14 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
-          <div className="max-w-xs">
+      <div className="mx-auto w-full max-w-7xl px-6 py-14 lg:px-8">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+          <div className="col-span-2 max-w-xs md:col-span-1">
             <Link href="/" className="inline-flex items-center gap-2.5" aria-label="CryoZen home">
               <Logo className="size-7" />
               <span className="text-[15px] font-semibold tracking-[0.14em] text-core uppercase">
@@ -59,7 +63,7 @@ export function SiteFooter() {
               target="_blank"
               rel="noreferrer"
               aria-label="CryoZen releases on GitHub"
-              className="mt-5 inline-flex rounded-md p-2 text-muted transition-colors duration-150 hover:text-core"
+              className="mt-5 -ml-2 inline-flex rounded-md p-2 text-muted transition-colors duration-150 hover:text-core"
             >
               <GitHubIcon />
             </a>
@@ -73,15 +77,24 @@ export function SiteFooter() {
               <ul className="mt-4 space-y-3">
                 {column.links.map((link) => {
                   const external = link.href.startsWith("http");
+                  const className =
+                    "text-sm text-muted transition-colors duration-150 hover:text-core";
                   return (
                     <li key={link.label}>
-                      <Link
-                        href={link.href}
-                        {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
-                        className="text-sm text-muted transition-colors duration-150 hover:text-core"
-                      >
-                        {link.label}
-                      </Link>
+                      {link.href.endsWith(".xml") ? (
+                        // A feed is a file, not a page: a plain anchor, so the router does not prefetch it.
+                        <a href={link.href} className={className}>
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
+                          className={className}
+                        >
+                          {link.label}
+                        </Link>
+                      )}
                     </li>
                   );
                 })}
@@ -94,7 +107,7 @@ export function SiteFooter() {
           <p>
             &copy; {new Date().getFullYear()} {site.name}. All rights reserved.
           </p>
-          <p>Self-hosted. No telemetry. Your data is stored on your hardware.</p>
+          <p>{footerNote}</p>
         </div>
       </div>
     </footer>
