@@ -1252,6 +1252,32 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     ].join("\n"),
     replacement: "",
   },
+  {
+    // The image runs `uvicorn cryozen:app` (Dockerfile at v1.2.0), which reads FORWARDED_ALLOW_IPS; the published docker-compose.yml does not pass it through, so an override file sets it.
+    id: "deployment-proxy-forwarded-allow-ips-compose",
+    files: ["docs/operations/deployment.md"],
+    reason: "Configure trusted proxy addresses through a Compose override instead of a uvicorn flag the public install never passes.",
+    pattern: "If the proxy runs on a different machine, start uvicorn with `--forwarded-allow-ips` naming that machine's address, or the application will build `http://` redirect URIs and every OAuth flow will fail.",
+    replacement: [
+      "If the proxy runs on a different machine, set `FORWARDED_ALLOW_IPS` for the `cryozen` service to that machine's address, or the application will build `http://` redirect URIs and every OAuth flow will fail.",
+      "The published `docker-compose.yml` does not pass that variable through from `.env`, so create a `docker-compose.override.yml` next to it and run `docker compose up -d`:",
+      "",
+      "```yaml",
+      "services:",
+      "  cryozen:",
+      "    environment:",
+      "      - FORWARDED_ALLOW_IPS=your_proxy_address_here",
+      "```",
+    ].join("\n"),
+  },
+  {
+    // The image runs `uvicorn cryozen:app` (Dockerfile at v1.2.0), which reads FORWARDED_ALLOW_IPS; the published docker-compose.yml does not pass it through, so an override file sets it.
+    id: "troubleshooting-proxy-forwarded-allow-ips-compose",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Name the Compose override setting for a cross-host proxy instead of a uvicorn flag the public install never passes.",
+    pattern: "so a proxy on a different host needs `--forwarded-allow-ips` naming its address.",
+    replacement: "so a proxy on a different host needs `FORWARDED_ALLOW_IPS` set to its address in a `docker-compose.override.yml`, as [the deployment guide](deployment.md#put-cryozen-behind-a-reverse-proxy-with-https) shows.",
+  },
 ];
 
 /**

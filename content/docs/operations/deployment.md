@@ -71,7 +71,15 @@ To reach it over HTTPS, run a proxy in front of it and keep the application itse
 
 Run the proxy on the same host as CryoZen where you can.
 Uvicorn trusts forwarded headers from `127.0.0.1` by default, and it needs `X-Forwarded-Proto` to build the `https://` callback URLs that OAuth sign-in depends on.
-If the proxy runs on a different machine, start uvicorn with `--forwarded-allow-ips` naming that machine's address, or the application will build `http://` redirect URIs and every OAuth flow will fail.
+If the proxy runs on a different machine, set `FORWARDED_ALLOW_IPS` for the `cryozen` service to that machine's address, or the application will build `http://` redirect URIs and every OAuth flow will fail.
+The published `docker-compose.yml` does not pass that variable through from `.env`, so create a `docker-compose.override.yml` next to it and run `docker compose up -d`:
+
+```yaml
+services:
+  cryozen:
+    environment:
+      - FORWARDED_ALLOW_IPS=your_proxy_address_here
+```
 
 This nginx server block terminates TLS and forwards the headers CryoZen needs:
 
