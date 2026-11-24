@@ -38,15 +38,13 @@ export const latestReleaseUrl = `${releasesUrl}/latest`;
 export const latestAssetUrl = (assetName: string) =>
   `${latestReleaseUrl}/download/${assetName}`;
 /**
- * Every outbound documentation and support link lands in the public release
- * channel. The product repository is private, so anything under it answers 404
- * to a visitor; `scripts/check-links.mjs` fails CI if a page links to one.
- * The channel has no docs/ tree yet, only a README and the annotated
- * .env.example, so these name what exists today.
+ * Documentation lives on-site under /docs (synced from a pinned product
+ * release). Support issues still land in the public release channel; the
+ * product repository is private and returns 404 to anonymous visitors.
  */
-export const docsUrl = `${releasesRepoUrl}#readme`;
-export const quickstartUrl = `${releasesRepoUrl}#docker`;
-export const configDocsUrl = `${releasesRepoUrl}/blob/main/.env.example`;
+export const docsUrl = "/docs";
+export const quickstartUrl = "/download#docker";
+export const configDocsUrl = "/docs/reference/configuration";
 export const issuesUrl = `${releasesRepoUrl}/issues`;
 export const ghcrImage = releaseFacts.image;
 
@@ -54,5 +52,5 @@ export const nav = [
   { href: "/download", label: "Download" },
   { href: "/pricing", label: "Pricing" },
   { href: "/changelog", label: "Changelog" },
-  { href: docsUrl, label: "Docs", external: true },
+  { href: docsUrl, label: "Docs" },
 ] as const;
