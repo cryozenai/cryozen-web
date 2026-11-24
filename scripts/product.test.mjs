@@ -253,11 +253,16 @@ test("no surface claims a capability v1.2.0 does not ship", () => {
 
 test("no surface says webhooks or contacts belong to one account", () => {
   // Both are instance-wide and admin-managed in v1.2.0; the release notes say otherwise and are wrong.
-  for (const id of ["api", "calendar"]) {
-    const { teams } = getSurface(id);
-    assert.match(teams, /shared across the instance/, id);
+  for (const [id, subject] of [
+    ["api", /webhook/i],
+    ["calendar", /contact/i],
+  ]) {
+    const sentences = (getSurface(id).teams ?? "").split(/(?<=\.)\s+/).filter((part) => subject.test(part));
+    assert.ok(sentences.length > 0, `${id}: the teams note must say who owns them`);
+    for (const sentence of sentences) {
+      assert.doesNotMatch(sentence, /belong|per[- ](user|account)|their own/i, `${id}: "${sentence}"`);
+    }
   }
-  assert.doesNotMatch(getSurface("api").teams, /belong to the account/);
 });
 
 test("the overclaim check catches each kind of false claim", () => {

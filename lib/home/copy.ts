@@ -30,7 +30,7 @@ export interface HeroSlot {
 export const heroSlots: readonly HeroSlot[] = [
   // Only recordings that passed independent video QA for v1.2.0. Research and
   // agents return here once their re-records pass (see the capture README).
-  { surface: "chat", captures: ["chat", "coderun"] },
+  { surface: "chat", captures: ["chat"] },
   { surface: "websearch", captures: ["websearch"] },
   { surface: "documents", captures: ["documents"] },
   { surface: "mail", captures: ["mail"] },
@@ -198,9 +198,9 @@ export const tourTeaser = {
     before: "The",
     link: "tour",
     after:
-      "walks through every surface with a short recording and the exact buttons to press. Here is one chapter.",
+      "walks through every surface and names the exact buttons to press, most with a short recording. Here is one chapter.",
   },
-  surface: "research" as SurfaceId,
+  surface: "documents" as SurfaceId,
   chapter: "Read the full chapter",
   all: "See all chapters",
 } as const;

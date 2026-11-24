@@ -1,6 +1,4 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowIcon } from "@/components/icons";
 
 /*
  * The building blocks shared by the home page, the tour, and the feature
@@ -96,18 +94,5 @@ export function Ledger({
       <span className={`${monoLabel} text-[0.6875rem]/5 text-primary`}>{label}</span>
       <span className="text-pretty">{children}</span>
     </p>
-  );
-}
-
-/** A pill-shaped link to another page, with an arrow. */
-export function PillLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="group inline-flex min-h-9 items-center gap-1.5 rounded-full border border-hairline px-3.5 text-sm text-core transition-colors duration-150 hover:border-primary/50 hover:text-glow"
-    >
-      {children}
-      <ArrowIcon className="size-3.5 text-primary transition-transform duration-150 group-hover:translate-x-0.5" />
-    </Link>
   );
 }

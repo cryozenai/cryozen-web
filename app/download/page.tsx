@@ -216,8 +216,8 @@ export default async function DownloadPage() {
           </p>
           <p className="mt-3 text-sm/6 text-muted">
             SearXNG and ChromaDB come with the Docker stack, not the desktop builds. Without them,
-            web search goes directly to DuckDuckGo, and vector search falls back to keyword matching
-            unless you run ChromaDB yourself. Some features still assume the Docker port and data path, including
+            web search goes directly to DuckDuckGo, and memory recall matches by keyword unless you
+            run ChromaDB yourself. Some features still assume the Docker port and data path, including
             model auto-stop and image editing; that fix is planned.
           </p>
         </Card>

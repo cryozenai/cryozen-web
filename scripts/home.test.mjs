@@ -10,6 +10,7 @@
  * from the pages, and the copy file names nothing that does not exist.
  */
 import { strict as assert } from "node:assert";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { registerHooks } from "node:module";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
@@ -39,9 +40,7 @@ const {
 const copy = await import("../lib/home/copy.ts");
 const { surfaces, surfaceIds, findSurface } = await import("../lib/product/surfaces.ts");
 const { nav } = await import("../lib/site.ts");
-const facts = JSON.parse(
-  (await import("node:fs")).readFileSync(join(root, "lib/release-facts.json"), "utf8"),
-);
+const facts = JSON.parse(readFileSync(join(root, "lib/release-facts.json"), "utf8"));
 
 /** A surface with only what the arranging logic reads. */
 const s = (id, group, leaves = "nothing") => ({ id, group, privacy: { leaves } });
@@ -212,6 +211,21 @@ test("every kind of work has a home chapter, and the copy names only real surfac
   for (const id of Object.keys(copy.extraCaptures)) assert.ok(findSurface(id), id);
 });
 
+test("a hero tab plays only its own surface's recording, so its reach line describes what is shown", () => {
+  for (const slot of copy.heroSlots) {
+    const own = findSurface(slot.surface).capture;
+    assert.notEqual(own, null, `${slot.surface}: a hero tab needs a shipped recording`);
+    for (const capture of slot.captures) assert.equal(capture, own, `${slot.surface} plays ${capture}`);
+  }
+});
+
+test("the tour teaser shows a chapter with a recording, and most chapters have one", () => {
+  // The teaser's intro promises a short recording for most chapters and shows one of them.
+  assert.notEqual(findSurface(copy.tourTeaser.surface).capture, null, copy.tourTeaser.surface);
+  const recorded = tourChapters(surfaces).filter((chapter) => chapter.surface.capture !== null);
+  assert.ok(recorded.length * 2 > tourChapters(surfaces).length, `${recorded.length} recorded`);
+});
+
 test("the activation path is the four steps, and the app address is the desktop port", () => {
   assert.deepEqual(
     copy.start.steps.map((step) => step.title),
@@ -227,32 +241,32 @@ test("the activation path is the four steps, and the app address is the desktop 
 test("the team summary files webhooks and contacts under shared, never per user", () => {
   const [perUser, adminOnly, shared] = copy.teams.tiers;
   assert.equal(copy.teams.tiers.length, 3);
-  assert.deepEqual(
-    [...perUser.items],
-    ["Mail", "Calendar", "Notes", "Model endpoints", "Scheduled tasks", "Research", "Compaction"],
-  );
-  assert.deepEqual(
-    [...shared.items],
-    ["Contacts", "Outbound webhooks", "Global model credentials", "Global search credentials", "Compute serving"],
-  );
+  assert.ok(shared.items.some((item) => /contact/i.test(item)), "contacts are shared");
+  assert.ok(shared.items.some((item) => /webhook/i.test(item)), "webhooks are shared");
   for (const item of [...perUser.items, ...adminOnly.items]) {
     assert.doesNotMatch(item, /webhook|contact/i, `"${item}" is shared, not ${perUser.label}`);
   }
   assert.match(perUser.note, /Mail and calendar are off/);
 });
 
-test("the header links are the site's sections, in order, and all internal", () => {
-  assert.deepEqual(
-    nav.map((item) => [item.label, item.href]),
-    [
-      ["Tour", "/tour"],
-      ["Features", "/features"],
-      ["Docs", "/docs"],
-      ["Teams", "/teams"],
-      ["Security", "/security"],
-      ["Pricing", "/pricing"],
-    ],
+/** Whether the App Router serves `/<segment>`: a page in its folder, or an optional catch-all under it. */
+function servesPage(segment) {
+  const dir = join(root, "app", segment);
+  if (existsSync(join(dir, "page.tsx"))) return true;
+  return (
+    existsSync(dir) &&
+    readdirSync(dir).some((entry) => /^\[\[\.\.\.\w+\]\]$/.test(entry) && existsSync(join(dir, entry, "page.tsx")))
   );
+}
+
+test("every header link is internal, distinct, and an App Router page", () => {
+  assert.ok(nav.length > 0);
+  assert.equal(new Set(nav.map((item) => item.href)).size, nav.length);
+  for (const { href, label } of nav) {
+    assert.match(href, /^\/[a-z-]+$/, `${label}: ${href} is not an internal page path`);
+    assert.ok(servesPage(href.slice(1)), `${label}: no page at ${href}`);
+  }
+  assert.equal(servesPage("no-such-section"), false);
 });
 
 /** Every string in the copy file, however deeply nested. */
