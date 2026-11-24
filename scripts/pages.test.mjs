@@ -138,7 +138,7 @@ test("JSON-LD describes the application and only prices the Personal offer", () 
   assert.deepEqual(data.operatingSystem, ["macOS", "Windows", "Linux"]);
   assert.equal(data.applicationCategory, "ProductivityApplication");
   assert.deepEqual(data.offers, [
-    { "@type": "Offer", name: "Personal", url: "https://cryozen.ai/pricing", price: 0 },
+    { "@type": "Offer", name: "Personal", url: "https://cryozen.ai/pricing", price: 0, priceCurrency: "USD" },
     { "@type": "Offer", name: "Team", url: "https://cryozen.ai/pricing" },
     { "@type": "Offer", name: "Enterprise", url: "https://cryozen.ai/pricing" },
   ]);

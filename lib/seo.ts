@@ -14,7 +14,7 @@ export function softwareApplicationJsonLd() {
       "@type": "Offer",
       name,
       url: new URL("/pricing", site.url).href,
-      ...(id === "personal" ? { price: 0 } : {}),
+      ...(id === "personal" ? { price: 0, priceCurrency: "USD" } : {}),
     })),
   } as const;
 }

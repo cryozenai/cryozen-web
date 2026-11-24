@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Card, Container, Eyebrow, SectionHeading, textLink } from "@/components/ui";
 import { breadcrumbJsonLd, JsonLd, softwareApplicationJsonLd } from "@/lib/seo";
+import { desktopPort, dockerPort } from "@/lib/platforms";
 import { latestReleaseUrl, site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 const protections = [
-  ["App listener", "Native launchers, systemd, and the default Docker host mapping bind to 127.0.0.1. The port is 7000 for Compose, systemd, Linux and Windows source launchers, and 7860 for the macOS launcher and packaged desktop app by default."],
+  ["App listener", `The desktop app and the default Docker Compose port mapping bind to 127.0.0.1: port ${desktopPort} for the desktop app and ${dockerPort} for Docker Compose.`],
   ["Compose services", "ChromaDB (8100), SearXNG (8080), and ntfy (8091) publish on host loopback. Containers also communicate over the Compose network."],
   ["Encrypted at rest", "Stored model endpoint keys, mail passwords, linked-account tokens, the vault session, and saved signatures use Fernet encryption. The key lives in the data directory. API bearer tokens are hashed."],
   ["Other local data", "CardDAV contact credentials are stored in plain text in the instance settings. Protect the data directory and backups, which hold application data and key material."],
