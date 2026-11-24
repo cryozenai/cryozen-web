@@ -70,10 +70,10 @@ docker compose up -d
 ```
 
 In a desktop package there is no such translation, so the failure means your own account cannot write the resolved data directory.
-Ask the application which directory it resolved and whether it can write there:
+Ask the application which directory it resolved and whether it can write there, at the address the package opened in your browser, which is port 7860 unless that port was taken:
 
 ```bash
-curl -fsS http://127.0.0.1:7000/api/ready
+curl -fsS http://127.0.0.1:7860/api/ready
 ```
 
 The `data_dir` check in that response reports the path it probed and the error it hit, which is faster than guessing which directory it resolved.

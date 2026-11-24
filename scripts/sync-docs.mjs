@@ -1053,11 +1053,26 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
   },
   {
     // Desktop packages run as the signed-in user; native and systemd installs need a source checkout.
+    // packaging/launcher.py serves on 7860 (lib/release-facts.json install.desktop_port) unless that port is taken.
     id: "troubleshooting-permissions-desktop",
     files: ["docs/operations/troubleshooting.md"],
-    reason: "Describe the non-container permission failure for desktop packages instead of native and systemd installs.",
-    pattern: "On a native or systemd install there is no such translation, so the failure means the account running uvicorn cannot write the resolved data directory.",
-    replacement: "In a desktop package there is no such translation, so the failure means your own account cannot write the resolved data directory.",
+    reason: "Describe the non-container permission failure and its readiness check for desktop packages instead of native and systemd installs.",
+    pattern: [
+      "On a native or systemd install there is no such translation, so the failure means the account running uvicorn cannot write the resolved data directory.",
+      "Ask the application which directory it resolved and whether it can write there:",
+      "",
+      "```bash",
+      "curl -fsS http://127.0.0.1:7000/api/ready",
+      "```",
+    ].join("\n"),
+    replacement: [
+      "In a desktop package there is no such translation, so the failure means your own account cannot write the resolved data directory.",
+      "Ask the application which directory it resolved and whether it can write there, at the address the package opened in your browser, which is port 7860 unless that port was taken:",
+      "",
+      "```bash",
+      "curl -fsS http://127.0.0.1:7860/api/ready",
+      "```",
+    ].join("\n"),
   },
   {
     // Desktop packages bundle neither SearXNG nor ChromaDB; only the Docker stack runs them.
@@ -1170,6 +1185,14 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     replacement: "Launcher port override with higher precedence than `APP_PORT`.",
   },
   {
+    // packaging/launcher.py reads CRYOZEN_PORT, not APP_PORT, and defaults to 7860 on every platform.
+    id: "config-app-port-row",
+    files: ["docs/reference/configuration.md"],
+    reason: "Attribute the 7860 APP_PORT default to the source-checkout macOS script, not the desktop launcher.",
+    pattern: "`7000`, and `7860` in the macOS launcher because AirPlay Receiver usually holds 7000 | Host port for the launchers and the Compose port map;",
+    replacement: "`7000`, and `7860` in the source-checkout macOS launch script because AirPlay Receiver usually holds 7000 | Host port for the Compose port map and the source-checkout launch scripts; the desktop launcher reads `CRYOZEN_PORT` instead;",
+  },
+  {
     // Keep the scheduling advice install-neutral.
     id: "config-pollers-scheduler",
     files: ["docs/reference/configuration.md"],
@@ -1220,9 +1243,11 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     // ARCHITECTURE.md is not published under /docs.
     id: "glossary-architecture-guide-unpublished",
     files: ["docs/concepts/glossary.md"],
-    reason: "Drop the pointer to the architecture guide, which is not published under /docs.",
+    reason: "Drop the name-collision claim and its pointer to the architecture guide, which is not published under /docs.",
     pattern: [
       "",
+      "",
+      "Six words are reused for different components, which is the most common source of confusion when reading the tree.",
       "[The architecture guide](../../ARCHITECTURE.md) lists each collision and how to tell them apart.",
     ].join("\n"),
     replacement: "",

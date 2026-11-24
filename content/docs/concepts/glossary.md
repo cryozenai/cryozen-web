@@ -56,8 +56,6 @@ These names appear in filenames, database tables, and logs rather than in URLs.
 | Task scheduler that runs scheduled tasks | `services/kaala.py` (`TaskScheduler`) |
 | User accounts file | `data/niti.json` |
 
-Six words are reused for different components, which is the most common source of confusion when reading the tree.
-
 ## Command-line commands
 
 The `cryozen` command dispatches to these.
