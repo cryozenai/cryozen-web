@@ -20,7 +20,7 @@ Find the directory before you copy it, because it differs by deployment path:
 - **Docker Compose**: `./data` in the repository, bind-mounted to `/app/data`. The image pins `CRYOZEN_DATA_DIR=/app/data`, so this is always the answer on the Compose path.
 - **Desktop packages**: `~/Library/Application Support/CryoZen` on macOS, `%LOCALAPPDATA%\CryoZen` on Windows, and `~/.local/share/cryozen` on Linux.
 - **Native launcher and systemd**: these paths require a source checkout, which is not public.
-- **Any path with `CRYOZEN_DATA_DIR` set**: whatever that variable names, which wins over both defaults.
+- **Any path with `CRYOZEN_DATA_DIR` set**: whatever that variable names, which wins over the defaults above.
 
 The directory holds the SQLite database `smriti.db`, the account file `niti.json`, the signed-in session store `sessions.json`, the Fernet key `.app_key`, the ChromaDB directory, uploads, personal documents, generated images, mail attachments, deep research runs, and the pinned SSH host keys.
 Losing `.app_key` is unrecoverable: every stored credential is encrypted with it, and no other copy exists.
@@ -163,7 +163,7 @@ Do them when it suits you, and each is independent of the others:
 - **Rename your environment variables**: switch variables from the previous-name prefix to `CRYOZEN_*` in `.env`, shell profiles, and unit files. The aliasing runs once at import, so a variable exported after startup is not picked up.
 - **Point service units at `cryozen:app`**: service units and launcher scripts require a source checkout, which is not public.
 - **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to source checkouts, which are not public).
-- **Move the data directory**: nothing moves the pre-rename data directory to `~/.cryozen` for you, and the application is content to keep using the old path indefinitely. If you want the new name, stop the application, move the old directory to `~/.cryozen`, and start it again.
+- **Move the data directory**: Docker Compose pins `CRYOZEN_DATA_DIR` to `/app/data`, and moving the pre-rename data directory on a native launcher or systemd install requires a source checkout, which is not public.
 
 ## Route names moved to English
 

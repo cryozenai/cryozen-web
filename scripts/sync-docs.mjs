@@ -173,11 +173,14 @@ export const BANNED_TRANSFORMS = [
     id: "upgrading-backup-legacy-dir",
     files: ["docs/operations/upgrading.md"],
     reason: "Replace the source-only native data directory line, which names the banned directory, with the desktop package data directories.",
-    pattern:
+    pattern: [
       "- **Native launcher and systemd**: `~/.cryozen`, or `~/.srijan` when that directory exists and `~/.cryozen` does not.",
+      "- **Any path with `CRYOZEN_DATA_DIR` set**: whatever that variable names, which wins over both defaults.",
+    ].join("\n"),
     replacement: [
       "- **Desktop packages**: `~/Library/Application Support/CryoZen` on macOS, `%LOCALAPPDATA%\\CryoZen` on Windows, and `~/.local/share/cryozen` on Linux.",
       "- **Native launcher and systemd**: these paths require a source checkout, which is not public.",
+      "- **Any path with `CRYOZEN_DATA_DIR` set**: whatever that variable names, which wins over the defaults above.",
     ].join("\n"),
   },
   {
@@ -243,7 +246,7 @@ export const BANNED_TRANSFORMS = [
       "- **Rename your environment variables**: switch variables from the previous-name prefix to `CRYOZEN_*` in `.env`, shell profiles, and unit files. The aliasing runs once at import, so a variable exported after startup is not picked up.",
       "- **Point service units at `cryozen:app`**: service units and launcher scripts require a source checkout, which is not public.",
       "- **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to source checkouts, which are not public).",
-      "- **Move the data directory**: nothing moves the pre-rename data directory to `~/.cryozen` for you, and the application is content to keep using the old path indefinitely. If you want the new name, stop the application, move the old directory to `~/.cryozen`, and start it again.",
+      "- **Move the data directory**: Docker Compose pins `CRYOZEN_DATA_DIR` to `/app/data`, and moving the pre-rename data directory on a native launcher or systemd install requires a source checkout, which is not public.",
     ].join("\n"),
   },
   {
