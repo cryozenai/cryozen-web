@@ -17,6 +17,7 @@ import type {
 
 const VERSION = /^v\d+\.\d+\.\d+$/;
 const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const FILE_SEGMENT = /^[a-z0-9][a-z0-9._-]*$/i;
 
 function fail(where: string, problem: string): never {
   throw new Error(`lib/media/manifest.json: ${where}: ${problem}`);
@@ -38,9 +39,16 @@ function positive(value: unknown, where: string): number {
   return value;
 }
 
+function isUnder(path: string, directory: string): boolean {
+  return (
+    path.startsWith(directory) &&
+    path.slice(directory.length).split("/").every((segment) => FILE_SEGMENT.test(segment))
+  );
+}
+
 function mediaPath(value: unknown, where: string, directory: string, extension: string): string {
   const path = text(value, where);
-  if (!path.startsWith(directory) || !path.endsWith(extension)) {
+  if (!isUnder(path, directory) || !path.endsWith(extension)) {
     fail(where, `expected a path under ${directory} ending in ${extension}, got ${path}`);
   }
   return path;
@@ -51,7 +59,7 @@ function parseSource(value: unknown, where: string, directory: string): CaptureS
   const type = text(value.type, `${where}.type`);
   if (!type.startsWith("video/")) fail(`${where}.type`, `expected a video MIME type, got ${type}`);
   const src = text(value.src, `${where}.src`);
-  if (!src.startsWith(directory)) fail(`${where}.src`, `expected a path under ${directory}, got ${src}`);
+  if (!isUnder(src, directory)) fail(`${where}.src`, `expected a path under ${directory}, got ${src}`);
   return { src, type };
 }
 

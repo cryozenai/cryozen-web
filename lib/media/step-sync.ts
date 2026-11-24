@@ -6,20 +6,20 @@
  */
 
 /**
- * `cues[i]` is the second at which step `i` begins, or null for a step the
- * recording does not show. Returns the index of the step that is active at
- * `time`: the one with the latest cue at or before it. Returns -1 before the
- * first cue, when no step is timed, or when `time` is not a real number.
+ * `cues[i]` is the second at which step `i` begins. Returns the index of the
+ * step that is active at `time`: the one with the latest cue at or before it.
+ * Returns -1 before the first cue, when there are no cues, or when `time` is
+ * not a real number.
  *
  * Cues need not be sorted. If two steps share a cue the later one wins, which
  * is what a viewer sees: the second step replaces the first on the same frame.
  */
-export function activeStepIndex(cues: readonly (number | null)[], time: number): number {
+export function activeStepIndex(cues: readonly number[], time: number): number {
   if (!Number.isFinite(time)) return -1;
   let active = -1;
   let latest = -Infinity;
   cues.forEach((cue, index) => {
-    if (cue !== null && cue <= time && cue >= latest) {
+    if (cue <= time && cue >= latest) {
       active = index;
       latest = cue;
     }
@@ -34,14 +34,13 @@ export function formatTimecode(seconds: number): string {
   return `${minutes}:${String(whole % 60).padStart(2, "0")}`;
 }
 
-/** A how-to step as the content model writes it; `at` is seconds into the capture. */
+/** A how-to step as the content model writes it: untimed, because the recording owns timing. */
 export interface GuideStep {
   title: string;
   detail?: string;
-  at?: number;
 }
 
-/** A step as a chapter lists it: `at` is null when the recording does not show it. */
+/** A step as a chapter lists it: `at` is null for a how-to step, which is never seekable. */
 export interface TimedStep {
   title: string;
   detail?: string;
@@ -49,38 +48,31 @@ export interface TimedStep {
 }
 
 export interface ChapterTimeline {
-  /** The moments the recording marks, listed only when the how-to carries no cues of its own. */
+  /** The moments the recording marks: the synced list, empty without a recording. */
   clip: TimedStep[];
-  /** The how-to, always listed in full. */
+  /** The how-to, always listed in full and never synced. */
   guide: TimedStep[];
 }
 
 /**
- * Decides which list follows the recording.
+ * Splits a chapter into the list that follows the recording and the list that
+ * does not.
  *
  * The how-to is written from the product, the recording's own step marks are
  * written by whoever recorded it, and the two are not guaranteed to line up
- * one to one. So nothing is matched by position:
- * - without a recording, the how-to is a plain list;
- * - if the how-to carries cues, it is the synced list and the recording's
- *   marks are not repeated beside it;
- * - otherwise the recording's marks are the synced list and the how-to stays
- *   a plain list under it.
+ * one to one. So nothing is matched by position: the recording's marks are
+ * the only timing, and the how-to stays a plain list under them.
  */
 export function chapterTimeline(
   howTo: readonly GuideStep[],
   capture: { steps: readonly { at: number; label: string }[] } | null,
 ): ChapterTimeline {
-  const cued = capture !== null && howTo.some((step) => step.at !== undefined);
   return {
-    clip:
-      capture === null || cued
-        ? []
-        : capture.steps.map((step) => ({ title: step.label, at: step.at })),
+    clip: capture === null ? [] : capture.steps.map((step) => ({ title: step.label, at: step.at })),
     guide: howTo.map((step) => ({
       title: step.title,
       ...(step.detail === undefined ? {} : { detail: step.detail }),
-      at: cued ? (step.at ?? null) : null,
+      at: null,
     })),
   };
 }

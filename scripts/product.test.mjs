@@ -291,20 +291,6 @@ test("capture references resolve, and a recording named after a surface is wired
   }
 });
 
-test("how-to cues exist only where a recording does, and fall inside it", () => {
-  for (const surface of surfaces) {
-    const capture = getCapture(surface.capture);
-    for (const step of surface.howTo) {
-      if (step.at === undefined) continue;
-      assert.ok(capture, `${surface.id}: "${step.title}" has a cue but there is no recording`);
-      assert.ok(
-        step.at >= 0 && step.at <= capture.duration,
-        `${surface.id}: "${step.title}" cue ${step.at} is outside 0-${capture.duration}`,
-      );
-    }
-  }
-});
-
 test("the shipped manifest is pinned to the release and every file it names exists", () => {
   assert.equal(manifest.version, facts.version);
   for (const capture of manifest.captures) {
@@ -398,6 +384,14 @@ test("parseManifest rejects a broken manifest and names what is wrong", () => {
     /capture "chat"\.poster\.avif: expected a path under \/media\/v1\.2\.0\//,
   );
   assert.throws(
+    broken((_, capture) => (capture.poster.avif = "/media/v1.2.0/../v1.1.0/chat.avif")),
+    /capture "chat"\.poster\.avif: expected a path under \/media\/v1\.2\.0\//,
+  );
+  assert.throws(
+    broken((_, capture) => (capture.captions = "/media/v1.2.0//chat.vtt")),
+    /capture "chat"\.captions: expected a path under \/media\/v1\.2\.0\//,
+  );
+  assert.throws(
     broken((_, capture) => (capture.poster.webp = "/media/v1.2.0/chat.png")),
     /poster\.webp: expected a path under \/media\/v1\.2\.0\/ ending in \.webp/,
   );
@@ -411,6 +405,10 @@ test("parseManifest rejects a broken manifest and names what is wrong", () => {
   );
   assert.throws(
     broken((_, capture) => (capture.sources[0].src = "https://cdn.example/chat.webm")),
+    /sources\[0\]\.src: expected a path under \/media\/v1\.2\.0\//,
+  );
+  assert.throws(
+    broken((_, capture) => (capture.sources[0].src = "/media/v1.2.0/../v1.1.0/chat.webm")),
     /sources\[0\]\.src: expected a path under \/media\/v1\.2\.0\//,
   );
   assert.throws(
@@ -458,13 +456,7 @@ test("activeStepIndex has no active step before the first cue", () => {
   assert.equal(activeStepIndex([2, 6], 2), 0);
 });
 
-test("activeStepIndex skips steps the recording does not show", () => {
-  // Step 2 of 4 is setup done off camera, so it carries no cue.
-  const cues = [0, null, 5, 11];
-  assert.equal(activeStepIndex(cues, 3), 0);
-  assert.equal(activeStepIndex(cues, 5), 2);
-  assert.equal(activeStepIndex(cues, 12), 3);
-  assert.equal(activeStepIndex([null, null], 7), -1);
+test("activeStepIndex has no active step without cues", () => {
   assert.equal(activeStepIndex([], 7), -1);
 });
 
@@ -486,7 +478,7 @@ test("formatTimecode reads like a player", () => {
   assert.equal(formatTimecode(Number.NaN), "0:00");
 });
 
-test("chapterTimeline decides which list follows the recording", () => {
+test("chapterTimeline syncs only the recording's marks and leaves the how-to untimed", () => {
   const howTo = [
     { title: "Pick a model", detail: "Click Select model." },
     { title: "Send a message" },
@@ -497,39 +489,20 @@ test("chapterTimeline decides which list follows the recording", () => {
       { at: 6, label: "Reply streams" },
     ],
   };
+  const untimed = [
+    { title: "Pick a model", detail: "Click Select model.", at: null },
+    { title: "Send a message", at: null },
+  ];
 
-  // No recording: the how-to is a plain list.
-  assert.deepEqual(chapterTimeline(howTo, null), {
-    clip: [],
-    guide: [
-      { title: "Pick a model", detail: "Click Select model.", at: null },
-      { title: "Send a message", at: null },
-    ],
-  });
+  // No recording: nothing is synced and the how-to is a plain list.
+  assert.deepEqual(chapterTimeline(howTo, null), { clip: [], guide: untimed });
 
-  // A recording, and a how-to without cues: the recording's own marks sync.
+  // A recording: its own marks are the synced list, the how-to stays plain.
   assert.deepEqual(chapterTimeline(howTo, capture), {
     clip: [
       { title: "Model picker opens", at: 0 },
       { title: "Reply streams", at: 6 },
     ],
-    guide: [
-      { title: "Pick a model", detail: "Click Select model.", at: null },
-      { title: "Send a message", at: null },
-    ],
+    guide: untimed,
   });
-
-  // A how-to with cues is the synced list; the marks are not repeated.
-  const cued = [{ title: "Pick a model", at: 1 }, { title: "Off camera" }, { title: "Send", at: 7 }];
-  assert.deepEqual(chapterTimeline(cued, capture), {
-    clip: [],
-    guide: [
-      { title: "Pick a model", at: 1 },
-      { title: "Off camera", at: null },
-      { title: "Send", at: 7 },
-    ],
-  });
-
-  // Cues mean nothing without a recording to seek in.
-  assert.deepEqual(chapterTimeline(cued, null).guide.map((step) => step.at), [null, null, null]);
 });

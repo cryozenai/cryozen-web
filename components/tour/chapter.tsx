@@ -43,8 +43,7 @@ export function Chapter({
   const [started, setStarted] = useState(false);
 
   const { clip, guide } = chapterTimeline(surface.howTo, capture);
-  const synced = clip.length > 0 ? clip : guide;
-  const active = started ? activeStepIndex(synced.map((step) => step.at), time) : -1;
+  const active = started ? activeStepIndex(capture?.steps.map((step) => step.at) ?? [], time) : -1;
 
   const Heading = `h${headingLevel}` as const;
   const SubHeading = `h${headingLevel + 1}` as "h3" | "h4";
@@ -108,7 +107,7 @@ export function Chapter({
 
           <div>
             <SubHeading className={subHeading}>How to use it</SubHeading>
-            <StepList steps={guide} active={clip.length > 0 ? -1 : active} onSeek={seek} />
+            <StepList steps={guide} active={-1} onSeek={seek} />
           </div>
 
           {surface.prerequisites.length > 0 ? (

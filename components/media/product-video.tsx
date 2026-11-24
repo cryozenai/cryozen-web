@@ -20,8 +20,6 @@ export interface ProductVideoProps {
   loop?: boolean;
   /** The poster is this page's largest above-the-fold image: fetch it first. */
   priority?: boolean;
-  /** Show the captions track's cues over the video. */
-  showCaptions?: boolean;
   /** Called with the playback position, a few times a second while playing. */
   onTimeUpdate?: (seconds: number) => void;
   onPlayingChange?: (playing: boolean) => void;
@@ -80,7 +78,6 @@ export function ProductVideo({
   autoPlay = true,
   loop = false,
   priority = false,
-  showCaptions = true,
   onTimeUpdate,
   onPlayingChange,
   ref,
@@ -115,11 +112,10 @@ export function ProductVideo({
      * native cue out at the top of the video and then moves it to the bottom,
      * and counts that as a layout shift for every cue: measured at 0.01 each,
      * on a page that otherwise scores zero. "hidden" still loads the track; it
-     * only turns the native rendering off. Without captions the track stays
-     * disabled and its file is never fetched.
+     * only turns the native rendering off.
      */
     const track = video.textTracks[0];
-    if (track && showCaptions) track.mode = "hidden";
+    if (track) track.mode = "hidden";
 
     const pending = pendingRef.current;
     if (pending) {
@@ -234,7 +230,7 @@ export function ProductVideo({
           onPause={() => reportPlaying(false)}
           onTimeUpdate={(event) => {
             const video = event.currentTarget;
-            setCaption(showCaptions ? captionAt(video) : "");
+            setCaption(captionAt(video));
             onTimeUpdate?.(video.currentTime);
           }}
         >

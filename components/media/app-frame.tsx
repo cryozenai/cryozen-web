@@ -13,11 +13,9 @@ import { desktopAddress } from "@/lib/media/address";
  */
 export function AppFrame({
   children,
-  address = desktopAddress,
   className = "",
 }: {
   children: ReactNode;
-  address?: string;
   className?: string;
 }) {
   return (
@@ -29,7 +27,7 @@ export function AppFrame({
           <span className="size-2.5 rounded-full bg-[#2b3a49]" />
           <span className="size-2.5 rounded-full bg-[#2b3a49]" />
         </span>
-        <span className="ml-3 min-w-0 truncate font-mono text-[11px] text-muted">{address}</span>
+        <span className="ml-3 min-w-0 truncate font-mono text-[11px] text-muted">{desktopAddress}</span>
       </div>
       {children}
     </div>

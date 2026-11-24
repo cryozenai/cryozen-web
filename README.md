@@ -121,7 +121,6 @@ lib/
   facts.ts            measured product facts the decks quote
   release-facts.json  exact snapshot of the public release facts
   decks/              deck copy as typed data, one file per positioning
-  release-facts.json  public release facts vendored from cryozen-releases, including the strings site copy must never contain
   product/            what the site claims CryoZen does, as typed data: one surface per capability, in tour order
   media/              the capture manifest, its loader and validator, and the step-sync logic the tour uses
 scripts/
