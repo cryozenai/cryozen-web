@@ -65,11 +65,11 @@ A variable you add to `.env` reaches the application only if that list names it,
 
 ## Deploy with the native launcher
 
-Source builds and the native launcher scripts (`start.sh` and `launch-windows.ps1`) are available to licensees; for public installs, download a desktop package on [the download page](/download) or pull the published container image from [/download#docker](/download#docker).
+Source builds and the native launcher scripts (`start.sh` and `launch-windows.ps1`) require a source checkout, which is not public; for public installs, download a desktop package on [the download page](/download) or pull the published container image from [/download#docker](/download#docker).
 
 ## Deploy as a systemd service
 
-Source builds and the `systemd` service unit files (`cryozen-ui.service` and `install-service.sh`) are available to licensees; for public server deployments, pull the published container image from [/download#docker](/download#docker).
+Source builds and the `systemd` service unit files (`cryozen-ui.service` and `install-service.sh`) require a source checkout, which is not public; for public server deployments, pull the published container image from [/download#docker](/download#docker).
 
 ## Put CryoZen behind a reverse proxy with HTTPS
 

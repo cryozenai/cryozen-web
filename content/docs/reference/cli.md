@@ -29,7 +29,7 @@ alias cryozen='docker compose exec cryozen python cli/cryozen'
 ```
 
 When the `cryozen` container is stopped (such as during a backup restore), use `docker compose run --rm --no-deps cryozen python cli/cryozen ...` instead.
-Host-side installation from `$PWD/cli/cryozen` and shell completion scripts apply to source checkouts, which are available to licensees.
+Host-side installation from `$PWD/cli/cryozen` and shell completion scripts apply to source checkouts, which are not public.
 
 ## How commands find your data
 
@@ -45,7 +45,7 @@ Each subcommand inserts the repo root onto `sys.path` and imports the applicatio
   `samparka` talks CardDAV over HTTP using the URL, username, and password saved from the Settings panel.
   `shakti hf-latest` calls the public HuggingFace API.
 
-Because the imports are real application imports, run these commands inside the container on a Docker Compose install (where `/app` is the working directory and `CRYOZEN_DATA_DIR=/app/data`), or from the repo root with the project virtual environment active on a licensee source checkout.
+Because the imports are real application imports, run these commands inside the container on a Docker Compose install (where `/app` is the working directory and `CRYOZEN_DATA_DIR=/app/data`), or from the repo root with the project virtual environment active on a source checkout, which is not public.
 A missing dependency produces `error: No module named ...` and exit code 2 rather than a stack trace.
 
 The environment variables the CLI reads are:
@@ -414,7 +414,7 @@ Every subcommand here fails with a clear message when CardDAV has not been confi
 ## Operations scripts
 
 These are one-shot scripts rather than dispatcher subcommands, and they are not reachable through `cryozen <name>`.
-On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, and development scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, and `cli/demo_email/*`) require a source checkout, which is available to licensees.
+On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, and development scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, and `cli/demo_email/*`) require a source checkout, which is not public.
 
 | Script | Purpose | Invocation |
 | --- | --- | --- |
@@ -459,7 +459,7 @@ Read the following before running anything in that table:
 
 ### Product control plane
 
-Internal lifecycle and release-verification scripts under `scripts/` (`scripts/cryozen_ops.py` and `scripts/cryozen_release_verify.py`) apply only to source builds, which are available to licensees; for public container deployments, pull the published image from [/download#docker](/download#docker).
+Internal lifecycle and release-verification scripts under `scripts/` (`scripts/cryozen_ops.py` and `scripts/cryozen_release_verify.py`) apply only to source builds, which are not public; for public container deployments, pull the published image from [/download#docker](/download#docker).
 
 ## Getting help
 

@@ -234,7 +234,7 @@ export const BANNED_TRANSFORMS = [
       "",
       "- **Rename your environment variables**: switch variables from the previous-name prefix to `CRYOZEN_*` in `.env`, shell profiles, and unit files. The aliasing runs once at import, so a variable exported after startup is not picked up.",
       "- **Point service units at `cryozen:app`**: edit `ExecStart` in your systemd unit and any launcher script you wrote yourself, then run `sudo systemctl daemon-reload` and restart. This removes the dependency on the shim.",
-      "- **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to licensee source checkouts).",
+      "- **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to source checkouts, which are not public).",
       "- **Move the data directory**: nothing moves the pre-rename data directory to `~/.cryozen` for you, and the application is content to keep using the old path indefinitely. If you want the new name, stop the application, move the old directory to `~/.cryozen`, and start it again.",
     ].join("\n"),
   },
@@ -300,7 +300,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     // Native launcher scripts (start.sh, launch-windows.ps1) only exist in the private source checkout.
     id: "deployment-native-launcher-source-only",
     files: ["docs/operations/deployment.md"],
-    reason: "Replace source-only native launcher instructions with licensee note and public download links.",
+    reason: "Replace source-only native launcher instructions with source-checkout notes and public download links.",
     pattern: [
       "## Deploy with the native launcher",
       "",
@@ -348,14 +348,14 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     replacement: [
       "## Deploy with the native launcher",
       "",
-      "Source builds and the native launcher scripts (`start.sh` and `launch-windows.ps1`) are available to licensees; for public installs, download a desktop package on [the download page](/download) or pull the published container image from [/download#docker](/download#docker).",
+      "Source builds and the native launcher scripts (`start.sh` and `launch-windows.ps1`) require a source checkout, which is not public; for public installs, download a desktop package on [the download page](/download) or pull the published container image from [/download#docker](/download#docker).",
     ].join("\n"),
   },
   {
     // The systemd unit and install-service.sh require a native source checkout.
     id: "deployment-systemd-source-only",
     files: ["docs/operations/deployment.md"],
-    reason: "Replace source-only systemd setup instructions with licensee note and /download#docker link.",
+    reason: "Replace source-only systemd setup instructions with source-checkout notes and /download#docker link.",
     pattern: [
       "## Deploy as a systemd service",
       "",
@@ -386,7 +386,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     replacement: [
       "## Deploy as a systemd service",
       "",
-      "Source builds and the `systemd` service unit files (`cryozen-ui.service` and `install-service.sh`) are available to licensees; for public server deployments, pull the published container image from [/download#docker](/download#docker).",
+      "Source builds and the `systemd` service unit files (`cryozen-ui.service` and `install-service.sh`) require a source checkout, which is not public; for public server deployments, pull the published container image from [/download#docker](/download#docker).",
     ].join("\n"),
   },
   {
@@ -409,7 +409,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "Prefer `cryozen-sanrakshana snapshot` run inside the container.",
       "It archives the resolved data directory, and it dumps every SQLite database through the backup API into a temporary file before adding it to the archive, so a running application cannot write a torn page into your backup.",
       "It writes to `backups/cryozen-sanrakshana-<timestamp>.tar.gz` inside the data directory unless you pass `--out` or set `CRYOZEN_BACKUP_DIR`, and it excludes large or re-derivable subtrees by default, as listed in the [CLI reference](../reference/cli.md#backups-sanrakshana).",
-      "Every archive carries a `manifest.json` naming the directory it came from, so you can check an archive before you need it (running `cli/cryozen-sanrakshana` directly on the host applies to licensee source checkouts).",
+      "Every archive carries a `manifest.json` naming the directory it came from, so you can check an archive before you need it (running `cli/cryozen-sanrakshana` directly on the host applies to source checkouts, which are not public).",
     ].join("\n"),
   },
   {
@@ -445,14 +445,14 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "docker image prune -f",
       "```",
       "",
-      "Source builds and `update_windows.bat` are available to licensees; public container installs pull from [/download#docker](/download#docker).",
+      "Source builds and `update_windows.bat` require a source checkout, which is not public; public container installs pull from [/download#docker](/download#docker).",
     ].join("\n"),
   },
   {
     // Native launcher and systemd upgrades rely on git pull in the private source checkout.
     id: "upgrading-native-and-systemd-source-only",
     files: ["docs/operations/upgrading.md"],
-    reason: "Replace source-only native launcher and systemd upgrade sections with licensee notes and download links.",
+    reason: "Replace source-only native launcher and systemd upgrade sections with source-checkout notes and download links.",
     pattern: [
       "## Upgrade a native launcher deployment",
       "",
@@ -494,11 +494,11 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     replacement: [
       "## Upgrade a native launcher deployment",
       "",
-      "Desktop packages from [the download page](/download) upgrade by installing the new package; source-based native launcher upgrades (`git pull` and `./start.sh`) are available to licensees, and container deployments pull the published image from [/download#docker](/download#docker).",
+      "Desktop packages from [the download page](/download) upgrade by installing the new package; source-based native launcher upgrades (`git pull` and `./start.sh`) require a source checkout, which is not public, and container deployments pull the published image from [/download#docker](/download#docker).",
       "",
       "## Upgrade a systemd deployment",
       "",
-      "Source-based `systemd` deployments are available to licensees; for public container deployments, pull the published image from [/download#docker](/download#docker).",
+      "Source-based `systemd` deployments require a source checkout, which is not public; for public container deployments, pull the published image from [/download#docker](/download#docker).",
     ].join("\n"),
   },
   {
@@ -579,7 +579,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "docker compose restart cryozen",
       "```",
       "",
-      "Prefer `cli/seed_admin.py` over `cli/reset_admin.py`, because `seed_admin.py` resolves `CRYOZEN_DATA_DIR` the same way the application does (bare host-side `cli/` invocations require a source checkout, available to licensees).",
+      "Prefer `cli/seed_admin.py` over `cli/reset_admin.py`, because `seed_admin.py` resolves `CRYOZEN_DATA_DIR` the same way the application does (bare host-side `cli/` invocations require a source checkout, which is not public).",
     ].join("\n"),
   },
   {
@@ -690,18 +690,18 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "```",
       "",
       "When the `cryozen` container is stopped (such as during a backup restore), use `docker compose run --rm --no-deps cryozen python cli/cryozen ...` instead.",
-      "Host-side installation from `$PWD/cli/cryozen` and shell completion scripts apply to source checkouts, which are available to licensees.",
+      "Host-side installation from `$PWD/cli/cryozen` and shell completion scripts apply to source checkouts, which are not public.",
     ].join("\n"),
   },
   {
-    // Clarify that direct repo-root venv execution applies to licensee source checkouts.
+    // Clarify that direct repo-root venv execution applies to source checkouts, which are not public.
     id: "cli-how-commands-find-data-public",
     files: ["docs/reference/cli.md"],
-    reason: "Clarify container execution vs licensee source-checkout execution in data resolution section.",
+    reason: "Clarify container execution vs source-checkout execution in data resolution section.",
     pattern:
       "Because the imports are real application imports, run these commands from the repo root with the project virtual environment active.",
     replacement:
-      "Because the imports are real application imports, run these commands inside the container on a Docker Compose install (where `/app` is the working directory and `CRYOZEN_DATA_DIR=/app/data`), or from the repo root with the project virtual environment active on a licensee source checkout.",
+      "Because the imports are real application imports, run these commands inside the container on a Docker Compose install (where `/app` is the working directory and `CRYOZEN_DATA_DIR=/app/data`), or from the repo root with the project virtual environment active on a source checkout, which is not public.",
   },
   {
     // Drop host-side ~/.cryozen/backups/ examples in cli.md so Compose users only see container /app/data/backups/ commands.
@@ -739,7 +739,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     // Operations scripts live inside /app/cli/ in the container; build/CI scripts require a source checkout.
     id: "cli-operations-scripts-container-context",
     files: ["docs/reference/cli.md"],
-    reason: "Explain that operations scripts run via docker compose exec inside the container and build scripts are licensee-only.",
+    reason: "Explain that operations scripts run via docker compose exec inside the container and build scripts need a source checkout.",
     pattern: [
       "## Operations scripts",
       "",
@@ -750,14 +750,14 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "## Operations scripts",
       "",
       "These are one-shot scripts rather than dispatcher subcommands, and they are not reachable through `cryozen <name>`.",
-      "On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, and development scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, and `cli/demo_email/*`) require a source checkout, which is available to licensees.",
+      "On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, and development scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, and `cli/demo_email/*`) require a source checkout, which is not public.",
     ].join("\n"),
   },
   {
     // Product control plane scripts (scripts/cryozen_ops.py, scripts/cryozen_release_verify.py) only make sense in a private source checkout.
     id: "cli-product-control-plane-source-only",
     files: ["docs/reference/cli.md"],
-    reason: "Replace private-repo Product control plane scripts section with licensee note and /download#docker link.",
+    reason: "Replace private-repo Product control plane scripts section with source-checkout notes and /download#docker link.",
     pattern: [
       "### Product control plane",
       "",
@@ -819,7 +819,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     replacement: [
       "### Product control plane",
       "",
-      "Internal lifecycle and release-verification scripts under `scripts/` (`scripts/cryozen_ops.py` and `scripts/cryozen_release_verify.py`) apply only to source builds, which are available to licensees; for public container deployments, pull the published image from [/download#docker](/download#docker).",
+      "Internal lifecycle and release-verification scripts under `scripts/` (`scripts/cryozen_ops.py` and `scripts/cryozen_release_verify.py`) apply only to source builds, which are not public; for public container deployments, pull the published image from [/download#docker](/download#docker).",
     ].join("\n"),
   },
 ];

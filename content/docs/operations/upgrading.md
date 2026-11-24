@@ -31,7 +31,7 @@ The snapshot command copies the database through SQLite's online backup API, whi
 Prefer `cryozen-sanrakshana snapshot` run inside the container.
 It archives the resolved data directory, and it dumps every SQLite database through the backup API into a temporary file before adding it to the archive, so a running application cannot write a torn page into your backup.
 It writes to `backups/cryozen-sanrakshana-<timestamp>.tar.gz` inside the data directory unless you pass `--out` or set `CRYOZEN_BACKUP_DIR`, and it excludes large or re-derivable subtrees by default, as listed in the [CLI reference](/docs/reference/cli#backups-sanrakshana).
-Every archive carries a `manifest.json` naming the directory it came from, so you can check an archive before you need it (running `cli/cryozen-sanrakshana` directly on the host applies to licensee source checkouts).
+Every archive carries a `manifest.json` naming the directory it came from, so you can check an archive before you need it (running `cli/cryozen-sanrakshana` directly on the host applies to source checkouts, which are not public).
 
 On the Compose path the command must run inside the container, because the host shell does not carry the container's `CRYOZEN_DATA_DIR`, so from the host it resolves `~/.cryozen` rather than `./data`.
 `run` goes through the image entrypoint, which applies `PUID` and `PGID` from `.env` as the service does; `exec` would run as root, and a `--user` built in the host shell can name the wrong owner because that shell does not read `.env`.
@@ -129,7 +129,7 @@ docker compose up -d
 docker image prune -f
 ```
 
-Source builds and `update_windows.bat` are available to licensees; public container installs pull from [/download#docker](/download#docker).
+Source builds and `update_windows.bat` require a source checkout, which is not public; public container installs pull from [/download#docker](/download#docker).
 
 Watch the first boot, because the application applies schema changes during startup:
 
@@ -147,11 +147,11 @@ A 503 means a critical check failed, and the response body names which one.
 
 ## Upgrade a native launcher deployment
 
-Desktop packages from [the download page](/download) upgrade by installing the new package; source-based native launcher upgrades (`git pull` and `./start.sh`) are available to licensees, and container deployments pull the published image from [/download#docker](/download#docker).
+Desktop packages from [the download page](/download) upgrade by installing the new package; source-based native launcher upgrades (`git pull` and `./start.sh`) require a source checkout, which is not public, and container deployments pull the published image from [/download#docker](/download#docker).
 
 ## Upgrade a systemd deployment
 
-Source-based `systemd` deployments are available to licensees; for public container deployments, pull the published image from [/download#docker](/download#docker).
+Source-based `systemd` deployments require a source checkout, which is not public; for public container deployments, pull the published image from [/download#docker](/download#docker).
 
 ## Upgrading from the project's previous name
 
@@ -176,7 +176,7 @@ Do them when it suits you, and each is independent of the others:
 
 - **Rename your environment variables**: switch variables from the previous-name prefix to `CRYOZEN_*` in `.env`, shell profiles, and unit files. The aliasing runs once at import, so a variable exported after startup is not picked up.
 - **Point service units at `cryozen:app`**: edit `ExecStart` in your systemd unit and any launcher script you wrote yourself, then run `sudo systemctl daemon-reload` and restart. This removes the dependency on the shim.
-- **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to licensee source checkouts).
+- **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to source checkouts, which are not public).
 - **Move the data directory**: nothing moves the pre-rename data directory to `~/.cryozen` for you, and the application is content to keep using the old path indefinitely. If you want the new name, stop the application, move the old directory to `~/.cryozen`, and start it again.
 
 ## Route names moved to English

@@ -118,7 +118,7 @@ docker compose exec cryozen python cli/seed_admin.py \
 docker compose restart cryozen
 ```
 
-Prefer `cli/seed_admin.py` over `cli/reset_admin.py`, because `seed_admin.py` resolves `CRYOZEN_DATA_DIR` the same way the application does (bare host-side `cli/` invocations require a source checkout, available to licensees).
+Prefer `cli/seed_admin.py` over `cli/reset_admin.py`, because `seed_admin.py` resolves `CRYOZEN_DATA_DIR` the same way the application does (bare host-side `cli/` invocations require a source checkout, which is not public).
 
 ## Every API request returns 401
 
