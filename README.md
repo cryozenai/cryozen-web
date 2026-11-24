@@ -155,7 +155,7 @@ If an installer filename changes upstream, update `lib/platforms.ts` in the same
 ## Docker installation
 
 The download page (`app/download/page.tsx`, served at `/download`) lists the Docker commands, image, and port, all derived from `lib/release-facts.json`.
-It also covers the `APP_PORT` override for when macOS AirPlay holds port 7000.
+It also covers the `APP_PORT` override for when macOS AirPlay holds the default Docker port (`install.docker_port`).
 
 ## Pitch decks
 

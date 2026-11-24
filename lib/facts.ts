@@ -7,7 +7,8 @@
  * from that snapshot and delete this constant.
  *
  * `version` is the release the decks were verified against (v1.1.0), kept
- * deliberately separate from the channel's current `version` (v1.2.0).
+ * deliberately separate from the channel's current `version` in
+ * lib/release-facts.json.
  *
  * Never type these from memory. How each was measured, on cryozen 314d7e1:
  * - version: the latest tag published to cryozen-releases at measurement time.
