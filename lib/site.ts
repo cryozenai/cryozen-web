@@ -1,14 +1,16 @@
-export const GITHUB_OWNER = "cryozenai";
+import releaseFacts from "./release-facts.json" with { type: "json" };
+
+export const GITHUB_OWNER = releaseFacts.owner.org;
 /**
  * The public release channel. The product repo is private, so its release
  * assets cannot be downloaded anonymously; the release pipeline publishes
  * every release (assets, SHA256SUMS.txt, notes) to this public repo, and the
  * site reads releases and links downloads from here.
  */
-export const GITHUB_RELEASES_REPO = "cryozen-releases";
+export const GITHUB_RELEASES_REPO = releaseFacts.repos.channel.slice(GITHUB_OWNER.length + 1);
 
 export const site = {
-  name: "CryoZen",
+  name: releaseFacts.brand.prose,
   domain: "cryozen.ai",
   url: "https://cryozen.ai",
   tagline: "Your AI workspace, on hardware you control.",
@@ -18,7 +20,7 @@ export const site = {
   contactEmail: "hello@cryozen.ai",
 } as const;
 
-export const releasesRepoUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_RELEASES_REPO}`;
+export const releasesRepoUrl = `https://github.com/${releaseFacts.repos.channel}`;
 export const releasesUrl = `${releasesRepoUrl}/releases`;
 export const latestReleaseUrl = `${releasesUrl}/latest`;
 /**
@@ -46,16 +48,7 @@ export const docsUrl = `${releasesRepoUrl}#readme`;
 export const quickstartUrl = `${releasesRepoUrl}#docker`;
 export const configDocsUrl = `${releasesRepoUrl}/blob/main/.env.example`;
 export const issuesUrl = `${releasesRepoUrl}/issues`;
-/**
- * Deliberately not derived from GITHUB_OWNER: container packages did not move
- * when the repositories were transferred to the cryozenai organisation. The
- * release workflow pushes to `ghcr.io/<github.repository>`, so every image
- * published so far, v1.1.0 included, lives under the old shreejitverma
- * account, while the next release will create a new package under cryozenai.
- * This names the pre-migration side because it is the only one that can be
- * pulled today; move it once the package migration lands.
- */
-export const ghcrImage = "ghcr.io/shreejitverma/cryozen";
+export const ghcrImage = releaseFacts.image;
 
 export const nav = [
   { href: "/download", label: "Download" },

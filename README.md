@@ -59,7 +59,8 @@ That keeps the degradation paths in `lib/releases.ts` under test: if an unreacha
 | --- | --- | --- |
 | `GITHUB_TOKEN` | No | Optional. Lifts the anonymous GitHub API rate limit (60 requests/hour per IP) during builds and revalidation. |
 
-The product repository `cryozenai/cryozen` is private, but the site never reads it: releases come from the public `cryozenai/cryozen-releases` repository, which anonymous callers can read.
+The `cryozenai` organization owns the private product repository `cryozenai/cryozen` and the public release channel `cryozenai/cryozen-releases`.
+The site reads releases anonymously from the public channel.
 A token therefore needs no scopes and only serves to raise the rate limit.
 
 To set one, copy `.env.example` to `.env.local` and fill in the token.
@@ -113,13 +114,17 @@ lib/
   site.ts             names, URLs, nav
   platforms.ts        per-platform asset names, requirements, install steps
   releases.ts         GitHub Releases client with graceful fallbacks
+  release-notes.ts    unlinks release-note links into the private source repo, which 404 for visitors
   pricing.ts          tiers and FAQ copy
-  facts.ts            measured product facts the decks quote, until a public facts.json exists
+  facts.ts            measured product facts the decks quote
+  release-facts.json  exact snapshot of the public release facts
   decks/              deck copy as typed data, one file per positioning
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
   check-deck-print.mjs print-fidelity check for the decks; needs Chrome and poppler
   releases.test.mjs   download-link contract test: every asset resolves to a floating latest-release download, never the fetched tag, with the releases-page fallback wherever GitHub reports absence
+  sync-release-facts.mjs refreshes the vendored facts from the public channel
+  release-facts.test.mjs checks the facts contract and scans for banned strings
   release-channel.test.mjs  release-channel contract test: releases, downloads, docs, and support links all land in the public repo
   decks.test.mjs      deck-data invariants: slide numbering, emphasis markers, sourced market assumptions, measured facts
   check-links.mjs     crawls a running site and fetches every external link anonymously, with its test alongside
@@ -139,10 +144,19 @@ scripts/
 | Linux (primary) | `CryoZen-x86_64.AppImage` |
 | Linux (alternates) | `cryozen_amd64.deb`, `cryozen.x86_64.rpm`, `CryoZen-Linux-Portable.tar.gz` |
 
-Releases are read from the public `cryozenai/cryozen-releases` repository (`GITHUB_RELEASES_REPO` in `lib/site.ts`), not the private product repo: the product pipeline publishes identical assets to both, and only the public one can serve anonymous downloads.
-These must match what `.github/workflows/release.yml` in the product repository uploads; the product repo's `packaging/README.md` documents `lib/platforms.ts` as part of that release contract.
-If a build script renames an artifact, update `lib/platforms.ts` in the same change, otherwise the button silently falls back to the releases page.
+The public release channel publishes installers, release notes, and SHA-256 checksums in `SHA256SUMS.txt`.
+`lib/release-facts.json` is a byte-for-byte copy of the release channel's [facts.json](https://github.com/cryozenai/cryozen-releases/blob/main/facts.json).
+The site derives the release channel, organization, Docker image, install commands, ports, and desktop data directories from that snapshot.
+Run `npm run sync:facts` to refresh the snapshot and review the resulting diff before committing it.
+If an installer filename changes upstream, update `lib/platforms.ts` in the same change.
+`scripts/release-facts.test.mjs` checks that the site agrees with the snapshot and rejects any banned string in the site source or README.
+
 `scripts/releases.test.mjs` covers the site side of the contract against a stubbed GitHub API: every primary and alternate name resolves to a direct download URL, an asset missing from the latest release and a channel with nothing published both fall back to the releases page rather than a link that 404s, and a failed API call still yields a direct download.
+
+## Docker installation
+
+The download page (`app/download/page.tsx`, served at `/download`) lists the Docker commands, image, and port, all derived from `lib/release-facts.json`.
+It also covers the `APP_PORT` override for when macOS AirPlay holds the default Docker port (`install.docker_port`).
 
 ## Pitch decks
 
@@ -173,11 +187,11 @@ Deleting the `metadata` export in that layout makes them public.
 
 Open items are marked `TODO(cryozen)` in the source:
 
-- `lib/site.ts` — confirm the `hello@cryozen.ai` mailbox exists.
-- `lib/pricing.ts` — set real prices on the Team and Enterprise tiers. They currently render as "Pricing on request" rather than an invented number.
-- `app/privacy/page.tsx`, `app/terms/page.tsx` — have counsel review.
-- `components/workspace-preview.tsx` — replace the stylized frame with a real screenshot of the running app.
-- `lib/decks/*.ts` — the decks state pre-launch, pre-revenue traction on purpose. Replace the velocity metrics with real adoption numbers once there are any, and re-run `npm run check:deck-print` afterwards.
+- `lib/site.ts` - confirm the `hello@cryozen.ai` mailbox exists.
+- `lib/pricing.ts` - set real prices on the Team and Enterprise tiers. They currently render as "Pricing on request" rather than an invented number.
+- `app/privacy/page.tsx`, `app/terms/page.tsx` - have counsel review.
+- `components/workspace-preview.tsx` - replace the stylized frame with a real screenshot of the running app.
+- `lib/decks/*.ts` - the decks state pre-launch, pre-revenue traction on purpose. Replace the velocity metrics with real adoption numbers once there are any, and re-run `npm run check:deck-print` afterwards.
 
 ## Security headers
 

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui";
 import { PlatformIcon } from "@/components/platform-icon";
 import { CopyCommand } from "@/components/copy-command";
-import { desktopPlatforms, dockerCommands, getPlatform } from "@/lib/platforms";
+import { desktopPlatforms, dockerCommands, dockerPort, getPlatform } from "@/lib/platforms";
 import {
   assetSizeFor,
   assetUrlByName,
@@ -173,9 +173,14 @@ export default async function DownloadPage() {
               ))}
             </div>
             <p className="mt-4 text-sm/6 text-muted">
-              The stack comes up on <InlineCode>http://localhost:7000</InlineCode>. Create the
+              By default, open <InlineCode>{`http://localhost:${dockerPort}`}</InlineCode>. Create the
               first administrator account when prompted, then connect a model on the
               integrations page.
+            </p>
+            <p className="mt-3 text-sm/6 text-muted">
+              If AirPlay on macOS is using port {dockerPort}, set <InlineCode>APP_PORT</InlineCode>{" "}
+              to a free port in <InlineCode>.env</InlineCode> before starting Docker Compose.
+              Open CryoZen on that port.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <ButtonLink href={configDocsUrl} variant="secondary">
