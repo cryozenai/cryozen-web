@@ -329,7 +329,7 @@
     {
       "id": "coderun",
       "title": "Run JavaScript in a sandbox",
-      "duration": 20.3,
+      "duration": 17,
       "width": 1280,
       "height": 800,
       "poster": {
@@ -353,15 +353,15 @@
           "label": "Ask for code"
         },
         {
-          "at": 6.6,
+          "at": 7,
           "label": "Get a code block"
         },
         {
-          "at": 14.7,
+          "at": 12.1,
           "label": "Click Run"
         },
         {
-          "at": 16.6,
+          "at": 13.3,
           "label": "See the output"
         }
       ],
