@@ -27,7 +27,7 @@ export const tiers: Tier[] = [
     cadence: null,
     tagline: "A self-hosted workspace for one person.",
     features: [
-      "Chat, agents, research, and document search",
+      "Chat, agents, deep research, and living documents",
       "Mail, calendar, contacts, tasks, and automations",
       "Local model backends and your own provider API keys",
       "Image gallery and layer editor",

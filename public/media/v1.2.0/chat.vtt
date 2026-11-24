@@ -1,0 +1,17 @@
+WEBVTT
+
+1
+00:00:00.500 --> 00:00:03.400
+Pick a model in the composer. This one runs locally in Ollama.
+
+2
+00:00:03.400 --> 00:00:11.300
+Ask a question. Markdown, math, and diagrams are all supported.
+
+3
+00:00:11.300 --> 00:00:18.300
+The answer streams in from the local model.
+
+4
+00:00:18.300 --> 00:00:23.700
+The formula and the flowchart render right in the chat, with no internet needed.

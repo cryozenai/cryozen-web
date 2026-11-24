@@ -16,7 +16,6 @@ export type SurfaceId =
   | "research"
   | "websearch"
   | "documents"
-  | "knowledge"
   | "memory"
   | "notes"
   | "mail"

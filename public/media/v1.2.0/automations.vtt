@@ -1,0 +1,25 @@
+WEBVTT
+
+1
+00:00:00.400 --> 00:00:03.100
+Open Tasks from the sidebar. Background jobs and their schedules live here.
+
+2
+00:00:03.100 --> 00:00:05.300
+Click Add.
+
+3
+00:00:05.300 --> 00:00:09.300
+Describe the task in plain words.
+
+4
+00:00:09.300 --> 00:00:12.100
+Click Draft with AI. The model turns it into a schedule, a prompt, and an output.
+
+5
+00:00:12.100 --> 00:00:14.600
+Review the drafted task and click Create.
+
+6
+00:00:14.600 --> 00:00:20.200
+Run it now to try it, or let the schedule take over.

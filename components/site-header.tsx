@@ -18,21 +18,20 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-hairline/70 bg-ground/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 lg:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-6 lg:px-8">
         <Link href="/" aria-label="CryoZen home" className="shrink-0">
           <Wordmark />
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        {/* Six links need more room than a tablet has, so the row starts at `lg`. */}
+        <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
           {nav.map((item) => {
-            const active = !("external" in item) && pathname.startsWith(item.href);
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.label}
                 href={item.href}
-                {...("external" in item && item.external
-                  ? { target: "_blank", rel: "noreferrer" }
-                  : {})}
+                aria-current={active ? "page" : undefined}
                 className={`rounded-md px-3 py-2 text-sm transition-colors duration-150 ${
                   active ? "text-core" : "text-muted hover:text-core"
                 }`}
@@ -66,7 +65,7 @@ export function SiteHeader() {
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? "Close menu" : "Open menu"}
-            className="inline-flex rounded-md p-2 text-ink md:hidden"
+            className="inline-flex size-11 items-center justify-center rounded-md text-ink lg:hidden"
           >
             <svg
               viewBox="0 0 24 24"
@@ -84,15 +83,16 @@ export function SiteHeader() {
       </div>
 
       {open ? (
-        <nav id="mobile-nav" className="border-t border-hairline bg-ground/95 md:hidden">
-          <div className="mx-auto flex w-full max-w-6xl flex-col px-6 py-3">
-            {nav.map((item) => (
+        <nav
+          id="mobile-nav"
+          aria-label="Primary"
+          className="border-t border-hairline bg-ground/95 lg:hidden"
+        >
+          <div className="mx-auto flex w-full max-w-7xl flex-col px-6 py-3 lg:px-8">
+            {[...nav, { href: "/download", label: "Download" }].map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                {...("external" in item && item.external
-                  ? { target: "_blank", rel: "noreferrer" }
-                  : {})}
                 onClick={close}
                 className="rounded-md px-2 py-3 text-sm text-ink hover:text-core"
               >

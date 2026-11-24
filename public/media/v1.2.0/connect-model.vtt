@@ -1,0 +1,21 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:02.600
+Open Settings from the gear in the sidebar. A new account opens it on Add Models.
+
+2
+00:00:02.600 --> 00:00:05.900
+Local endpoints come first. Paste the address of your local server, here Ollama on the Docker host.
+
+3
+00:00:05.900 --> 00:00:08.500
+Click Test. CryoZen reports the server is online and lists its models.
+
+4
+00:00:08.500 --> 00:00:12.600
+Click Add. The endpoint appears under Added Models, and its first model is selected for chat.
+
+5
+00:00:12.600 --> 00:00:17.300
+Close Settings. qwen3:14b is already selected, and the picker lists every model on the server.

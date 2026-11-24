@@ -1,0 +1,21 @@
+WEBVTT
+
+1
+00:00:00.400 --> 00:00:02.500
+Open Compute from the sidebar.
+
+2
+00:00:02.500 --> 00:00:05.400
+Scan / Download reads this machine and ranks models by fit, VRAM, and speed. This container has no GPU.
+
+3
+00:00:05.400 --> 00:00:09.300
+Click EDIT to try another machine, here one GPU with 24 GB of VRAM.
+
+4
+00:00:09.300 --> 00:00:12.700
+Click Apply. The list re-ranks for that hardware.
+
+5
+00:00:12.700 --> 00:00:17.400
+Filter by quantization to compare what fits.

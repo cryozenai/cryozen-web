@@ -34,7 +34,7 @@ const { TAGLINE_MAX, SUMMARY_MAX, docsHref, privacyLabels, groupLabels } = await
 );
 const { manifest, captureIds, findCaptureId, getCapture } = await import("../lib/media/index.ts");
 const { parseManifest } = await import("../lib/media/parse.ts");
-const { activeStepIndex, chapterTimeline, formatTimecode } = await import(
+const { activeStepIndex, chapterTimeline, formatSpan, formatTimecode } = await import(
   "../lib/media/step-sync.ts"
 );
 const { desktopAddress } = await import("../lib/media/address.ts");
@@ -55,7 +55,6 @@ const CLAIMABLE = [
   "research",
   "websearch",
   "documents",
-  "knowledge",
   "memory",
   "notes",
   "mail",
@@ -101,9 +100,11 @@ const NOT_CLAIMABLE = [
       /text[- ]to[- ]image|\bimage generation\b|\bgenerat\w+ (an? |new |your )?(image|picture|photo|artwork)s?\b/i,
   },
   {
-    claim: "Office or EPUB indexing",
-    only: ["knowledge"],
-    pattern: /\b(office|epub|word|docx?|powerpoint|pptx?|excel|xlsx?|spreadsheets?)\b/i,
+    // Chat retrieval over an index of the user's files cannot be switched on
+    // from the v1.2.0 UI, so the surface was withdrawn and nothing may claim it.
+    claim: "answers from an index of your own files",
+    pattern:
+      /\bRAG\b|\bretriev\w+|\bvector (store|index|search)\b|\bindex(es|ed|ing)? (your|their|the) (own )?(files?|documents?|folders?)\b|\b(answers?|ask\w*|search\w*|chat\w*)\b[^.]*\b(from|over|across|with) your (own )?(files|documents)\b/i,
   },
   {
     claim: "linked-account mirrors in Mail or Calendar",
@@ -250,13 +251,34 @@ test("no surface claims a capability v1.2.0 does not ship", () => {
   assert.deepEqual(surfaces.flatMap(overclaims), []);
 });
 
+test("no surface says webhooks or contacts belong to one account", () => {
+  // Both are instance-wide and admin-managed in v1.2.0; the release notes say otherwise and are wrong.
+  for (const [id, subject] of [
+    ["api", /webhook/i],
+    ["calendar", /contact/i],
+  ]) {
+    const sentences = (getSurface(id).teams ?? "").split(/(?<=\.)\s+/).filter((part) => subject.test(part));
+    assert.ok(sentences.length > 0, `${id}: the teams note must say who owns them`);
+    for (const sentence of sentences) {
+      assert.doesNotMatch(sentence, /belong|per[- ](user|account)|their own/i, `${id}: "${sentence}"`);
+    }
+  }
+});
+
 test("the overclaim check catches each kind of false claim", () => {
   const base = getSurface("agents");
   const withSummary = (id, summary) => ({ ...getSurface(id), summary });
   const cases = [
     [withSummary("chat", "Dictate a message with your voice."), "voice input or read-aloud"],
     [withSummary("images", "Generate images from a text prompt."), "a text-to-image generation UI"],
-    [withSummary("knowledge", "Index PDFs and Word files."), "Office or EPUB indexing"],
+    [
+      withSummary("chat", "Turn on RAG and get answers from your documents."),
+      "answers from an index of your own files",
+    ],
+    [
+      withSummary("memory", "It retrieves passages from a local vector store."),
+      "answers from an index of your own files",
+    ],
     [withSummary("mail", "See your Gmail inbox beside your chat."), "linked-account mirrors"],
     [
       { ...base, summary: "It asks for your approval before every tool call." },
@@ -476,6 +498,33 @@ test("formatTimecode reads like a player", () => {
   assert.equal(formatTimecode(75.4), "1:15");
   assert.equal(formatTimecode(-3), "0:00");
   assert.equal(formatTimecode(Number.NaN), "0:00");
+});
+
+test("formatSpan says a length of real time in words", () => {
+  assert.equal(formatSpan(101), "1 min 41 s");
+  assert.equal(formatSpan(45), "45 s");
+  assert.equal(formatSpan(120), "2 min");
+  assert.equal(formatSpan(59.6), "1 min", "rounds to the nearest second before splitting");
+  assert.equal(formatSpan(0), "0 s");
+  assert.equal(formatSpan(Number.NaN), "0 s");
+});
+
+test("parseManifest keeps realDuration on a shortened recording and rejects a nonsensical one", () => {
+  const shortened = specManifest();
+  shortened.captures[0].realDuration = 101;
+  assert.equal(parseManifest(shortened).captures[0].realDuration, 101);
+  assert.equal("realDuration" in parseManifest(specManifest()).captures[0], false);
+
+  const withReal = (value) => {
+    const raw = specManifest();
+    raw.captures[0].realDuration = value;
+    return () => parseManifest(raw);
+  };
+  // The recording is 18.4 s long; a shortened one took longer than that for real.
+  assert.throws(withReal(18.4), /capture "chat"\.realDuration: expected more than the duration 18\.4/);
+  assert.throws(withReal(10), /capture "chat"\.realDuration: expected more than the duration 18\.4/);
+  assert.throws(withReal("101"), /capture "chat"\.realDuration: expected a number greater than zero/);
+  assert.throws(withReal(null), /capture "chat"\.realDuration: expected a number greater than zero/);
 });
 
 test("chapterTimeline syncs only the recording's marks and leaves the how-to untimed", () => {

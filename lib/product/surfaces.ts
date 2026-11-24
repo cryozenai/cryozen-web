@@ -13,8 +13,9 @@ import type { Surface, SurfaceId } from "./types";
  *   where the UI's name differs from ours: Memory is "Brain", Mail is "Email",
  *   the image gallery is "Gallery", and automations are "Tasks".
  * - Deliberately absent, because the release does not ship them in the UI:
- *   voice input and read-aloud, creating images from a text prompt, indexing
- *   of Office and EPUB files, mirrors of linked Google, Microsoft, or Apple
+ *   voice input and read-aloud, creating images from a text prompt, answers
+ *   drawn from an index of your own files (the release has no way to switch
+ *   that on from the UI), mirrors of linked Google, Microsoft, or Apple
  *   accounts, a confirmation before each individual agent tool call, and
  *   agents or tasks running several at once. `scripts/product.test.mjs` fails
  *   if copy here starts claiming any of them.
@@ -215,7 +216,7 @@ export const surfaces: readonly Surface[] = [
       {
         title: "Set the depth",
         detail:
-          "Open Settings in the panel to set Rounds, from Auto up to 20, or to change the search engine and model.",
+          "Open Settings in the panel to set Rounds, from Auto up to 20, and to pick the Endpoint and Model that write the report.",
       },
       {
         title: "Start",
@@ -224,7 +225,7 @@ export const surfaces: readonly Surface[] = [
       {
         title: "Read the report",
         detail:
-          "When it finishes, click Visual Report for the full page, or Discuss to open a chat seeded with the findings.",
+          "The finished card shows how long it took and how many sources it read. Click Visual Report for the full page, or Discuss to open a chat seeded with the findings.",
       },
     ],
     prerequisites: [
@@ -234,7 +235,7 @@ export const surfaces: readonly Surface[] = [
     privacy: {
       leaves: "configured-service",
       detail:
-        "Search queries go to your configured search provider, and CryoZen fetches the result pages itself. The question and page excerpts go to the model endpoint you chose for research. Reports are stored on your machine.",
+        "Search queries go to your configured search provider, and CryoZen fetches the result pages itself. The question and page excerpts go to the model endpoint you chose for research. Reports are stored on your machine. Opening one as a Visual Report makes your browser load its images directly from the source websites.",
     },
     capture: findCaptureId("research"),
     docs: "reference/configuration",
@@ -320,7 +321,7 @@ export const surfaces: readonly Surface[] = [
       {
         title: "Write, or ask",
         detail:
-          "Type in the editor, or ask the model in chat to draft, rewrite, or summarize. Its edits stream into the open document.",
+          "Type in the editor, or ask the model in chat to draft, rewrite, or summarize. Its edits arrive in the open document as an inline diff, and Accept All keeps them.",
       },
       {
         title: "Pick the type",
@@ -330,7 +331,7 @@ export const surfaces: readonly Surface[] = [
       {
         title: "Review versions",
         detail:
-          "Click the version badge, such as v1, to open the history. Select a version to preview it with its changes highlighted, or click Restore.",
+          "Click the version chip, such as v2, to open Version History. Select a version to preview it with its changes highlighted, or click Restore.",
       },
       {
         title: "Export",
@@ -360,61 +361,6 @@ export const surfaces: readonly Surface[] = [
       "routers/shastra_router.py:947-1050",
       "frontend/js/chat.js:1050-1057",
       "frontend/js/slashCommands.js:6004-6025",
-    ],
-  },
-  {
-    id: "knowledge",
-    name: "Answers from your documents",
-    group: "know",
-    tagline: "Ask a question and get an answer drawn from your own files.",
-    summary:
-      "CryoZen indexes your files into a local vector store and retrieves the matching passages when you chat. Each answer comes with a Sources list that names the file, its match score, and the passage used. It indexes text, Markdown, code, JSON, YAML, CSV, HTML, and PDF.",
-    verifiedOn: VERIFIED_ON,
-    /*
-     * PROVISIONAL: these steps are written from the source audit, which found
-     * no panel in the v1.2.0 UI for adding files to the index (the upload UI
-     * has no mount in index.html), only the command line, the HTTP API, and a
-     * hidden slash command. The capture stream will confirm the in-UI flow;
-     * rewrite the first step from what it records before this ships.
-     */
-    howTo: [
-      {
-        title: "Add your files to the index",
-        detail:
-          "An administrator indexes a folder from the command line or over the HTTP API. The CLI reference lists the commands.",
-      },
-      {
-        title: "Turn on RAG",
-        detail: "Open + in the message box and click RAG. A RAG badge shows while it is active.",
-      },
-      { title: "Ask your question", detail: "Send it as usual." },
-      {
-        title: "Check the sources",
-        detail:
-          "Expand Sources under the reply to see each file, its match percentage, and the passage.",
-      },
-    ],
-    prerequisites: [
-      "A connected model.",
-      "An administrator account to add folders to the index.",
-    ],
-    privacy: {
-      leaves: "chosen-provider",
-      detail:
-        "Indexing and retrieval run on your machine. Only your question and the retrieved passages, up to 10,000 characters, go to the model endpoint you select.",
-    },
-    capture: findCaptureId("knowledge"),
-    docs: "reference/cli",
-    evidence: [
-      "frontend/index.html:3262-3277",
-      "frontend/index.html:3467-3500",
-      "frontend/js/chat.js:1097-1100",
-      "frontend/js/chatRenderer.js:1148-1173",
-      "services/chat_processor.py:269-304",
-      "services/veda_vector.py:33-45",
-      "services/veda_vector.py:460-467",
-      "routers/nija_router.py:1-334",
-      "frontend/js/slashCommands.js:2240-2310",
     ],
   },
   {
@@ -536,6 +482,11 @@ export const surfaces: readonly Surface[] = [
         detail: "Click Email in the sidebar to browse folders and search.",
       },
       {
+        title: "Summarize and reply",
+        detail:
+          "Open a message, click Summary, then Generate now. AI reply drafts an answer that opens for editing before you click Send.",
+      },
+      {
         title: "Write and schedule",
         detail:
           "Click Compose email and write the message, then choose Schedule Send... to pick a date and time.",
@@ -592,6 +543,11 @@ export const surfaces: readonly Surface[] = [
         detail: "Click Calendar in the sidebar, or press Ctrl+Alt+C.",
       },
       {
+        title: "Add an event in plain words",
+        detail:
+          "Switch to Week, type the event into Quick add, and press Enter. Check the form it fills in, then click Create.",
+      },
+      {
         title: "Bring in events",
         detail: "In the calendar's settings, click Import .ics to load an existing calendar file.",
       },
@@ -612,6 +568,7 @@ export const surfaces: readonly Surface[] = [
     ],
     prerequisites: [
       "A CalDAV or CardDAV server and its credentials, for sync. Local calendars and .ics files need nothing.",
+      "A connected model for Quick add.",
       "An administrator account to manage contacts.",
       "On a shared instance, calendar management is switched off for accounts that are not administrators unless the administrator grants it.",
     ],
@@ -710,6 +667,11 @@ export const surfaces: readonly Surface[] = [
           "On the Download tab, Scan / Download reads your hardware and lists the models that will run on it. Sort by Fit, Score, or VRAM.",
       },
       {
+        title: "Plan for hardware you do not have yet",
+        detail:
+          "Click EDIT to open the hardware simulator, enter the GPUs, VRAM, and RAM you are considering, and click Apply. The list re-ranks for that profile, and the Quant filter narrows it.",
+      },
+      {
         title: "Download a model",
         detail:
           "Click Download on a listed model, or paste a Hugging Face reference such as org/model:Q4_K_M.",
@@ -774,7 +736,7 @@ export const surfaces: readonly Surface[] = [
       {
         title: "Edit in layers",
         detail:
-          "Open a photo and click Edit. Work with the toolbar and the Layers panel, and add adjustments to any layer.",
+          "Open a photo and click Edit, or press E. Click Adjust layer, pick an adjustment such as Hue / Saturation, drag its sliders, and click Apply to keep it on its own layer.",
       },
       {
         title: "Save",
@@ -824,7 +786,7 @@ export const surfaces: readonly Surface[] = [
       {
         title: "Customize",
         detail:
-          "On the Customize tab, adjust the colors, or open Color Harmony and click Generate. Choose a Font, a Density, and a Background / Effect.",
+          "On the Customize tab, adjust the colors, or open Color Harmony and click Generate. Choose a Font, a Density, and a Background / Effect, and click Peek to see it behind the window.",
       },
       {
         title: "Save and share",
@@ -929,7 +891,10 @@ export const surfaces: readonly Surface[] = [
     },
     capture: findCaptureId("api"),
     docs: "guides/api-access",
-    teams: "Webhooks belong to the account that registered them.",
+    // Not "per account": webhook rows have no owner and every webhook route is
+    // admin-only in this release, whatever its release notes say.
+    teams:
+      "Outbound webhooks are shared across the instance, and only an administrator can create tokens or manage webhooks.",
     evidence: [
       "routers/api_token_router.py:78-196",
       "routers/webhook_router.py:71-239",
@@ -953,7 +918,7 @@ export const surfaces: readonly Surface[] = [
       {
         title: "Create the first account",
         detail:
-          "On first launch, enter a username and a password of at least 8 characters, then click Create Admin Account.",
+          "On first launch, fill in Username, Password, and Confirm Password, with a password of at least 8 characters, then click Create Admin Account. You land in Settings, on Integrations.",
       },
       {
         title: "Turn on two-factor",

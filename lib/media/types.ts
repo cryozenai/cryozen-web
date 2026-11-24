@@ -44,6 +44,13 @@ export interface Capture {
   title: string;
   /** Seconds. */
   duration: number;
+  /**
+   * Seconds the recorded session really took, present only when the recording
+   * was shortened: a long wait shown as a time-lapse. Always longer than
+   * `duration`. Pages print it beside the player, so the speed-up is disclosed
+   * to someone who never turns the captions on.
+   */
+  realDuration?: number;
   /** Intrinsic pixel size; the frame reserves this aspect ratio before anything loads. */
   width: number;
   height: number;

@@ -1,0 +1,29 @@
+WEBVTT
+
+1
+00:00:00.400 --> 00:00:04.300
+Open Library from the sidebar to see your documents.
+
+2
+00:00:04.300 --> 00:00:06.300
+Click Open. The editor docks next to the chat.
+
+3
+00:00:06.300 --> 00:00:10.800
+Ask the model to edit it. With a document open, chat switches to Agent so it can write into the document.
+
+4
+00:00:10.800 --> 00:00:13.300
+The model writes the edit straight into the document.
+
+5
+00:00:13.300 --> 00:00:18.300
+The edit waits for your review. Accept or reject it.
+
+6
+00:00:18.300 --> 00:00:20.700
+Click the version badge to see every version with its changes.
+
+7
+00:00:20.700 --> 00:00:24.100
+The history lists v2 and v1. Restore brings an older version back as a new version.
