@@ -12,7 +12,7 @@ You do not need any of it to use the application.
 
 Routes, page URLs, and top-level packages are named in English.
 Some inner module filenames still carry the project's original Sanskrit vocabulary, so this page leads with what a thing does and shows the identifier second.
-The naming map records what the old route names became, and what you have to change in your own installation when you upgrade.
+[The upgrading guide](/docs/operations/upgrading#route-names-moved-to-english) records what the old route names became, and what you have to change in your own installation when you upgrade.
 
 ## Features and where they live
 
@@ -57,7 +57,6 @@ These names appear in filenames, database tables, and logs rather than in URLs.
 | User accounts file | `data/niti.json` |
 
 Six words are reused for different components, which is the most common source of confusion when reading the tree.
-The architecture guide lists each collision and how to tell them apart.
 
 ## Command-line commands
 

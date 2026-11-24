@@ -25,10 +25,10 @@ docker compose exec cryozen python cli/cryozen help
 Define a shell alias in your Compose directory so the subcommand examples below work directly:
 
 ```bash
-alias cryozen='docker compose exec cryozen python cli/cryozen'
+alias cryozen='docker compose exec -T cryozen python cli/cryozen'
 ```
 
-When the `cryozen` container is stopped (such as during a backup restore), use `docker compose run --rm --no-deps cryozen python cli/cryozen ...` instead.
+When the `cryozen` container is stopped (such as during a backup restore), use `docker compose run --rm --no-deps -T cryozen python cli/cryozen ...` instead.
 Host-side installation from `$PWD/cli/cryozen` and shell completion scripts apply to source checkouts, which are not public.
 
 ## How commands find your data
@@ -113,7 +113,7 @@ cryozen patra read your_message_uid_here --account your_account_id_here --folder
 cryozen patra send --account your_account_id_here --to alice@example.com --subject "Status" --dry-run <<<"body text"
 ```
 
-The two pollers each do one pass and exit, which suits a cron entry or a systemd timer:
+The two pollers each do one pass and exit, which suits a cron entry or another scheduler:
 
 ```bash
 cryozen patra poll-scheduled
@@ -195,8 +195,8 @@ cryozen shakti state-set < /tmp/shakti_state_backup.json
 
 ### Backups (`sanrakshana`)
 
-`snapshot` writes a gzip tarball of the data directory the application resolves (`CRYOZEN_DATA_DIR`, the vault config file, or `~/.cryozen`), using SQLite's online backup API for databases so the running app cannot corrupt the archive and so writes still in the write-ahead log are included.
-The command reads the checkout's `.env` as the application does, and variables set in the shell win; `snapshot`, `list`, `verify`, and `restore` all print the resolved `data_dir`, so a wrong resolution is visible.
+`snapshot` writes a gzip tarball of the data directory the application resolves (`CRYOZEN_DATA_DIR`, which Docker Compose sets to `/app/data` and desktop packages set to their per-user data directory), using SQLite's online backup API for databases so the running app cannot corrupt the archive and so writes still in the write-ahead log are included.
+The command reads `.env` the same way the application does, and variables set in the shell win; `snapshot`, `list`, `verify`, and `restore` all print the resolved `data_dir`, so a wrong resolution is visible.
 It refuses to run when that directory or the configured database is missing, and it never creates, opens, or migrates either one, so a wrong resolution gets a refusal rather than an empty backup.
 The database is the one `DATABASE_URL` names; it always enters the archive as `data/smriti.db`, and a stale `smriti.db` left in the data directory is skipped with a warning.
 When `DATABASE_URL` is not SQLite the snapshot refuses; back the database up with its own tools and the data directory with `tar`.

@@ -69,14 +69,14 @@ echo "PGID=$(id -g)" >> .env
 docker compose up -d
 ```
 
-On a native or systemd install there is no such translation, so the failure means the account running uvicorn cannot write the resolved data directory.
+In a desktop package there is no such translation, so the failure means your own account cannot write the resolved data directory.
 Ask the application which directory it resolved and whether it can write there:
 
 ```bash
 curl -fsS http://127.0.0.1:7000/api/ready
 ```
 
-The `data_dir` check in that response reports the path it probed and the error it hit, which is faster than guessing between `~/.cryozen`, the legacy pre-rename data directory, and whatever `CRYOZEN_DATA_DIR` names.
+The `data_dir` check in that response reports the path it probed and the error it hit, which is faster than guessing which directory it resolved.
 
 ## You cannot sign in, or you were signed out after a restart
 
@@ -85,7 +85,7 @@ Being signed out after a restart means the application is no longer reading the 
 
 That happens for three reasons in practice:
 
-- **The data directory moved**: `CRYOZEN_DATA_DIR` changed, or a `~/.cryozen` directory was created next to an existing legacy pre-rename data directory, which flips resolution to the new path and leaves the old accounts behind.
+- **The data directory moved**: `CRYOZEN_DATA_DIR` changed, which points the application at a different directory and leaves the old accounts behind.
 - **The directory is not persisted**: on the Compose path, a container that writes outside the `./data` bind mount loses everything on recreation.
 - **The directory is not writable**: `sessions.json` never saves, so every restart starts with no sessions.
 
@@ -189,7 +189,7 @@ docker compose ps searxng
 docker compose logs searxng
 ```
 
-On a native install nothing starts SearXNG for you.
+In a desktop package nothing starts SearXNG for you.
 Either set `SEARXNG_INSTANCE` to an instance you run, or choose a provider that uses an API key instead.
 
 ## Document search and memory recall find nothing
@@ -209,7 +209,7 @@ nc -z 127.0.0.1 8100 && echo open
 The Compose stack sets `CHROMADB_HOST=chromadb` and `CHROMADB_PORT=8000` inside the container, and publishes the same service on `127.0.0.1:8100` for anything running on the host.
 That is why the defaults in the code are `localhost` and `8100`: they describe the native case, not the in-container one.
 
-On a native install, start a ChromaDB instance and leave the defaults alone:
+For a desktop package, start a ChromaDB instance and leave the defaults alone:
 
 ```bash
 docker run -d --name chromadb -p 127.0.0.1:8100:8000 chromadb/chroma
@@ -236,7 +236,7 @@ The connection error is surfaced verbatim, with an install hint added for the se
 
 Check three things in order:
 
-1. **The command exists on the host running CryoZen.** Servers launched with `npx` need Node.js and npm, which the Docker image includes and a native install may not.
+1. **The command exists on the host running CryoZen.** Servers launched with `npx` need Node.js and npm, which the Docker image includes and a desktop package may not.
 2. **The package is cached.** The first `npx` invocation downloads, and a connection attempt can time out before the download finishes. Run the server's `--version` by hand once.
 3. **The server actually speaks MCP over the transport you configured.** A remote Streamable HTTP server that requires authorization needs the OAuth flow below, not a plain connection.
 
@@ -330,8 +330,8 @@ An nginx default of 60s cuts off a deep research run that the application would 
 
 ## The backup snapshot does not contain the data you expected
 
-`cli/cryozen-sanrakshana snapshot` archives the data directory the application resolves: `CRYOZEN_DATA_DIR` when set, otherwise the vault config file, otherwise `~/.cryozen`.
-The command reads the checkout's `.env` as the application does, so `CRYOZEN_DATA_DIR`, `CRYOZEN_BACKUP_DIR`, `CRYOZEN_BACKUP_KEEP`, and `DATABASE_URL` set there apply, and the same variables set in the shell win.
+`cli/cryozen-sanrakshana snapshot` archives the data directory the application resolves: `CRYOZEN_DATA_DIR`, which Docker Compose sets to `/app/data` and desktop packages set to their per-user data directory.
+The command reads `.env` the same way the application does, so `CRYOZEN_DATA_DIR`, `CRYOZEN_BACKUP_DIR`, `CRYOZEN_BACKUP_KEEP`, and `DATABASE_URL` set there apply, and the same variables set in the shell win.
 On the Compose path run the command inside the container, as `docker compose run --rm --no-deps cryozen python cli/cryozen-sanrakshana`, because the host shell does not carry the container's `CRYOZEN_DATA_DIR` and would resolve a different directory.
 `run` goes through the image entrypoint, which applies `PUID` and `PGID` from `.env` as the service does; `exec` would run as root, and a `--user` built in the host shell can name the wrong owner because that shell does not read `.env`.
 The entrypoint runs first-time setup only when it starts the server, so a one-off command like this one finds the database as it was.
@@ -353,7 +353,7 @@ docker compose run --rm --no-deps cryozen python cli/cryozen-sanrakshana verify 
 `verify` extracts every member to a temporary directory and discards it, which needs free space equal to the uncompressed archive, and reports the member count, the first and last entry names, and the archive's `manifest.json`, whose `data_dir` field names the directory the snapshot was taken from.
 It rejects a tarball whose entries are absolute, contain `..`, are links or special files, or sit outside a top-level `data/` directory, which is the same check `restore` applies.
 
-Archives made by releases before the manifest existed have no `manifest.json`, and on a native install they hold the checkout's `data/` rather than your data; treat them as suspect and take a fresh snapshot.
+Archives made by releases before the manifest existed have no `manifest.json` and may not hold your data; treat them as suspect and take a fresh snapshot.
 A `.part` file beside the archives or a `.snapshot-staging-*` directory in the data directory is an interrupted write and can be deleted, unless a snapshot is still running.
 See [upgrading](/docs/operations/upgrading) for the full backup procedure per deployment path.
 

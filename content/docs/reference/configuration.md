@@ -7,7 +7,7 @@ commit: "f358e1dc7f53603abdf3f3d7ae2face02bd939ca"
 # Configuration reference
 
 This page lists every environment variable that CryoZen reads, grouped by the concern it controls, with the default the code actually applies and the effect of changing it.
-Configuration comes from two places: a `.env` file in the repository root, which `cryozen.py` loads at import with `load_dotenv(encoding="utf-8-sig")`, and the process environment inherited from your shell, systemd unit, or container runtime.
+Configuration comes from two places: a `.env` file in the repository root, which `cryozen.py` loads at import with `load_dotenv(encoding="utf-8-sig")`, and the process environment inherited from your shell or container runtime.
 Values already present in the process environment win over `.env`, because `load_dotenv` does not overwrite existing keys.
 Any legacy variable prefixed with the project's previous name is mirrored onto the matching `CRYOZEN_*` name once at startup by `_alias_legacy_env()` in `services/constants.py`, so pre-rename installs keep working without edits, and an explicitly set `CRYOZEN_*` value always beats its legacy twin.
 Variables marked compose-only are consumed by `docker-compose.yml` or the Docker entrypoint and are never read by Python; variables marked test-only affect development tooling.
@@ -61,10 +61,10 @@ Rotating it invalidates in-flight OAuth handshakes only, so a user who is mid-co
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `APP_BIND` | `127.0.0.1` | Host interface the launchers bind and the address side of the Compose port map (`start-linux.sh`, `start-macos.sh`, `docker-compose.yml`). Set `0.0.0.0` only when you intend LAN or reverse-proxy exposure. |
+| `APP_BIND` | `127.0.0.1` | Address side of the Compose port map (`docker-compose.yml`) and the host interface the source-checkout launch scripts bind. Set `0.0.0.0` only when you intend LAN or reverse-proxy exposure. |
 | `APP_PORT` | `7000`, and `7860` in the macOS launcher because AirPlay Receiver usually holds 7000 | Host port for the launchers and the Compose port map; also read by `pairing/service.py` to build the pairing URL, and by `core/self_url.py` as the last fallback before 7000. |
-| `CRYOZEN_HOST` | Unset, falls back to `APP_BIND` | Launcher-only bind override with higher precedence than `APP_BIND` (`start-linux.sh`, `launch-windows.ps1:62`). Not read by the Python application. |
-| `CRYOZEN_PORT` | Unset, falls back to `APP_PORT` | Launcher port override with higher precedence than `APP_PORT` (`start-linux.sh`, `launch-windows.ps1:58`). The packaged launcher exports it, and `core/self_url.py` reads it only when no `uvicorn --port` flag or accepted request says otherwise. |
+| `CRYOZEN_HOST` | Unset, falls back to `APP_BIND` | Bind override for the source-checkout launch scripts, with higher precedence than `APP_BIND`. Not read by the Python application. |
+| `CRYOZEN_PORT` | Unset, falls back to `APP_PORT` | Launcher port override with higher precedence than `APP_PORT`. The packaged launcher exports it, and `core/self_url.py` reads it only when no `uvicorn --port` flag or accepted request says otherwise. |
 | `CRYOZEN_SELF_URL` | Unset, inferred from the listening socket, then `uvicorn --port`, `CRYOZEN_PORT`, `APP_PORT`, and 7000 | Origin the app uses to call its own API (`core/self_url.py`). Set it only when inference cannot work, such as TLS on the listener, and keep it on loopback because the internal token is only honoured from a loopback client. |
 | `UVICORN_PORT`, `UVICORN_HOST` | Unset | Uvicorn's own settings. Under the `uvicorn` command, `core/self_url.py` reads them when `--port` or `--host` is absent, to predict the self-call origin before the first request. |
 | `ALLOWED_ORIGINS` | `http://localhost,http://127.0.0.1` | Comma-separated CORS allowlist passed to `CORSMiddleware` (`cryozen.py`). Credentials are allowed, so list your exact public origin rather than a wildcard. The same list names the other origins whose pages may make writes under `/api` with a signed-in session (`CrossOriginWriteGuard` in `core/middleware.py`). |
@@ -232,7 +232,7 @@ Apple linked accounts use an iCloud app-specific password instead, because Apple
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `CRYOZEN_DATA_DIR` | `~/.cryozen`, or the legacy data directory under `~` from the project's previous name when that directory already exists and `~/.cryozen` does not (`services/constants.py`) | Absolute vault path holding sessions, memory, uploads, settings, and the SQLite database. It also overrides any `vault_path` stored in `~/.cryozen_vault_config.json`. Under pytest the suite pins it to a fresh temporary directory. Compose pins it to `/app/data` so writes land in the bind mount. |
+| `CRYOZEN_DATA_DIR` | `~/.cryozen`, or the legacy data directory under `~` from the project's previous name when that directory already exists and `~/.cryozen` does not (`services/constants.py`) | Absolute vault path holding sessions, memory, uploads, settings, and the SQLite database. It also overrides any `vault_path` stored in `~/.cryozen_vault_config.json`. Under pytest the suite pins it to a fresh temporary directory. Compose pins it to `/app/data` so writes land in the bind mount, and desktop packages set it to `~/Library/Application Support/CryoZen` on macOS, `%LOCALAPPDATA%\CryoZen` on Windows, and `~/.local/share/cryozen` on Linux. |
 | `CRYOZEN_BACKUP_DIR` | `backups` inside `CRYOZEN_DATA_DIR` (`services/constants.py`) | Where the application writes its own backups: pre-migration database copies under `pre-migration/`, the scheduler's daily archives, and `cryozen-sanrakshana snapshot` output when `--out` is not given. Snapshots skip this directory and `backups` inside the data directory, so setting it later does not put older backups into new archives. They archive the database `DATABASE_URL` names, or refuse when it is not SQLite. Set it to another disk to keep backups off the data volume. On the Compose path, a path outside `/app/data` also needs its own volume mount. |
 | `CRYOZEN_BACKUP_KEEP` | `7` (`services/constants.py`) | How many daily archives the scheduler keeps; older ones are deleted after a new one is written, starting with any stamped later than the new one, since those come from a clock error. `0` disables the daily backup. Manual snapshots are never rotated. |
 | `DATA_DIR` | `data` | A separate variable read only by `routers/shakti_serve_router.py`, `routers/codex_router.py`, and `services/bg_jobs.py`. Setting `CRYOZEN_DATA_DIR` does not change it. |
@@ -247,7 +247,7 @@ Each of these toggles accepts `0`, `false`, `no`, `off`, or an empty string as "
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `CRYOZEN_INPROCESS_POLLERS` | `1` | Runs the scheduled email poller inside the application process (`routers/email_pollers.py`). Set it to `0` when cron or a systemd timer drives `cli/cryozen-patra poll-scheduled` and `cli/cryozen-patra poll-summary`, otherwise two schedulers race on the same SQLite file. |
+| `CRYOZEN_INPROCESS_POLLERS` | `1` | Runs the scheduled email poller inside the application process (`routers/email_pollers.py`). Set it to `0` when cron or another scheduler drives `cli/cryozen-patra poll-scheduled` and `cli/cryozen-patra poll-summary`, otherwise two schedulers race on the same SQLite file. |
 | `CRYOZEN_INPROCESS_TASKS` | `1` | Runs the scheduled-task runner, which also writes the daily backup, inside the application process (`services/constants.py`). Set it to `0` to let an external driver fire scheduled tasks; that driver must then take the backups too. Calendar reminders are polled by the browser, so they need no equivalent gate. |
 | `ACCOUNT_SYNC_ENABLED` | `1` | Controls the linked-account background sync loop (`cryozen.py`). |
 | `CLEANUP_ENABLED` | `True` | Enables the periodic cleanup job (`services/constants.py`). The comparison is case-insensitive against `true`. |
@@ -273,8 +273,8 @@ Turn them on for internet-exposed or multi-tenant deployments, and expect local 
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `CRYOZEN_TESTING` | Unset | Test-only. Set to `1` to force test mode, which skips the data-directory migration and, when `CRYOZEN_DATA_DIR` is unset, resolves the vault to a fresh temporary directory instead of the checkout's `data/` (`services/constants.py`). |
-| `CRYOZEN_SKIP_DATA_DIR_MIGRATION` | Unset | Internal. `cli/cryozen-sanrakshana` sets it so that importing `services/constants.py` does not copy the checkout's `data/` into a missing vault, which the snapshot would then archive as a backup. You never set it yourself. |
+| `CRYOZEN_TESTING` | Unset | Test-only. Set to `1` to force test mode, which skips the data-directory migration and, when `CRYOZEN_DATA_DIR` is unset, resolves the vault to a fresh temporary directory instead of the application directory's `data/` (`services/constants.py`). |
+| `CRYOZEN_SKIP_DATA_DIR_MIGRATION` | Unset | Internal. `cli/cryozen-sanrakshana` sets it so that importing `services/constants.py` does not copy the application directory's `data/` into a missing vault, which the snapshot would then archive as a backup. You never set it yourself. |
 | `PYTEST_CURRENT_TEST` | Set by pytest | Test-only. Its presence is one of the four signals that put `services/constants.py` into test mode; you never set it yourself. |
 | `DEMO_IMAP_HOST` | `localhost` | Test-only. IMAP host for the demo mailbox seeder (`cli/demo_email/seed_demo_emails.py`). |
 | `DEMO_IMAP_PORT` | `31143` | Test-only. IMAP port for the demo mailbox seeder (`cli/demo_email/seed_demo_emails.py`). |
@@ -292,7 +292,7 @@ Treat them as platform detail, not configuration.
 
 Configuration resolves in this order, highest priority first:
 
-- **Process environment**: values exported by your shell, systemd unit, or container runtime. `load_dotenv` does not overwrite them.
+- **Process environment**: values exported by your shell or container runtime. `load_dotenv` does not overwrite them.
 - **`.env` file**: read once from the repository root at `cryozen.py` with `encoding="utf-8-sig"`, which tolerates the UTF-8 byte order mark that Windows Notepad adds.
 - **Code default**: the fallback in the `os.getenv` call listed in each table above.
 
@@ -308,4 +308,4 @@ Two consequences follow:
 - **Only the prefix is translated**: a legacy `*_DATA_DIR` variable becomes `CRYOZEN_DATA_DIR`, but variables without the prefix, such as `DATABASE_URL` or `SESSION_SECRET`, have no legacy alias.
 
 Prefer the `CRYOZEN_*` names in new configuration.
-The legacy prefix exists so that systemd units, compose files, and shell profiles written before the rename keep working without edits.
+The legacy prefix exists so that compose files and shell profiles written before the rename keep working without edits.

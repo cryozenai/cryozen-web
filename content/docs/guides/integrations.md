@@ -16,10 +16,11 @@ An unconfigured integration reports "not connected" and the rest of the applicat
 
 Every integration is either instance-wide or per-user:
 
-- **Instance-wide**: one setting shared by everyone, configured by an administrator. Language-model keys, search keys, and local services work this way.
-- **Per-user**: each account stores its own credentials. Mail, calendar, contacts, and linked accounts work this way, so two users on one instance never see each other's mailboxes.
+- **Instance-wide**: one setting shared by everyone, configured by an administrator. Language-model keys, search keys, local services, and contacts, including the CardDAV connection, work this way.
+- **Per-user**: each account stores its own credentials. Mail, calendar, and linked accounts work this way, so two users on one instance never see each other's mailboxes.
 
 Secrets are encrypted at rest with a key held in your data directory, masked whenever they are read back, and never written to logs.
+The exception is the CardDAV password, which is stored in plain text in the instance settings file.
 
 Most integrations live in one place in the interface: open **Settings**, then **Integrations**.
 Each one is a card showing its current status, with buttons to test, connect, or disconnect it.
@@ -106,6 +107,7 @@ Calendars sync over CalDAV and contacts over CardDAV, which covers Nextcloud, Ra
 Open **Settings**, then **Calendar**, and add the account with its server URL, username, and password.
 Select **Test** to confirm CryoZen can reach the server before you rely on it.
 Contacts follow the same pattern under **Settings**, then **Contacts**.
+Contacts are shared across the instance, and only an administrator can configure or edit them.
 
 CryoZen negotiates both Basic and Digest authentication, so servers that require Digest, such as a default Baikal installation, work without extra configuration.
 

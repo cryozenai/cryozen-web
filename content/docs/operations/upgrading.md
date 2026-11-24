@@ -34,7 +34,7 @@ It archives the resolved data directory, and it dumps every SQLite database thro
 It writes to `backups/cryozen-sanrakshana-<timestamp>.tar.gz` inside the data directory unless you pass `--out` or set `CRYOZEN_BACKUP_DIR`, and it excludes large or re-derivable subtrees by default, as listed in the [CLI reference](/docs/reference/cli#backups-sanrakshana).
 Every archive carries a `manifest.json` naming the directory it came from, so you can check an archive before you need it (running `cli/cryozen-sanrakshana` directly on the host applies to source checkouts, which are not public).
 
-On the Compose path the command must run inside the container, because the host shell does not carry the container's `CRYOZEN_DATA_DIR`, so from the host it resolves `~/.cryozen` rather than `./data`.
+On the Compose path the command must run inside the container, because the host shell does not carry the container's `CRYOZEN_DATA_DIR` and would resolve a different directory.
 `run` goes through the image entrypoint, which applies `PUID` and `PGID` from `.env` as the service does; `exec` would run as root, and a `--user` built in the host shell can name the wrong owner because that shell does not read `.env`.
 The entrypoint runs first-time setup only when it starts the server, so a one-off command like this one finds the database as it was.
 `--no-deps` leaves out searxng and chromadb, because the tool needs neither and an unhealthy searxng would otherwise block it.
@@ -148,7 +148,7 @@ Upgrade the way your deployment path describes above, and expect the following t
 Six things carry over automatically:
 
 - **Legacy environment variables**: at startup the application mirrors every variable using the previous-name prefix onto the matching `CRYOZEN_*` name. The mirror uses a default-only write, so a `CRYOZEN_*` value you set explicitly always wins over its legacy twin. Variables that were never prefixed, such as `APP_PORT` and `AUTH_ENABLED`, did not change name and need no handling.
-- **The legacy data directory**: when `CRYOZEN_DATA_DIR` is unset, no vault config file is present, `~/.cryozen` does not exist, and the pre-rename directory under `~` does, the application keeps reading it instead of starting empty. A pre-rename vault config file is also still read after `~/.cryozen_vault_config.json`.
+- **The legacy data directory**: a source-checkout install that still uses the pre-rename data directory keeps reading it instead of starting empty. Desktop packages and Docker Compose always set `CRYOZEN_DATA_DIR`, so the fallback does not apply to them.
 - **Signed-in sessions**: the session cookie is now `cryozen_session`, and the application falls back to the pre-rename session cookie when the new one is absent. Nobody is signed out by the upgrade, and signing out clears both cookie names. The new cookie wins whenever both are present.
 - **Browser storage keys**: on first load after the upgrade, an inline script copies every `localStorage` and `sessionStorage` key from the previous-name prefix to the matching `cryozen-` key where the new key is not already set. The legacy keys are left in place.
 - **Vector collections**: on every boot, the application renames ChromaDB collections from the previous-name prefix to their `cryozen_` equivalents in place with no re-embedding. A `cryozen_` collection that already exists and holds documents is never overwritten, and the legacy collection is left alone; an empty one is deleted so the legacy data can be adopted on the next attempt.
@@ -168,9 +168,8 @@ Do them when it suits you, and each is independent of the others:
 ## Route names moved to English
 
 The HTTP route prefixes, the page URLs, two agent-integration sub-paths, and the vault settings sub-path were renamed from Sanskrit to English.
-Some requested paths were left alone, and `docs/concepts/naming-map.md` lists them under "What did not change".
+Some requested paths were left alone.
 `/api/niti` is now `/api/auth`, `/api/smarana` is now `/api/memory`, `/api/shodh` is now `/api/research`, and so on.
-The naming map lists every pair.
 
 On a default install you do not have to do anything for most of it.
 Every old API path still resolves there: a middleware rewrites it to the new one before routing, and logs one warning per prefix naming the replacement.

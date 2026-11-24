@@ -24,7 +24,7 @@ import {
   DEFAULT_TRANSFORMS,
   DOC_ALLOWLIST,
   findDockerComposeBuildMatches,
-  findSourceOnlyCommandMatches,
+  findSourceOnlyMatches,
   findSourceRepoMatches,
   syncDocs,
 } from "./sync-docs.mjs";
@@ -380,9 +380,9 @@ test("published content/docs links resolve to synced docs and never link to gith
       `${filePath} must not pass --build to docker compose`,
     );
     assert.deepEqual(
-      findSourceOnlyCommandMatches(content),
+      findSourceOnlyMatches(content, Object.values(facts.install.data_dirs)),
       [],
-      `${filePath} must not hand visitors source-checkout-only commands`,
+      `${filePath} must not hand visitors source-checkout-only content`,
     );
 
     // The page renders the body without its leading H1 (lib/docs/index.ts).
@@ -523,17 +523,13 @@ test("docs table of contents and lead text keep intraword underscores", () => {
   ]);
 });
 
-test("sync-docs fails loudly when a source-checkout-only command survives in a code block", () => {
+test("sync-docs fails loudly when source-checkout-only prose survives outside the allowlist", () => {
   const { repoDir } = createFixtureGitRepo(
     baseFixtureFiles({
       "docs/operations/upgrading.md": [
         "# Upgrading",
         "",
-        "The `cryozen-ui` unit and `start.sh` need a source checkout.",
-        "",
-        "```bash",
-        "sudo systemctl restart cryozen-ui",
-        "```",
+        "On a native install, restart CryoZen after you edit `.env`.",
         "",
       ].join("\n"),
     }),
@@ -549,31 +545,30 @@ test("sync-docs fails loudly when a source-checkout-only command survives in a c
         outDir,
         factsPath: FACTS_PATH,
       }),
-    /Source-only command check failed:\ndocs\/operations\/upgrading\.md:\d+ [^\n]*sudo systemctl restart cryozen-ui$/,
+    /Source-only content check failed:\ndocs\/operations\/upgrading\.md:\d+ matched source-checkout-only content: On a native install, restart CryoZen after you edit `\.env`\.$/,
   );
   assert.equal(existsSync(join(outDir, "index.md")), false, "failed sync must not write partial output");
 });
 
-test("findSourceOnlyCommandMatches flags source-only commands in code blocks only", () => {
+test("findSourceOnlyMatches flags source-only prose and code, except allowlisted notes", () => {
+  const facts = JSON.parse(readFileSync(FACTS_PATH, "utf8"));
+  const desktopDirs = Object.values(facts.install.data_dirs);
+  const namesEveryDesktopDir = `Unset, it falls back to \`~/.cryozen\`; desktop packages set ${desktopDirs.join(", ")}.`;
   const text = [
-    "Prose may name `start.sh`, `cryozen-ui.service`, and the `~/.cryozen` default.",
-    "",
+    "On a native install, restart CryoZen.",
+    "The native launcher and systemd paths require a source checkout, which is not public.",
+    "Uvicorn trusts forwarded headers from `127.0.0.1` by default.",
+    "The default data directory is `~/.cryozen`.",
+    namesEveryDesktopDir,
+    `Unset, it falls back to \`~/.cryozen\`; macOS desktop packages use ${desktopDirs[0]}.`,
     "```bash",
     "sudo systemctl restart docker",
-    "./start-macos.sh",
-    "```",
-    "",
-    "~~~powershell",
-    ".\\launch-windows.ps1",
-    "~~~",
-    "",
-    "```bash",
-    "tar -czf backup.tar.gz -C ~ .cryozen && ls ~/.cryozen/backups",
+    "sudo systemctl restart cryozen-ui",
     "```",
   ].join("\n");
 
   assert.deepEqual(
-    findSourceOnlyCommandMatches(text).map((hit) => hit.text),
-    ["./start-macos.sh", ".\\launch-windows.ps1", "tar -czf backup.tar.gz -C ~ .cryozen && ls ~/.cryozen/backups"],
+    findSourceOnlyMatches(text, desktopDirs).map((hit) => hit.line),
+    [1, 4, 6, 9],
   );
 });

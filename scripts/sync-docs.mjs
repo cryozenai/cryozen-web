@@ -4,8 +4,8 @@
 // explicit transforms for banned terms and private-repo-only blocks, and failing
 // if any transform matches nothing in its file, or if any banned term, private
 // source-repo URL, `docker compose ... --build` command, or source-checkout-only
-// command in a code block (launcher scripts, the cryozen-ui unit, ~/.cryozen)
-// survives.
+// content (launcher scripts, systemd, the cryozen-ui unit, ~/.cryozen) survives
+// outside the explicit allowlist.
 //
 // Usage:
 //   PRODUCT_REPO=/path/to/cryozen node scripts/sync-docs.mjs [--ref v1.2.0]
@@ -43,8 +43,32 @@ const DEFAULT_SOURCE_REPO = "cryozenai/cryozen";
 const DOCKER_COMPOSE_BUILD_LINE_RE =
   /\bdocker[\s-]+compose\b[^\r\n]*\s--build(?=$|\s|[`"'();])/i;
 
-const SOURCE_ONLY_COMMAND_RE =
-  /\bcryozen-ui\b|\bstart(?:-linux|-macos)?\.sh\b|\blaunch-windows\.ps1\b|\binstall-service\.sh\b|~\/\.cryozen\b/;
+// Strong markers of an instruction or condition that only applies to a source
+// checkout (native launcher scripts, the systemd unit, the checkout's files).
+// uvicorn is not a marker: the published image and the desktop launcher run it too.
+const SOURCE_ONLY_MARKER_RE =
+  /\bsystemd\b|\bnative (?:launcher|install)|\bstart(?:-linux|-macos)?\.sh\b|\blaunch-windows\.ps1\b|\bcryozen-ui\b|\binstall-service\b|\bthe checkout's\b/i;
+// The source-checkout default data directory; a line may name it only when it
+// also names every desktop data directory from lib/release-facts.json.
+const SOURCE_CHECKOUT_DATA_DIR_RE = /~\/\.cryozen\b/;
+// Exact lines that legitimately carry a marker: headings of source-only
+// sections and the "require a source checkout, which is not public" notes the
+// transforms write in their place.
+const SOURCE_ONLY_ALLOWLIST = new Set([
+  "The native launcher and systemd paths require a source checkout, which is not public.",
+  "## Deploy with the native launcher",
+  "Source builds and the native launcher scripts (`start.sh` and `launch-windows.ps1`) require a source checkout, which is not public; for public installs, download a desktop package on [the download page](/download) or pull the published container image from [/download#docker](/download#docker).",
+  "## Deploy as a systemd service",
+  "Source builds and the `systemd` service unit files (`cryozen-ui.service` and `install-service.sh`) require a source checkout, which is not public; for public server deployments, pull the published container image from [/download#docker](/download#docker).",
+  "- **Native launcher and systemd**: both paths require a source checkout, which is not public.",
+  "- **Native launcher and systemd**: these paths require a source checkout, which is not public.",
+  "Backing up and restoring a native launcher or systemd install by hand requires a source checkout, which is not public.",
+  "## Upgrade a native launcher deployment",
+  "Desktop packages from [the download page](/download) upgrade by installing the new package; source-based native launcher upgrades (`git pull` and `./start.sh`) require a source checkout, which is not public, and container deployments pull the published image from [/download#docker](/download#docker).",
+  "## Upgrade a systemd deployment",
+  "Source-based `systemd` deployments require a source checkout, which is not public; for public container deployments, pull the published image from [/download#docker](/download#docker).",
+  "- **Move the data directory**: Docker Compose pins `CRYOZEN_DATA_DIR` to `/app/data`, and moving the pre-rename data directory on a native launcher or systemd install requires a source checkout, which is not public.",
+]);
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -118,12 +142,14 @@ export const BANNED_TRANSFORMS = [
       "Any legacy variable prefixed with the project's previous name is mirrored onto the matching `CRYOZEN_*` name once at startup by `_alias_legacy_env()` in `services/constants.py`, so pre-rename installs keep working without edits, and an explicitly set `CRYOZEN_*` value always beats its legacy twin.",
   },
   {
+    // packaging/launcher.py sets CRYOZEN_DATA_DIR to the platform data directory (lib/release-facts.json install.data_dirs).
     id: "config-legacy-data-dir",
     files: ["docs/reference/configuration.md"],
-    reason: "Describe fallback legacy data dir without naming the banned directory.",
-    pattern: "`~/.cryozen`, or `~/.srijan` when that directory already exists and `~/.cryozen` does not",
+    reason: "Describe the fallback legacy data dir without naming the banned directory, and name the desktop package data directories.",
+    pattern:
+      "`~/.cryozen`, or `~/.srijan` when that directory already exists and `~/.cryozen` does not (`services/constants.py`) | Absolute vault path holding sessions, memory, uploads, settings, and the SQLite database. It also overrides any `vault_path` stored in `~/.cryozen_vault_config.json`. Under pytest the suite pins it to a fresh temporary directory. Compose pins it to `/app/data` so writes land in the bind mount.",
     replacement:
-      "`~/.cryozen`, or the legacy data directory under `~` from the project's previous name when that directory already exists and `~/.cryozen` does not",
+      "`~/.cryozen`, or the legacy data directory under `~` from the project's previous name when that directory already exists and `~/.cryozen` does not (`services/constants.py`) | Absolute vault path holding sessions, memory, uploads, settings, and the SQLite database. It also overrides any `vault_path` stored in `~/.cryozen_vault_config.json`. Under pytest the suite pins it to a fresh temporary directory. Compose pins it to `/app/data` so writes land in the bind mount, and desktop packages set it to `~/Library/Application Support/CryoZen` on macOS, `%LOCALAPPDATA%\\CryoZen` on Windows, and `~/.local/share/cryozen` on Linux.",
   },
   {
     id: "config-legacy-aliasing-section",
@@ -147,20 +173,20 @@ export const BANNED_TRANSFORMS = [
   {
     id: "troubleshooting-legacy-data-dir-probe",
     files: ["docs/operations/troubleshooting.md"],
-    reason: "Describe data directory probing without naming the banned directory.",
+    reason: "Describe data directory probing without naming the banned directory or the source-checkout default.",
     pattern:
       "which is faster than guessing between `~/.cryozen`, `~/.srijan`, and whatever `CRYOZEN_DATA_DIR` names.",
     replacement:
-      "which is faster than guessing between `~/.cryozen`, the legacy pre-rename data directory, and whatever `CRYOZEN_DATA_DIR` names.",
+      "which is faster than guessing which directory it resolved.",
   },
   {
     id: "troubleshooting-legacy-data-dir-moved",
     files: ["docs/operations/troubleshooting.md"],
-    reason: "Explain directory precedence collision without naming the banned directory.",
+    reason: "Explain a moved data directory without the banned directory or the source-checkout-only collision.",
     pattern:
       "or a `~/.cryozen` directory was created next to an existing `~/.srijan`, which flips resolution to the new path and leaves the old accounts behind.",
     replacement:
-      "or a `~/.cryozen` directory was created next to an existing legacy pre-rename data directory, which flips resolution to the new path and leaves the old accounts behind.",
+      "which points the application at a different directory and leaves the old accounts behind.",
   },
   {
     id: "upgrading-intro-previous-name",
@@ -231,7 +257,7 @@ export const BANNED_TRANSFORMS = [
       "Six things carry over automatically:",
       "",
       "- **Legacy environment variables**: at startup the application mirrors every variable using the previous-name prefix onto the matching `CRYOZEN_*` name. The mirror uses a default-only write, so a `CRYOZEN_*` value you set explicitly always wins over its legacy twin. Variables that were never prefixed, such as `APP_PORT` and `AUTH_ENABLED`, did not change name and need no handling.",
-      "- **The legacy data directory**: when `CRYOZEN_DATA_DIR` is unset, no vault config file is present, `~/.cryozen` does not exist, and the pre-rename directory under `~` does, the application keeps reading it instead of starting empty. A pre-rename vault config file is also still read after `~/.cryozen_vault_config.json`.",
+      "- **The legacy data directory**: a source-checkout install that still uses the pre-rename data directory keeps reading it instead of starting empty. Desktop packages and Docker Compose always set `CRYOZEN_DATA_DIR`, so the fallback does not apply to them.",
       "- **Signed-in sessions**: the session cookie is now `cryozen_session`, and the application falls back to the pre-rename session cookie when the new one is absent. Nobody is signed out by the upgrade, and signing out clears both cookie names. The new cookie wins whenever both are present.",
       "- **Browser storage keys**: on first load after the upgrade, an inline script copies every `localStorage` and `sessionStorage` key from the previous-name prefix to the matching `cryozen-` key where the new key is not already set. The legacy keys are left in place.",
       "- **Vector collections**: on every boot, the application renames ChromaDB collections from the previous-name prefix to their `cryozen_` equivalents in place with no re-embedding. A `cryozen_` collection that already exists and holds documents is never overwritten, and the legacy collection is left alone; an empty one is deleted so the legacy data can be adopted on the next attempt.",
@@ -746,10 +772,10 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "Define a shell alias in your Compose directory so the subcommand examples below work directly:",
       "",
       "```bash",
-      "alias cryozen='docker compose exec cryozen python cli/cryozen'",
+      "alias cryozen='docker compose exec -T cryozen python cli/cryozen'",
       "```",
       "",
-      "When the `cryozen` container is stopped (such as during a backup restore), use `docker compose run --rm --no-deps cryozen python cli/cryozen ...` instead.",
+      "When the `cryozen` container is stopped (such as during a backup restore), use `docker compose run --rm --no-deps -T cryozen python cli/cryozen ...` instead.",
       "Host-side installation from `$PWD/cli/cryozen` and shell completion scripts apply to source checkouts, which are not public.",
     ].join("\n"),
   },
@@ -1025,9 +1051,232 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     replacement:
       "Then open an issue at [the public release channel](https://github.com/cryozenai/cryozen-releases/issues).",
   },
+  {
+    // Desktop packages run as the signed-in user; native and systemd installs need a source checkout.
+    id: "troubleshooting-permissions-desktop",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Describe the non-container permission failure for desktop packages instead of native and systemd installs.",
+    pattern: "On a native or systemd install there is no such translation, so the failure means the account running uvicorn cannot write the resolved data directory.",
+    replacement: "In a desktop package there is no such translation, so the failure means your own account cannot write the resolved data directory.",
+  },
+  {
+    // Desktop packages bundle neither SearXNG nor ChromaDB; only the Docker stack runs them.
+    id: "troubleshooting-searxng-desktop",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Desktop packages do not bundle SearXNG (lib/platforms.ts), so the native-install note applies to them.",
+    pattern: "On a native install nothing starts SearXNG for you.",
+    replacement: "In a desktop package nothing starts SearXNG for you.",
+  },
+  {
+    // Desktop packages bundle neither SearXNG nor ChromaDB; only the Docker stack runs them.
+    id: "troubleshooting-chromadb-desktop",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Desktop packages do not bundle ChromaDB (lib/platforms.ts), so the native-install note applies to them.",
+    pattern: "On a native install, start a ChromaDB instance and leave the defaults alone:",
+    replacement: "For a desktop package, start a ChromaDB instance and leave the defaults alone:",
+  },
+  {
+    // Desktop packages bundle Python and its dependencies, not Node.js.
+    id: "troubleshooting-npx-desktop",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Name the desktop package as the public install that may lack Node.js.",
+    pattern: "which the Docker image includes and a native install may not.",
+    replacement: "which the Docker image includes and a desktop package may not.",
+  },
+  {
+    // The ~/.cryozen fallback is only reached on a source checkout; Compose and the desktop launcher set CRYOZEN_DATA_DIR.
+    id: "troubleshooting-snapshot-resolution-public",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Describe snapshot resolution for the public installs, which always set CRYOZEN_DATA_DIR.",
+    pattern: [
+      ": `CRYOZEN_DATA_DIR` when set, otherwise the vault config file, otherwise `~/.cryozen`.",
+      "The command reads the checkout's `.env` as the application does,",
+    ].join("\n"),
+    replacement: [
+      ": `CRYOZEN_DATA_DIR`, which Docker Compose sets to `/app/data` and desktop packages set to their per-user data directory.",
+      "The command reads `.env` the same way the application does,",
+    ].join("\n"),
+  },
+  {
+    // The checkout's data/ only exists on a source checkout.
+    id: "troubleshooting-premanifest-archive",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Drop the source-checkout condition from the pre-manifest archive warning.",
+    pattern: ", and on a native install they hold the checkout's `data/` rather than your data;",
+    replacement: " and may not hold your data;",
+  },
+  {
+    // The ~/.cryozen fallback is only reached on a source checkout.
+    id: "upgrading-host-shell-resolution",
+    files: ["docs/operations/upgrading.md"],
+    reason: "Explain why the snapshot runs in the container without presenting ~/.cryozen as a public location.",
+    pattern: "because the host shell does not carry the container's `CRYOZEN_DATA_DIR`, so from the host it resolves `~/.cryozen` rather than `./data`.",
+    replacement: "because the host shell does not carry the container's `CRYOZEN_DATA_DIR` and would resolve a different directory.",
+  },
+  {
+    // Keep the scheduling advice install-neutral.
+    id: "cli-pollers-scheduler",
+    files: ["docs/reference/cli.md"],
+    reason: "Describe the poller schedule without a systemd-specific example.",
+    pattern: "which suits a cron entry or a systemd timer:",
+    replacement: "which suits a cron entry or another scheduler:",
+  },
+  {
+    // The ~/.cryozen fallback is only reached on a source checkout; Compose and the desktop launcher set CRYOZEN_DATA_DIR.
+    id: "cli-snapshot-resolution-public",
+    files: ["docs/reference/cli.md"],
+    reason: "Describe snapshot resolution for the public installs, which always set CRYOZEN_DATA_DIR.",
+    pattern: "(`CRYOZEN_DATA_DIR`, the vault config file, or `~/.cryozen`), using SQLite's online backup API",
+    replacement: "(`CRYOZEN_DATA_DIR`, which Docker Compose sets to `/app/data` and desktop packages set to their per-user data directory), using SQLite's online backup API",
+  },
+  {
+    // Inside the container the command and the application read the same .env path.
+    id: "cli-snapshot-dotenv",
+    files: ["docs/reference/cli.md"],
+    reason: "Drop the source-checkout wording from how the snapshot reads .env.",
+    pattern: "The command reads the checkout's `.env` as the application does,",
+    replacement: "The command reads `.env` the same way the application does,",
+  },
+  {
+    // systemd units only exist on a source checkout; replaceAll covers both mentions on the page.
+    id: "config-environment-sources",
+    files: ["docs/reference/configuration.md"],
+    reason: "List the environment sources for the public installs without a systemd unit.",
+    pattern: "your shell, systemd unit, or container runtime",
+    replacement: "your shell or container runtime",
+  },
+  {
+    // The launch scripts named here only exist on a source checkout.
+    id: "config-launcher-script-rows",
+    files: ["docs/reference/configuration.md"],
+    reason: "Drop source-checkout launcher script citations from the APP_BIND, CRYOZEN_HOST, and CRYOZEN_PORT rows.",
+    pattern: "Host interface the launchers bind and the address side of the Compose port map (`start-linux.sh`, `start-macos.sh`, `docker-compose.yml`).",
+    replacement: "Address side of the Compose port map (`docker-compose.yml`) and the host interface the source-checkout launch scripts bind.",
+  },
+  {
+    // The launch scripts named here only exist on a source checkout.
+    id: "config-cryozen-host-row",
+    files: ["docs/reference/configuration.md"],
+    reason: "Drop source-checkout launcher script citations from the CRYOZEN_HOST row.",
+    pattern: "Launcher-only bind override with higher precedence than `APP_BIND` (`start-linux.sh`, `launch-windows.ps1:62`).",
+    replacement: "Bind override for the source-checkout launch scripts, with higher precedence than `APP_BIND`.",
+  },
+  {
+    // The launch scripts named here only exist on a source checkout; the packaged launcher clause that follows still holds.
+    id: "config-cryozen-port-row",
+    files: ["docs/reference/configuration.md"],
+    reason: "Drop source-checkout launcher script citations from the CRYOZEN_PORT row.",
+    pattern: "Launcher port override with higher precedence than `APP_PORT` (`start-linux.sh`, `launch-windows.ps1:58`).",
+    replacement: "Launcher port override with higher precedence than `APP_PORT`.",
+  },
+  {
+    // Keep the scheduling advice install-neutral.
+    id: "config-pollers-scheduler",
+    files: ["docs/reference/configuration.md"],
+    reason: "Describe the poller schedule without a systemd-specific example.",
+    pattern: "when cron or a systemd timer drives",
+    replacement: "when cron or another scheduler drives",
+  },
+  {
+    // The image runs from /app, so the application directory's data/ is /app/data; replaceAll covers both rows.
+    id: "config-checkout-data-dir",
+    files: ["docs/reference/configuration.md"],
+    reason: "Name the application directory's data/ instead of the checkout's, which also holds inside the image.",
+    pattern: "the checkout's `data/`",
+    replacement: "the application directory's `data/`",
+  },
+  {
+    // systemd units only exist on a source checkout.
+    id: "config-legacy-prefix-units",
+    files: ["docs/reference/configuration.md"],
+    reason: "Drop systemd units from the legacy-prefix rationale.",
+    pattern: "The legacy prefix exists so that systemd units, compose files, and shell profiles written before the rename keep working without edits.",
+    replacement: "The legacy prefix exists so that compose files and shell profiles written before the rename keep working without edits.",
+  },
+  {
+    // docs/concepts/naming-map.md is not in DOC_ALLOWLIST, so readers cannot follow it.
+    id: "upgrading-naming-map-unpublished",
+    files: ["docs/operations/upgrading.md"],
+    reason: "Drop references to the naming map, which is not published under /docs.",
+    pattern: [
+      "Some requested paths were left alone, and `docs/concepts/naming-map.md` lists them under \"What did not change\".",
+      "`/api/niti` is now `/api/auth`, `/api/smarana` is now `/api/memory`, `/api/shodh` is now `/api/research`, and so on.",
+      "[The naming map](../concepts/naming-map.md) lists every pair.",
+    ].join("\n"),
+    replacement: [
+      "Some requested paths were left alone.",
+      "`/api/niti` is now `/api/auth`, `/api/smarana` is now `/api/memory`, `/api/shodh` is now `/api/research`, and so on.",
+    ].join("\n"),
+  },
+  {
+    // docs/concepts/naming-map.md is not in DOC_ALLOWLIST; the upgrading guide covers the route rename.
+    id: "glossary-naming-map-unpublished",
+    files: ["docs/concepts/glossary.md"],
+    reason: "Point the route-name pointer at the published upgrading section instead of the unpublished naming map.",
+    pattern: "[The naming map](naming-map.md) records what the old route names became, and what you have to change in your own installation when you upgrade.",
+    replacement: "[The upgrading guide](../operations/upgrading.md#route-names-moved-to-english) records what the old route names became, and what you have to change in your own installation when you upgrade.",
+  },
+  {
+    // ARCHITECTURE.md is not published under /docs.
+    id: "glossary-architecture-guide-unpublished",
+    files: ["docs/concepts/glossary.md"],
+    reason: "Drop the pointer to the architecture guide, which is not published under /docs.",
+    pattern: [
+      "",
+      "[The architecture guide](../../ARCHITECTURE.md) lists each collision and how to tell them apart.",
+    ].join("\n"),
+    replacement: "",
+  },
 ];
 
-export const DEFAULT_TRANSFORMS = [...BANNED_TRANSFORMS, ...PUBLIC_INSTALL_TRANSFORMS];
+/**
+ * Corrections of upstream statements that the pinned ref's own code
+ * contradicts. Each rule cites the code that establishes the fact.
+ */
+export const FACT_CORRECTION_TRANSFORMS = [
+  {
+    // routers/contacts_router.py:30-54 at v1.2.0: contacts and CardDAV settings live in one instance settings.json, and every route requires require_admin.
+    id: "integrations-contacts-instance-wide",
+    files: ["docs/guides/integrations.md"],
+    reason: "Correct contacts to instance-wide and admin-managed, as routers/contacts_router.py stores them in one settings file behind require_admin.",
+    pattern: [
+      "Language-model keys, search keys, and local services work this way.",
+      "- **Per-user**: each account stores its own credentials. Mail, calendar, contacts, and linked accounts work this way,",
+    ].join("\n"),
+    replacement: [
+      "Language-model keys, search keys, local services, and contacts, including the CardDAV connection, work this way.",
+      "- **Per-user**: each account stores its own credentials. Mail, calendar, and linked accounts work this way,",
+    ].join("\n"),
+  },
+  {
+    // routers/contacts_router.py:46-54 and update_config at v1.2.0 store carddav_password as given in settings.json; get_config masks it on read.
+    id: "integrations-carddav-plaintext",
+    files: ["docs/guides/integrations.md"],
+    reason: "Disclose that the CardDAV password is stored in plain text, as routers/contacts_router.py writes it unencrypted.",
+    pattern: "Secrets are encrypted at rest with a key held in your data directory, masked whenever they are read back, and never written to logs.",
+    replacement: [
+      "Secrets are encrypted at rest with a key held in your data directory, masked whenever they are read back, and never written to logs.",
+      "The exception is the CardDAV password, which is stored in plain text in the instance settings file.",
+    ].join("\n"),
+  },
+  {
+    // routers/contacts_router.py at v1.2.0: every contacts route depends on require_admin.
+    id: "integrations-contacts-admin-only",
+    files: ["docs/guides/integrations.md"],
+    reason: "State that contacts are shared and admin-managed, as every contacts route requires require_admin.",
+    pattern: "Contacts follow the same pattern under **Settings**, then **Contacts**.",
+    replacement: [
+      "Contacts follow the same pattern under **Settings**, then **Contacts**.",
+      "Contacts are shared across the instance, and only an administrator can configure or edit them.",
+    ].join("\n"),
+  },
+];
+
+export const DEFAULT_TRANSFORMS = [
+  ...BANNED_TRANSFORMS,
+  ...PUBLIC_INSTALL_TRANSFORMS,
+  ...FACT_CORRECTION_TRANSFORMS,
+];
 
 function gitShow(productRepo, ref, path) {
   return execFileSync("git", ["-C", productRepo, "show", `${ref}:${path}`], {
@@ -1256,19 +1505,15 @@ export function findDockerComposeBuildMatches(text) {
   return matches;
 }
 
-export function findSourceOnlyCommandMatches(text) {
+export function findSourceOnlyMatches(text, desktopDataDirs) {
   const matches = [];
   const lines = text.split(/\r?\n/);
-  let fenceMarker = "";
   for (let i = 0; i < lines.length; i += 1) {
-    const fence = /^\s*(`{3,}|~{3,})/.exec(lines[i]);
-    if (fence) {
-      if (!fenceMarker) fenceMarker = fence[1][0];
-      else if (fence[1][0] === fenceMarker) fenceMarker = "";
-      continue;
-    }
-    if (fenceMarker && SOURCE_ONLY_COMMAND_RE.test(lines[i])) {
-      matches.push({ line: i + 1, text: lines[i].trim() });
+    const line = lines[i].trim();
+    if (SOURCE_ONLY_ALLOWLIST.has(line)) continue;
+    const namesDesktopDirs = desktopDataDirs.length > 0 && desktopDataDirs.every((dir) => line.includes(dir));
+    if (SOURCE_ONLY_MARKER_RE.test(line) || (SOURCE_CHECKOUT_DATA_DIR_RE.test(line) && !namesDesktopDirs)) {
+      matches.push({ line: i + 1, text: line });
     }
   }
   return matches;
@@ -1301,6 +1546,7 @@ export function syncDocs({
   const facts = JSON.parse(readFileSync(factsPath, "utf8"));
   const bannedTerms = Array.isArray(facts.banned) ? facts.banned : [];
   const sourceRepo = typeof facts.repos?.source === "string" ? facts.repos.source.trim() : "";
+  const desktopDataDirs = Object.values(facts.install?.data_dirs ?? {});
   const commit = gitCommitSha(productRepo, ref);
 
   const prepared = [];
@@ -1358,12 +1604,12 @@ export function syncDocs({
       throw new Error(`Docker Compose --build check failed:\n${detail}`);
     }
 
-    const sourceOnlyHits = findSourceOnlyCommandMatches(fullContent);
+    const sourceOnlyHits = findSourceOnlyMatches(fullContent, desktopDataDirs);
     if (sourceOnlyHits.length > 0) {
       const detail = sourceOnlyHits
-        .map((hit) => `${entry.source}:${hit.line} matched a source-checkout-only command in a code block: ${hit.text}`)
+        .map((hit) => `${entry.source}:${hit.line} matched source-checkout-only content: ${hit.text}`)
         .join("\n");
-      throw new Error(`Source-only command check failed:\n${detail}`);
+      throw new Error(`Source-only content check failed:\n${detail}`);
     }
 
     prepared.push({
