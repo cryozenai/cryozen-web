@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Syncs user-facing documentation from a pinned CryoZen product repo ref into
 // content/docs/*.md, rewriting links, pruning unsynced index sections, applying
-// explicit transforms for banned terms, and failing if any banned term survives.
+// explicit transforms for banned terms and private-repo-only blocks, and failing
+// if any banned term, private source-repo URL, or `docker compose ... --build`
+// command survives.
 //
 // Usage:
 //   PRODUCT_REPO=/path/to/cryozen node scripts/sync-docs.mjs [--ref v1.2.0]
@@ -35,7 +37,28 @@ export const DOC_ALLOWLIST = [
 
 const SLUG_BY_SOURCE = new Map(DOC_ALLOWLIST.map((entry) => [entry.source, entry.slug]));
 const SECURITY_BASENAMES = new Set(["THREAT_MODEL.md", "SECURITY.md"]);
-const PRIVATE_REPO_URL_RE = /^https?:\/\/github\.com\/cryozenai\/cryozen(?:$|[/?#]|\.git$)/i;
+const DEFAULT_SOURCE_REPO = "cryozenai/cryozen";
+const DOCKER_COMPOSE_BUILD_LINE_RE =
+  /\bdocker[\s-]+compose\b[^\r\n]*\s--build(?=$|\s|[`"'();])/i;
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildPrivateRepoUrlRegex(sourceRepo) {
+  const escaped = escapeRegExp(sourceRepo || DEFAULT_SOURCE_REPO);
+  return new RegExp(`^https?://github\\.com/${escaped}(?:$|[/?#]|\\.git$)`, "i");
+}
+
+function buildSourceRepoRegex(sourceRepo) {
+  // Match github.com/<owner>/<repo> anywhere (including inside code blocks),
+  // without false-matching sibling repos such as <repo>-releases or <repo>-web.
+  const escaped = escapeRegExp(sourceRepo);
+  return new RegExp(
+    `github\\.com/${escaped}(?:\\.git)?(?=$|[^A-Za-z0-9_.-])`,
+    "i",
+  );
+}
 
 /**
  * Explicit transform table for source passages that legitimately reference a
@@ -211,7 +234,7 @@ export const BANNED_TRANSFORMS = [
       "",
       "- **Rename your environment variables**: switch variables from the previous-name prefix to `CRYOZEN_*` in `.env`, shell profiles, and unit files. The aliasing runs once at import, so a variable exported after startup is not picked up.",
       "- **Point service units at `cryozen:app`**: edit `ExecStart` in your systemd unit and any launcher script you wrote yourself, then run `sudo systemctl daemon-reload` and restart. This removes the dependency on the shim.",
-      "- **Update command-line aliases**: the repository now ships only `cli/cryozen` and its `cli/cryozen-*` subcommands. A symlink or shell alias pointing at a pre-rename script name refers to a file that no longer exists, so repoint it, for example with `ln -sf \"$PWD/cli/cryozen\" ~/.local/bin/cryozen`.",
+      "- **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to licensee source checkouts).",
       "- **Move the data directory**: nothing moves the pre-rename data directory to `~/.cryozen` for you, and the application is content to keep using the old path indefinitely. If you want the new name, stop the application, move the old directory to `~/.cryozen`, and start it again.",
     ].join("\n"),
   },
@@ -233,6 +256,575 @@ export const BANNED_TRANSFORMS = [
     ].join("\n"),
   },
 ];
+
+/**
+ * Reviewed transforms that rewrite source-repo-only commands (private repo
+ * clones, `--build` flags, host-side `cli/` and `scripts/` paths, and
+ * source-only sections) to truthful public equivalents using the published
+ * container image (`ghcr.io/cryozenai/cryozen`) and `cryozen-releases` bundle.
+ */
+export const PUBLIC_INSTALL_TRANSFORMS = [
+  {
+    // Public visitors clone cryozen-releases and pull ghcr.io/cryozenai/cryozen (no --build).
+    id: "deployment-docker-compose-public",
+    files: ["docs/operations/deployment.md"],
+    reason: "Rewrite Docker Compose quickstart from private source build to public cryozen-releases pull.",
+    pattern: [
+      "## Deploy with Docker Compose",
+      "",
+      "The Compose stack builds the application image from the repository and starts four services.",
+      "You need Docker with Compose v2.",
+      "",
+      "```bash",
+      "git clone https://github.com/cryozenai/cryozen.git",
+      "cd cryozen",
+      "cp .env.example .env",
+      "docker compose up -d --build",
+      "```",
+    ].join("\n"),
+    replacement: [
+      "## Deploy with Docker Compose",
+      "",
+      "The Compose stack pulls the published `ghcr.io/cryozenai/cryozen` image and starts four services.",
+      "You need Docker with Compose v2.",
+      "",
+      "```bash",
+      "git clone https://github.com/cryozenai/cryozen-releases.git",
+      "cd cryozen-releases",
+      "cp .env.example .env",
+      "docker compose up -d",
+      "```",
+    ].join("\n"),
+  },
+  {
+    // Native launcher scripts (start.sh, launch-windows.ps1) only exist in the private source checkout.
+    id: "deployment-native-launcher-source-only",
+    files: ["docs/operations/deployment.md"],
+    reason: "Replace source-only native launcher instructions with licensee note and public download links.",
+    pattern: [
+      "## Deploy with the native launcher",
+      "",
+      "The native launchers create a virtual environment in `venv/`, install `requirements.txt`, run first-time setup, and start uvicorn in the foreground.",
+      "Re-running them is safe: each step is skipped when its work is already done.",
+      "",
+      "On macOS and Linux, `start.sh` detects the operating system and hands off to the right script:",
+      "",
+      "```bash",
+      "git clone https://github.com/cryozenai/cryozen.git",
+      "cd cryozen",
+      "./start.sh",
+      "```",
+      "",
+      "On Windows, run the PowerShell launcher directly:",
+      "",
+      "```bash",
+      "powershell -ExecutionPolicy Bypass -File .\\launch-windows.ps1",
+      "```",
+      "",
+      "The three launchers do not agree on a default port, so confirm which one you are running:",
+      "",
+      "- **`start-linux.sh`**: binds `127.0.0.1:7000` and opens `http://127.0.0.1:7000`.",
+      "- **`start-macos.sh`**: binds `127.0.0.1:7860`, because the macOS AirPlay Receiver usually holds port 7000.",
+      "- **`launch-windows.ps1`**: binds `127.0.0.1:7000`, and accepts `-Port` and `-BindHost` flags.",
+      "",
+      "All three resolve the port and bind address the same way, reading `.env` and letting shell variables win over the file.",
+      "The precedence is `CRYOZEN_PORT` and `CRYOZEN_HOST` first, then `APP_PORT` and `APP_BIND`, then the built-in default.",
+      "Override the port for a single run without touching `.env`:",
+      "",
+      "```bash",
+      "CRYOZEN_PORT=7900 ./start-macos.sh",
+      "```",
+      "",
+      "On macOS the launcher also installs Homebrew formulas that the local model server needs: `tmux` for background downloads and serves, and `llama.cpp` for a Metal-enabled `llama-server`.",
+      "A failed formula install warns and continues, because neither is required to boot the application.",
+      "",
+      "The native path does not start ChromaDB.",
+      "Vector search falls back to keyword matching until you point `CHROMADB_HOST` and `CHROMADB_PORT` at a running instance, or start one alongside the app:",
+      "",
+      "```bash",
+      "docker run -d --name chromadb -p 127.0.0.1:8100:8000 chromadb/chroma",
+      "```",
+    ].join("\n"),
+    replacement: [
+      "## Deploy with the native launcher",
+      "",
+      "Source builds and the native launcher scripts (`start.sh` and `launch-windows.ps1`) are available to licensees; for public installs, download a desktop package on [the download page](/download) or pull the published container image from [/download#docker](/download#docker).",
+    ].join("\n"),
+  },
+  {
+    // The systemd unit and install-service.sh require a native source checkout.
+    id: "deployment-systemd-source-only",
+    files: ["docs/operations/deployment.md"],
+    reason: "Replace source-only systemd setup instructions with licensee note and /download#docker link.",
+    pattern: [
+      "## Deploy as a systemd service",
+      "",
+      "Use the shipped unit file on a Linux host that should start CryoZen at boot without Docker.",
+      "Run a native launcher once first, so `venv/` exists and first-time setup has run.",
+      "",
+      "Edit `cryozen-ui.service` and replace `YOURUSER` in the `User`, `WorkingDirectory`, `ExecStart`, and `EnvironmentFile` lines with your account name and install path.",
+      "Then install and start it:",
+      "",
+      "```bash",
+      "./install-service.sh",
+      "```",
+      "",
+      "The script copies the unit to `/etc/systemd/system/`, reloads systemd, enables the unit, starts it, and prints its status.",
+      "The shipped `ExecStart` runs `uvicorn cryozen:app --host 127.0.0.1 --port 7000`, and `EnvironmentFile=-` makes the `.env` file optional rather than fatal when absent.",
+      "",
+      "Manage the service with the usual commands:",
+      "",
+      "```bash",
+      "sudo systemctl restart cryozen-ui",
+      "sudo systemctl status cryozen-ui",
+      "journalctl -u cryozen-ui -f",
+      "```",
+      "",
+      "Leave `--host 127.0.0.1` in place and publish the instance through a reverse proxy.",
+      "Changing it to `0.0.0.0` puts an agent that can run shell commands on every interface of the host.",
+    ].join("\n"),
+    replacement: [
+      "## Deploy as a systemd service",
+      "",
+      "Source builds and the `systemd` service unit files (`cryozen-ui.service` and `install-service.sh`) are available to licensees; for public server deployments, pull the published container image from [/download#docker](/download#docker).",
+    ].join("\n"),
+  },
+  {
+    // Host-side cli/cryozen-sanrakshana requires a source checkout; Docker Compose runs it in the container.
+    id: "upgrading-backup-host-cli",
+    files: ["docs/operations/upgrading.md"],
+    reason: "Remove bare host-side cli/cryozen-sanrakshana block in favor of the container run command.",
+    pattern: [
+      "Prefer `cli/cryozen-sanrakshana snapshot`.",
+      "It archives the resolved data directory, and it dumps every SQLite database through the backup API into a temporary file before adding it to the archive, so a running application cannot write a torn page into your backup.",
+      "It writes to `backups/cryozen-sanrakshana-<timestamp>.tar.gz` inside the data directory unless you pass `--out` or set `CRYOZEN_BACKUP_DIR`, and it excludes large or re-derivable subtrees by default, as listed in the [CLI reference](../reference/cli.md#backups-sanrakshana).",
+      "Every archive carries a `manifest.json` naming the directory it came from, so you can check an archive before you need it.",
+      "",
+      "```bash",
+      "cli/cryozen-sanrakshana snapshot",
+      "cli/cryozen-sanrakshana verify ~/.cryozen/backups/your-snapshot.tar.gz",
+      "```",
+    ].join("\n"),
+    replacement: [
+      "Prefer `cryozen-sanrakshana snapshot` run inside the container.",
+      "It archives the resolved data directory, and it dumps every SQLite database through the backup API into a temporary file before adding it to the archive, so a running application cannot write a torn page into your backup.",
+      "It writes to `backups/cryozen-sanrakshana-<timestamp>.tar.gz` inside the data directory unless you pass `--out` or set `CRYOZEN_BACKUP_DIR`, and it excludes large or re-derivable subtrees by default, as listed in the [CLI reference](../reference/cli.md#backups-sanrakshana).",
+      "Every archive carries a `manifest.json` naming the directory it came from, so you can check an archive before you need it (running `cli/cryozen-sanrakshana` directly on the host applies to licensee source checkouts).",
+    ].join("\n"),
+  },
+  {
+    // Public Docker Compose upgrades pull the GHCR image rather than pulling source and running --build.
+    id: "upgrading-docker-compose-public",
+    files: ["docs/operations/upgrading.md"],
+    reason: "Rewrite Docker Compose upgrade from git pull + --build to docker compose pull + up -d.",
+    pattern: [
+      "## Upgrade a Docker Compose deployment",
+      "",
+      "Pull the new code, rebuild the image, and recreate the containers.",
+      "The bind-mounted `./data` and `./logs` directories are untouched by a rebuild.",
+      "",
+      "```bash",
+      "cd cryozen",
+      "git pull --ff-only",
+      "docker compose up -d --build",
+      "docker image prune -f",
+      "```",
+      "",
+      "On Windows, `update_windows.bat` runs the same sequence and checks that `git`, `docker`, and Compose v2 are present before it starts.",
+    ].join("\n"),
+    replacement: [
+      "## Upgrade a Docker Compose deployment",
+      "",
+      "Pull the latest published `ghcr.io/cryozenai/cryozen` image and recreate the containers.",
+      "The bind-mounted `./data` and `./logs` directories are untouched when containers are recreated.",
+      "",
+      "```bash",
+      "cd cryozen-releases",
+      "docker compose pull",
+      "docker compose up -d",
+      "docker image prune -f",
+      "```",
+      "",
+      "Source builds and `update_windows.bat` are available to licensees; public container installs pull from [/download#docker](/download#docker).",
+    ].join("\n"),
+  },
+  {
+    // Native launcher and systemd upgrades rely on git pull in the private source checkout.
+    id: "upgrading-native-and-systemd-source-only",
+    files: ["docs/operations/upgrading.md"],
+    reason: "Replace source-only native launcher and systemd upgrade sections with licensee notes and download links.",
+    pattern: [
+      "## Upgrade a native launcher deployment",
+      "",
+      "Pull the new code and re-run the launcher.",
+      "Each launcher hashes `requirements.txt` and reinstalls dependencies only when that hash changes, so an upgrade that does not touch dependencies starts as fast as a restart.",
+      "",
+      "```bash",
+      "cd cryozen",
+      "git pull --ff-only",
+      "./start.sh",
+      "```",
+      "",
+      "If the launcher reports that the port is in use, the previous process is still running.",
+      "Stop it first: the launcher refuses to start rather than binding a second listener to the same database.",
+      "",
+      "## Upgrade a systemd deployment",
+      "",
+      "Stop the service, pull, reinstall dependencies, then start it again.",
+      "The unit file runs `venv/bin/uvicorn` directly, so nothing updates the virtual environment on your behalf.",
+      "",
+      "```bash",
+      "sudo systemctl stop cryozen-ui",
+      "cd ~/cryozen-ui",
+      "git pull --ff-only",
+      "./venv/bin/pip install -r requirements.txt",
+      "sudo systemctl start cryozen-ui",
+      "journalctl -u cryozen-ui -f",
+      "```",
+      "",
+      "If the upgrade changed `cryozen-ui.service`, copy the new unit into place and reload systemd before starting:",
+      "",
+      "```bash",
+      "sudo cp cryozen-ui.service /etc/systemd/system/",
+      "sudo systemctl daemon-reload",
+      "```",
+      "",
+      "Remember that the shipped unit contains `YOURUSER` placeholders, so re-apply your own `User`, `WorkingDirectory`, `ExecStart`, and `EnvironmentFile` values whenever you replace it.",
+    ].join("\n"),
+    replacement: [
+      "## Upgrade a native launcher deployment",
+      "",
+      "Desktop packages from [the download page](/download) upgrade by installing the new package; source-based native launcher upgrades (`git pull` and `./start.sh`) are available to licensees, and container deployments pull the published image from [/download#docker](/download#docker).",
+      "",
+      "## Upgrade a systemd deployment",
+      "",
+      "Source-based `systemd` deployments are available to licensees; for public container deployments, pull the published image from [/download#docker](/download#docker).",
+    ].join("\n"),
+  },
+  {
+    // Public Docker Compose rollbacks pin the previous GHCR image tag rather than git checkout + --build.
+    id: "upgrading-rollback-docker-public",
+    files: ["docs/operations/upgrading.md"],
+    reason: "Rewrite Docker rollback from git checkout + --build to pinning the previous GHCR image tag.",
+    pattern: [
+      "Rolling back is safe when you restore the backup you took before the upgrade:",
+      "",
+      "```bash",
+      "docker compose down",
+      "rm -rf data",
+      "tar -xzf ~/cryozen-backup-20260731.tar.gz",
+      "git checkout your_previous_tag_here",
+      "docker compose up -d --build",
+      "```",
+    ].join("\n"),
+    replacement: [
+      "Rolling back is safe when you restore the backup you took before the upgrade and pin the previous image tag in `docker-compose.yml` (for example `ghcr.io/cryozenai/cryozen:your_previous_tag_here`):",
+      "",
+      "```bash",
+      "docker compose down",
+      "rm -rf data",
+      "tar -xzf ~/cryozen-backup-20260731.tar.gz",
+      "docker compose pull",
+      "docker compose up -d",
+      "```",
+    ].join("\n"),
+  },
+  {
+    // cli/cryozen-logs exists inside /app in the published image; run it via docker compose exec.
+    id: "troubleshooting-logs-cli-exec",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Use docker compose exec for cli/cryozen-logs since bare host-side cli/ requires a source checkout.",
+    pattern: [
+      "The `logs/` directory in the repository is bind-mounted into the container and holds application-level logs.",
+      "Local model downloads and serves run under `tmux` and write per-session logs to `/tmp/cryozen-tmux/`.",
+      "The `cli/cryozen-logs` command enumerates both, so `cli/cryozen-logs list` saves you remembering which directory holds what.",
+    ].join("\n"),
+    replacement: [
+      "The `./logs` directory in the Compose directory is bind-mounted into the container and holds application-level logs.",
+      "Local model downloads and serves run under `tmux` inside the container and write per-session logs to `/tmp/cryozen-tmux/`.",
+      "Inside Docker, `docker compose exec cryozen python cli/cryozen-logs list` enumerates both so you do not have to remember which directory holds what.",
+    ].join("\n"),
+  },
+  {
+    // Dockerfile runs `COPY . .` at WORKDIR /app, so `docker compose exec cryozen python cli/seed_admin.py`
+    // works against the published image; drop the bare host-side `python cli/seed_admin.py` block.
+    id: "troubleshooting-seed-admin-drop-host",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Drop bare host-side python cli/seed_admin.py block and keep the verified docker compose exec form.",
+    pattern: [
+      "If you have lost the administrator password rather than the session, reset it from the command line.",
+      "This is the supported path on a host with no mail server:",
+      "",
+      "```bash",
+      "python cli/seed_admin.py --email admin@local.test --password your_new_password_here --force",
+      "```",
+      "",
+      "Inside Docker, run it against the same bind-mounted data directory the application reads, then restart so the account file is re-read:",
+      "",
+      "```bash",
+      "docker compose exec cryozen python cli/seed_admin.py \\",
+      "  --email admin@local.test --password your_new_password_here --force",
+      "docker compose restart cryozen",
+      "```",
+      "",
+      "Note that `cli/reset_admin.py` writes to `data/` relative to the repository, which is correct under Docker and wrong on a native install where the data directory resolves to `~/.cryozen`.",
+      "Prefer `cli/seed_admin.py`, which resolves the data directory the same way the application does.",
+    ].join("\n"),
+    replacement: [
+      "If you have lost the administrator password rather than the session, reset it inside the container against the same bind-mounted data directory the application reads, then restart so the account file is re-read:",
+      "",
+      "```bash",
+      "docker compose exec cryozen python cli/seed_admin.py \\",
+      "  --email admin@local.test --password your_new_password_here --force",
+      "docker compose restart cryozen",
+      "```",
+      "",
+      "Prefer `cli/seed_admin.py` over `cli/reset_admin.py`, because `seed_admin.py` resolves `CRYOZEN_DATA_DIR` the same way the application does (bare host-side `cli/` invocations require a source checkout, available to licensees).",
+    ].join("\n"),
+  },
+  {
+    // Drop bare host-side cli/cryozen-sanrakshana block and keep the container run block.
+    id: "troubleshooting-backup-cli-drop-host",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Drop bare host-side cli/cryozen-sanrakshana block and keep the docker compose run form.",
+    pattern: [
+      "Check what a snapshot holds before you rely on it, rather than after you need it:",
+      "",
+      "```bash",
+      "cli/cryozen-sanrakshana snapshot",
+      "cli/cryozen-sanrakshana verify ~/.cryozen/backups/your-snapshot.tar.gz",
+      "```",
+      "",
+      "On the Compose path that is:",
+      "",
+      "```bash",
+      "docker compose run --rm --no-deps cryozen python cli/cryozen-sanrakshana snapshot",
+      "docker compose run --rm --no-deps cryozen python cli/cryozen-sanrakshana verify /app/data/backups/your-snapshot.tar.gz",
+      "```",
+    ].join("\n"),
+    replacement: [
+      "Check what a snapshot holds before you rely on it, rather than after you need it (run inside the container on the Compose path):",
+      "",
+      "```bash",
+      "docker compose run --rm --no-deps cryozen python cli/cryozen-sanrakshana snapshot",
+      "docker compose run --rm --no-deps cryozen python cli/cryozen-sanrakshana verify /app/data/backups/your-snapshot.tar.gz",
+      "```",
+    ].join("\n"),
+  },
+  {
+    // Use container run command for cli/cryozen-sanrakshana list.
+    id: "troubleshooting-readiness-backup-list-exec",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Show docker compose run form for cli/cryozen-sanrakshana list.",
+    pattern: "It reports no paths, because the route needs no login; `cli/cryozen-sanrakshana list` shows them.",
+    replacement:
+      "It reports no paths, because the route needs no login; `docker compose run --rm --no-deps cryozen python cli/cryozen-sanrakshana list` shows them.",
+  },
+  {
+    // Public visitors do not have $PWD/cli/cryozen or $PWD/cli/_completion/ on the host;
+    // the published Docker image ships /app/cli/ so commands run via docker compose exec/run.
+    id: "cli-installing-public-docker",
+    files: ["docs/reference/cli.md"],
+    reason: "Rewrite host-side source symlink/completion instructions to docker compose exec against the published image.",
+    pattern: [
+      "## Installing the CLI",
+      "",
+      "Put the dispatcher on your `PATH` with a symlink from the repo:",
+      "",
+      "```bash",
+      "mkdir -p ~/.local/bin",
+      "ln -s \"$PWD/cli/cryozen\" ~/.local/bin/cryozen",
+      "```",
+      "",
+      "Confirm `~/.local/bin` is on your `PATH`, then check the install:",
+      "",
+      "```bash",
+      "cryozen --version",
+      "```",
+      "",
+      "The dispatcher resolves subcommands relative to the real location of `cli/cryozen`, so the symlink works from any directory.",
+      "It also prefers `venv/bin/python` at the repo root when that virtual environment exists, and falls back to the interpreter running the dispatcher otherwise.",
+      "",
+      "To enable bash completion, source the completion script from your shell startup file:",
+      "",
+      "```bash",
+      "echo \"source $PWD/cli/_completion/cryozen.bash\" >> ~/.bashrc",
+      "```",
+      "",
+      "For a system-wide bash install, symlink rather than copy:",
+      "",
+      "```bash",
+      "sudo ln -s \"$PWD/cli/_completion/cryozen.bash\" /etc/bash_completion.d/cryozen",
+      "```",
+      "",
+      "The script locates the `cli/` directory by resolving its own path through any symlinks, so a copied file placed outside the repo finds no subcommands to complete.",
+      "",
+      "To enable zsh completion, add the completion directory to `fpath` before calling `compinit`:",
+      "",
+      "```zsh",
+      "fpath=(\"$PWD/cli/_completion\" $fpath)",
+      "autoload -U compinit; compinit",
+      "```",
+      "",
+      "Two things are worth knowing about completions:",
+      "",
+      "- **First tab is slow**: both scripts build their cache by running every `cryozen-*` script with `--help`, and that imports application modules.",
+      "  Refresh the bash cache by hand with `_cryozen_refresh_cache`.",
+      "- **Completion follows `cli/`**: both scripts read `cli/cryozen-*` when they build their cache, so a new subcommand completes through the `cryozen` umbrella as soon as it exists.",
+      "  Bash also registers every executable it finds for direct completion; zsh completes a `cryozen-<name>` typed on its own only when that name is on the `#compdef` line of `cli/_completion/cryozen.zsh`, so adding a sub-CLI means adding its name there too.",
+    ].join("\n"),
+    replacement: [
+      "## Installing the CLI",
+      "",
+      "On a public Docker Compose deployment (from [/download#docker](/download#docker)), the `cli/` tools are packaged at `/app/cli/` inside the `cryozen` container image, so run them inside the container from your Compose directory:",
+      "",
+      "```bash",
+      "docker compose exec cryozen python cli/cryozen --version",
+      "docker compose exec cryozen python cli/cryozen help",
+      "```",
+      "",
+      "Define a shell alias in your Compose directory so the subcommand examples below work directly:",
+      "",
+      "```bash",
+      "alias cryozen='docker compose exec cryozen python cli/cryozen'",
+      "```",
+      "",
+      "When the `cryozen` container is stopped (such as during a backup restore), use `docker compose run --rm --no-deps cryozen python cli/cryozen ...` instead.",
+      "Host-side installation from `$PWD/cli/cryozen` and shell completion scripts apply to source checkouts, which are available to licensees.",
+    ].join("\n"),
+  },
+  {
+    // Clarify that direct repo-root venv execution applies to licensee source checkouts.
+    id: "cli-how-commands-find-data-public",
+    files: ["docs/reference/cli.md"],
+    reason: "Clarify container execution vs licensee source-checkout execution in data resolution section.",
+    pattern:
+      "Because the imports are real application imports, run these commands from the repo root with the project virtual environment active.",
+    replacement:
+      "Because the imports are real application imports, run these commands inside the container on a Docker Compose install (where `/app` is the working directory and `CRYOZEN_DATA_DIR=/app/data`), or from the repo root with the project virtual environment active on a licensee source checkout.",
+  },
+  {
+    // Drop host-side ~/.cryozen/backups/ examples in cli.md so Compose users only see container /app/data/backups/ commands.
+    id: "cli-sanrakshana-host-blocks",
+    files: ["docs/reference/cli.md"],
+    reason: "Keep container docker compose run backup/restore commands and drop bare host-side ~/.cryozen blocks.",
+    pattern: [
+      "```bash",
+      "cryozen sanrakshana snapshot",
+      "cryozen sanrakshana snapshot --out /mnt/nas/cryozen-nightly.tar.gz --include-attachments",
+      "cryozen sanrakshana list",
+      "cryozen sanrakshana verify ~/.cryozen/backups/your_backup_name_here.tar.gz",
+      "```",
+      "",
+      "On the Compose path the command must run inside the container, because the host shell does not carry the container's `CRYOZEN_DATA_DIR`.",
+    ].join("\n"),
+    replacement:
+      "On the Compose path the command must run inside the container, because the host shell does not carry the container's `CRYOZEN_DATA_DIR`.",
+  },
+  {
+    // Drop host-side sanrakshana restore example pointing at ~/.cryozen/backups/.
+    id: "cli-sanrakshana-restore-host-block",
+    files: ["docs/reference/cli.md"],
+    reason: "Drop bare host-side restore block in favor of the container run command below it.",
+    pattern: [
+      "```bash",
+      "cryozen sanrakshana restore ~/.cryozen/backups/your_backup_name_here.tar.gz --yes",
+      "```",
+      "",
+      "On the Compose path, stop the application and run it in a one-off container:",
+    ].join("\n"),
+    replacement: "On the Compose path, stop the application and run it in a one-off container:",
+  },
+  {
+    // Operations scripts live inside /app/cli/ in the container; build/CI scripts require a source checkout.
+    id: "cli-operations-scripts-container-context",
+    files: ["docs/reference/cli.md"],
+    reason: "Explain that operations scripts run via docker compose exec inside the container and build scripts are licensee-only.",
+    pattern: [
+      "## Operations scripts",
+      "",
+      "These are one-shot scripts rather than dispatcher subcommands, so run them by path from the repo root.",
+      "They are not reachable through `cryozen <name>`.",
+    ].join("\n"),
+    replacement: [
+      "## Operations scripts",
+      "",
+      "These are one-shot scripts rather than dispatcher subcommands, and they are not reachable through `cryozen <name>`.",
+      "On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, and development scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, and `cli/demo_email/*`) require a source checkout, which is available to licensees.",
+    ].join("\n"),
+  },
+  {
+    // Product control plane scripts (scripts/cryozen_ops.py, scripts/cryozen_release_verify.py) only make sense in a private source checkout.
+    id: "cli-product-control-plane-source-only",
+    files: ["docs/reference/cli.md"],
+    reason: "Replace private-repo Product control plane scripts section with licensee note and /download#docker link.",
+    pattern: [
+      "### Product control plane",
+      "",
+      "`scripts/cryozen_ops.py` manages the lifecycle records under `.cryozen/`: it mints identifiers, creates record pairs, applies audited state transitions, validates every record against `.cryozen/config/schemas/`, reconciles the records with the tasks-axi backlog, and writes reports.",
+      "",
+      "```sh",
+      "python scripts/cryozen_ops.py mint TASK",
+      "python scripts/cryozen_ops.py collisions",
+      "python scripts/cryozen_ops.py new TASK --title \"Add a thing\" --slug add-a-thing --set repository=cryozen --set priority=P2 --set 'acceptance_criteria=[\"it works\"]'",
+      "python scripts/cryozen_ops.py transition TASK-2026-0001 --to IN_PROGRESS --actor claude --reason \"dispatched\" --evidence \"worktree 4\"",
+      "python scripts/cryozen_ops.py transition PR-2026-0001 --to MERGED --actor git-operations --reason \"merged\" --at 2026-08-24T00:55:20Z",
+      "python scripts/cryozen_ops.py validate",
+      "python scripts/cryozen_ops.py reconcile",
+      "python scripts/cryozen_ops.py drift",
+      "python scripts/cryozen_ops.py report daily",
+      "python scripts/cryozen_ops.py report sprint SPRINT-2026-001",
+      "python scripts/cryozen_ops.py report rc RC-2026-001",
+      "python scripts/cryozen_ops.py report release REL-2026-001",
+      "```",
+      "",
+      "`mint` returns a number above every id in the working tree and on every local and remote-tracking ref and tag, so run `git fetch` first; `collisions` exits non-zero when an id has two different titles across refs.",
+      "`new` refuses a record that leaves out a field its schema requires, so a record cannot be created in a shape `validate` would reject; pass each one with `--set`.",
+      "`validate` and `reconcile` exit non-zero when they find a problem, so they can gate a pull request.",
+      "`--at` records the time an event actually happened, so a state change entered after the fact keeps its real timestamp rather than the time it was typed; the record's `updated_at` stays the time the file was written, so it never precedes `created_at`.",
+      "Moving a record back to a state earlier in its lifecycle than the one that stamped a completion time clears that timestamp, so a reopened item carries no completion time; an archival move forward, such as `MERGED` to `CLOSED` or `RELEASED` to `SUPERSEDED`, keeps it.",
+      "`report sprint` counts finished and carried items from the sprint's member records rather than reporting points it has no estimate for.",
+      "`report rc` scores the statements in `.cryozen/config/release-policy.yaml` from what the candidate record proves; a statement nothing has recorded counts as unproven, and a candidate is eligible only when every statement passes and every child record is finished.",
+      "`report release` renders a release and the candidate it came from, printing `not recorded` for anything that was never filled in.",
+      "`reconcile` compares the records with the tasks-axi backlog; `drift` compares them with each other and reports a parent finished ahead of its children, a merged pull request over unfinished work, work claiming a pull request nothing names, unfinished work left on a closed sprint, and a released candidate and release that do not name each other.",
+      "The daily and sprint reports carry both under their own headings.",
+      "",
+      "The whole control plane is reachable through the dispatcher as `cryozen product`, which forwards the lifecycle verbs to the operations script and `verify` to the release verifier.",
+      "",
+      "```sh",
+      "cryozen product status",
+      "cryozen product check",
+      "cryozen product report daily",
+      "cryozen product verify v1.4.0",
+      "```",
+      "",
+      "`cryozen product check` runs validate, reconcile, and drift in one pass and exits with the worst result, so it can gate a pull request without touching the network.",
+      "For a verb another installed tool owns, it names that tool rather than reimplementing it.",
+      "The operational task queue stays in tasks-axi, which reads `.cryozen/backlog/backlog.md` through `.tasks.toml` and prunes finished items into `.cryozen/backlog/done-archive.md`; `reconcile` reads the same two paths out of `.tasks.toml`.",
+      "",
+      "`scripts/cryozen_release_verify.py` reads a published tag back from every place it has to appear.",
+      "",
+      "```sh",
+      "python scripts/cryozen_release_verify.py v1.4.0",
+      "python scripts/cryozen_release_verify.py v1.4.0 --json",
+      "python scripts/cryozen_release_verify.py v1.4.0-rc.1 --skip website",
+      "```",
+      "",
+      "A pre-release needs `--skip website` and a tag up to v1.1.0 needs `--skip docker`; [RELEASING.md](../../RELEASING.md#before-the-next-release-the-move-to-cryozenai) says why.",
+      "",
+      "It checks the tag on the product repository, a release on the product repository and on the public releases channel carrying exactly the asset contract in `scripts/release_contract.py`, a `SHA256SUMS.txt` covering every asset, an anonymous download of every public asset URL, the GHCR image tag, and the asset links on the cryozen.ai download page.",
+      "Each check prints pass or fail with the evidence it read, and the command exits non-zero when any check fails, so a release record cannot claim distribution that was never verified.",
+      "The same contract module is what `tests/test_release_packaging_artifact_names.py` pins the build scripts and the release workflow to, so the names exist in one place.",
+    ].join("\n"),
+    replacement: [
+      "### Product control plane",
+      "",
+      "Internal lifecycle and release-verification scripts under `scripts/` (`scripts/cryozen_ops.py` and `scripts/cryozen_release_verify.py`) apply only to source builds, which are available to licensees; for public container deployments, pull the published image from [/download#docker](/download#docker).",
+    ].join("\n"),
+  },
+];
+
+export const DEFAULT_TRANSFORMS = [...BANNED_TRANSFORMS, ...PUBLIC_INSTALL_TRANSFORMS];
 
 function gitShow(productRepo, ref, path) {
   return execFileSync("git", ["-C", productRepo, "show", `${ref}:${path}`], {
@@ -329,8 +921,9 @@ function pruneDocsIndex(markdown, sourcePath) {
  * - Links to THREAT_MODEL.md or SECURITY.md -> /security
  * - Links to unsynced repo files or github.com/cryozenai/cryozen -> unlinked (text kept)
  */
-function rewriteLinks(markdown, sourcePath) {
+function rewriteLinks(markdown, sourcePath, sourceRepo = DEFAULT_SOURCE_REPO) {
   const dir = posix.dirname(sourcePath);
+  const privateRepoUrlRe = buildPrivateRepoUrlRegex(sourceRepo);
   const unlinked = [];
   const lines = markdown.split(/\r?\n/);
   let inFence = false;
@@ -352,12 +945,12 @@ function rewriteLinks(markdown, sourcePath) {
     if (inFence) return line;
 
     return line.replace(/(?<!!)\[([^\]]+)\]\(([^)\s]+)\)/g, (full, label, rawTarget) => {
-      if (rawTarget.startsWith("#") || /^mailto:/i.test(rawTarget)) {
+      if (rawTarget.startsWith("#") || rawTarget.startsWith("/") || /^mailto:/i.test(rawTarget)) {
         return full;
       }
 
       if (/^https?:\/\//i.test(rawTarget)) {
-        if (PRIVATE_REPO_URL_RE.test(rawTarget)) {
+        if (privateRepoUrlRe.test(rawTarget)) {
           unlinked.push({
             file: sourcePath,
             line: index + 1,
@@ -433,6 +1026,37 @@ function findBannedMatches(text, bannedTerms) {
   return matches;
 }
 
+export function findSourceRepoMatches(text, sourceRepo) {
+  if (!sourceRepo) return [];
+  const re = buildSourceRepoRegex(sourceRepo);
+  const matches = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const hit = re.exec(lines[i]);
+    if (hit) {
+      matches.push({ match: hit[0], line: i + 1, text: lines[i].trim() });
+    }
+  }
+  return matches;
+}
+
+export function findDockerComposeBuildMatches(text) {
+  const matches = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    let combined = lines[i];
+    const startLine = i + 1;
+    while (combined.endsWith("\\") && i + 1 < lines.length) {
+      i += 1;
+      combined = `${combined.slice(0, -1)} ${lines[i]}`;
+    }
+    if (DOCKER_COMPOSE_BUILD_LINE_RE.test(combined)) {
+      matches.push({ line: startLine, text: combined.trim() });
+    }
+  }
+  return matches;
+}
+
 function formatFrontmatter({ title, source, ref, commit }) {
   const quote = (value) => JSON.stringify(String(value));
   return [
@@ -451,7 +1075,7 @@ export function syncDocs({
   ref = DEFAULT_REF,
   outDir = DEFAULT_OUT_DIR,
   factsPath = DEFAULT_FACTS_PATH,
-  transforms = BANNED_TRANSFORMS,
+  transforms = DEFAULT_TRANSFORMS,
 } = {}) {
   if (!productRepo) {
     throw new Error("Missing product repo path: set PRODUCT_REPO or pass --product <path>.");
@@ -459,6 +1083,7 @@ export function syncDocs({
 
   const facts = JSON.parse(readFileSync(factsPath, "utf8"));
   const bannedTerms = Array.isArray(facts.banned) ? facts.banned : [];
+  const sourceRepo = typeof facts.repos?.source === "string" ? facts.repos.source.trim() : "";
   const commit = gitCommitSha(productRepo, ref);
 
   const prepared = [];
@@ -479,7 +1104,7 @@ export function syncDocs({
     body = transformed.markdown;
     appliedTransforms.push(...transformed.applied);
 
-    const rewritten = rewriteLinks(body, entry.source);
+    const rewritten = rewriteLinks(body, entry.source, sourceRepo);
     body = rewritten.markdown;
     unlinkedLinks.push(...rewritten.unlinked);
 
@@ -492,6 +1117,22 @@ export function syncDocs({
         .map((hit) => `${entry.source}:${hit.line} matched banned term ${JSON.stringify(hit.term)}: ${hit.text}`)
         .join("\n");
       throw new Error(`Banned term check failed:\n${detail}`);
+    }
+
+    const sourceRepoHits = findSourceRepoMatches(fullContent, sourceRepo);
+    if (sourceRepoHits.length > 0) {
+      const detail = sourceRepoHits
+        .map((hit) => `${entry.source}:${hit.line} matched private source repo github.com/${sourceRepo}: ${hit.text}`)
+        .join("\n");
+      throw new Error(`Private source repo check failed:\n${detail}`);
+    }
+
+    const composeBuildHits = findDockerComposeBuildMatches(fullContent);
+    if (composeBuildHits.length > 0) {
+      const detail = composeBuildHits
+        .map((hit) => `${entry.source}:${hit.line} matched --build in docker compose command: ${hit.text}`)
+        .join("\n");
+      throw new Error(`Docker Compose --build check failed:\n${detail}`);
     }
 
     prepared.push({

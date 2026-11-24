@@ -26,14 +26,14 @@ Pick systemd when you want the native runtime and a supervised process, and you 
 
 ## Deploy with Docker Compose
 
-The Compose stack builds the application image from the repository and starts four services.
+The Compose stack pulls the published `ghcr.io/cryozenai/cryozen` image and starts four services.
 You need Docker with Compose v2.
 
 ```bash
-git clone https://github.com/cryozenai/cryozen.git
-cd cryozen
+git clone https://github.com/cryozenai/cryozen-releases.git
+cd cryozen-releases
 cp .env.example .env
-docker compose up -d --build
+docker compose up -d
 ```
 
 Open `http://127.0.0.1:7000` and create the first administrator account when the login page prompts you.
@@ -65,72 +65,11 @@ A variable you add to `.env` reaches the application only if that list names it,
 
 ## Deploy with the native launcher
 
-The native launchers create a virtual environment in `venv/`, install `requirements.txt`, run first-time setup, and start uvicorn in the foreground.
-Re-running them is safe: each step is skipped when its work is already done.
-
-On macOS and Linux, `start.sh` detects the operating system and hands off to the right script:
-
-```bash
-git clone https://github.com/cryozenai/cryozen.git
-cd cryozen
-./start.sh
-```
-
-On Windows, run the PowerShell launcher directly:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .\launch-windows.ps1
-```
-
-The three launchers do not agree on a default port, so confirm which one you are running:
-
-- **`start-linux.sh`**: binds `127.0.0.1:7000` and opens `http://127.0.0.1:7000`.
-- **`start-macos.sh`**: binds `127.0.0.1:7860`, because the macOS AirPlay Receiver usually holds port 7000.
-- **`launch-windows.ps1`**: binds `127.0.0.1:7000`, and accepts `-Port` and `-BindHost` flags.
-
-All three resolve the port and bind address the same way, reading `.env` and letting shell variables win over the file.
-The precedence is `CRYOZEN_PORT` and `CRYOZEN_HOST` first, then `APP_PORT` and `APP_BIND`, then the built-in default.
-Override the port for a single run without touching `.env`:
-
-```bash
-CRYOZEN_PORT=7900 ./start-macos.sh
-```
-
-On macOS the launcher also installs Homebrew formulas that the local model server needs: `tmux` for background downloads and serves, and `llama.cpp` for a Metal-enabled `llama-server`.
-A failed formula install warns and continues, because neither is required to boot the application.
-
-The native path does not start ChromaDB.
-Vector search falls back to keyword matching until you point `CHROMADB_HOST` and `CHROMADB_PORT` at a running instance, or start one alongside the app:
-
-```bash
-docker run -d --name chromadb -p 127.0.0.1:8100:8000 chromadb/chroma
-```
+Source builds and the native launcher scripts (`start.sh` and `launch-windows.ps1`) are available to licensees; for public installs, download a desktop package on [the download page](/download) or pull the published container image from [/download#docker](/download#docker).
 
 ## Deploy as a systemd service
 
-Use the shipped unit file on a Linux host that should start CryoZen at boot without Docker.
-Run a native launcher once first, so `venv/` exists and first-time setup has run.
-
-Edit `cryozen-ui.service` and replace `YOURUSER` in the `User`, `WorkingDirectory`, `ExecStart`, and `EnvironmentFile` lines with your account name and install path.
-Then install and start it:
-
-```bash
-./install-service.sh
-```
-
-The script copies the unit to `/etc/systemd/system/`, reloads systemd, enables the unit, starts it, and prints its status.
-The shipped `ExecStart` runs `uvicorn cryozen:app --host 127.0.0.1 --port 7000`, and `EnvironmentFile=-` makes the `.env` file optional rather than fatal when absent.
-
-Manage the service with the usual commands:
-
-```bash
-sudo systemctl restart cryozen-ui
-sudo systemctl status cryozen-ui
-journalctl -u cryozen-ui -f
-```
-
-Leave `--host 127.0.0.1` in place and publish the instance through a reverse proxy.
-Changing it to `0.0.0.0` puts an agent that can run shell commands on every interface of the host.
+Source builds and the `systemd` service unit files (`cryozen-ui.service` and `install-service.sh`) are available to licensees; for public server deployments, pull the published container image from [/download#docker](/download#docker).
 
 ## Put CryoZen behind a reverse proxy with HTTPS
 

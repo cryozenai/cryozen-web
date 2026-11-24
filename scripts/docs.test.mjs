@@ -14,7 +14,12 @@ import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { DOC_ALLOWLIST, syncDocs } from "./sync-docs.mjs";
+import {
+  DOC_ALLOWLIST,
+  findDockerComposeBuildMatches,
+  findSourceRepoMatches,
+  syncDocs,
+} from "./sync-docs.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CONTENT_DOCS_DIR = join(ROOT, "content", "docs");
@@ -243,8 +248,110 @@ test("sync-docs fails loudly when a banned string survives without a transform",
   assert.equal(existsSync(join(outDir, "index.md")), false, "failed sync must not write partial output");
 });
 
+test("sync-docs fails loudly when github.com/<repos.source> survives inside a code block", () => {
+  const { repoDir } = createFixtureGitRepo(
+    baseFixtureFiles({
+      "docs/operations/deployment.md": [
+        "# Deployment",
+        "",
+        "```bash",
+        "git clone https://github.com/cryozenai/cryozen.git",
+        "```",
+        "",
+      ].join("\n"),
+    }),
+    "v9.9.9",
+  );
+  const outDir = makeTempDir("cryozen-docs-fail-source-repo-");
+
+  assert.throws(
+    () =>
+      syncDocs({
+        productRepo: repoDir,
+        ref: "v9.9.9",
+        outDir,
+        factsPath: FACTS_PATH,
+      }),
+    /Private source repo check failed[\s\S]*docs\/operations\/deployment\.md[\s\S]*github\.com\/cryozenai\/cryozen/,
+  );
+  assert.equal(existsSync(join(outDir, "index.md")), false, "failed sync must not write partial output");
+});
+
+test("sync-docs fails loudly when --build survives in a docker compose command", () => {
+  const { repoDir } = createFixtureGitRepo(
+    baseFixtureFiles({
+      "docs/operations/upgrading.md": [
+        "# Upgrading",
+        "",
+        "```bash",
+        "docker compose up -d --build",
+        "```",
+        "",
+      ].join("\n"),
+    }),
+    "v9.9.9",
+  );
+  const outDir = makeTempDir("cryozen-docs-fail-build-flag-");
+
+  assert.throws(
+    () =>
+      syncDocs({
+        productRepo: repoDir,
+        ref: "v9.9.9",
+        outDir,
+        factsPath: FACTS_PATH,
+      }),
+    /Docker Compose --build check failed[\s\S]*docs\/operations\/upgrading\.md[\s\S]*--build/,
+  );
+  assert.equal(existsSync(join(outDir, "index.md")), false, "failed sync must not write partial output");
+});
+
+test("sync-docs rewrites source-only Docker Compose block to public cryozen-releases install", () => {
+  const { repoDir } = createFixtureGitRepo(
+    baseFixtureFiles({
+      "docs/operations/deployment.md": [
+        "# Deployment",
+        "",
+        "## Deploy with Docker Compose",
+        "",
+        "The Compose stack builds the application image from the repository and starts four services.",
+        "You need Docker with Compose v2.",
+        "",
+        "```bash",
+        "git clone https://github.com/cryozenai/cryozen.git",
+        "cd cryozen",
+        "cp .env.example .env",
+        "docker compose up -d --build",
+        "```",
+        "",
+      ].join("\n"),
+    }),
+    "v9.9.9",
+  );
+  const outDir = makeTempDir("cryozen-docs-rewrite-");
+
+  const report = syncDocs({
+    productRepo: repoDir,
+    ref: "v9.9.9",
+    outDir,
+    factsPath: FACTS_PATH,
+  });
+
+  assert.ok(
+    report.appliedTransforms.some((item) => item.id === "deployment-docker-compose-public"),
+    "expected deployment-docker-compose-public transform to run",
+  );
+  const deploymentMd = readFileSync(join(outDir, "operations", "deployment.md"), "utf8");
+  assert.match(deploymentMd, /git clone https:\/\/github\.com\/cryozenai\/cryozen-releases\.git/);
+  assert.match(deploymentMd, /cd cryozen-releases/);
+  assert.match(deploymentMd, /docker compose up -d/);
+  assert.equal(findSourceRepoMatches(deploymentMd, "cryozenai/cryozen").length, 0);
+  assert.equal(findDockerComposeBuildMatches(deploymentMd).length, 0);
+});
+
 test("published content/docs links resolve to synced docs and never link to github.com/cryozenai/cryozen/", () => {
   const facts = JSON.parse(readFileSync(FACTS_PATH, "utf8"));
+  const sourceRepo = facts.repos?.source;
   const files = listMarkdownFiles(CONTENT_DOCS_DIR);
   assert.equal(files.length, DOC_ALLOWLIST.length);
 
@@ -265,10 +372,24 @@ test("published content/docs links resolve to synced docs and never link to gith
       );
     }
 
+    assert.deepEqual(
+      findSourceRepoMatches(content, sourceRepo),
+      [],
+      `${filePath} must not reference github.com/${sourceRepo} anywhere`,
+    );
+    assert.deepEqual(
+      findDockerComposeBuildMatches(content),
+      [],
+      `${filePath} must not pass --build to docker compose`,
+    );
+
     const body = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
     const route = entry.slug === "" ? "/docs" : `/docs/${entry.slug}`;
     headingsByRoute.set(route, headingIdsInMarkdown(body));
   }
+
+  const deploymentMd = readFileSync(join(CONTENT_DOCS_DIR, "operations", "deployment.md"), "utf8");
+  assert.match(deploymentMd, /\[\/download#docker\]\(\/download#docker\)/);
 
   for (const filePath of files) {
     const content = readFileSync(filePath, "utf8");

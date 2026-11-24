@@ -15,49 +15,21 @@ Every subcommand writes JSON to stdout, errors to stderr, and exits non-zero on 
 
 ## Installing the CLI
 
-Put the dispatcher on your `PATH` with a symlink from the repo:
+On a public Docker Compose deployment (from [/download#docker](/download#docker)), the `cli/` tools are packaged at `/app/cli/` inside the `cryozen` container image, so run them inside the container from your Compose directory:
 
 ```bash
-mkdir -p ~/.local/bin
-ln -s "$PWD/cli/cryozen" ~/.local/bin/cryozen
+docker compose exec cryozen python cli/cryozen --version
+docker compose exec cryozen python cli/cryozen help
 ```
 
-Confirm `~/.local/bin` is on your `PATH`, then check the install:
+Define a shell alias in your Compose directory so the subcommand examples below work directly:
 
 ```bash
-cryozen --version
+alias cryozen='docker compose exec cryozen python cli/cryozen'
 ```
 
-The dispatcher resolves subcommands relative to the real location of `cli/cryozen`, so the symlink works from any directory.
-It also prefers `venv/bin/python` at the repo root when that virtual environment exists, and falls back to the interpreter running the dispatcher otherwise.
-
-To enable bash completion, source the completion script from your shell startup file:
-
-```bash
-echo "source $PWD/cli/_completion/cryozen.bash" >> ~/.bashrc
-```
-
-For a system-wide bash install, symlink rather than copy:
-
-```bash
-sudo ln -s "$PWD/cli/_completion/cryozen.bash" /etc/bash_completion.d/cryozen
-```
-
-The script locates the `cli/` directory by resolving its own path through any symlinks, so a copied file placed outside the repo finds no subcommands to complete.
-
-To enable zsh completion, add the completion directory to `fpath` before calling `compinit`:
-
-```zsh
-fpath=("$PWD/cli/_completion" $fpath)
-autoload -U compinit; compinit
-```
-
-Two things are worth knowing about completions:
-
-- **First tab is slow**: both scripts build their cache by running every `cryozen-*` script with `--help`, and that imports application modules.
-  Refresh the bash cache by hand with `_cryozen_refresh_cache`.
-- **Completion follows `cli/`**: both scripts read `cli/cryozen-*` when they build their cache, so a new subcommand completes through the `cryozen` umbrella as soon as it exists.
-  Bash also registers every executable it finds for direct completion; zsh completes a `cryozen-<name>` typed on its own only when that name is on the `#compdef` line of `cli/_completion/cryozen.zsh`, so adding a sub-CLI means adding its name there too.
+When the `cryozen` container is stopped (such as during a backup restore), use `docker compose run --rm --no-deps cryozen python cli/cryozen ...` instead.
+Host-side installation from `$PWD/cli/cryozen` and shell completion scripts apply to source checkouts, which are available to licensees.
 
 ## How commands find your data
 
@@ -73,7 +45,7 @@ Each subcommand inserts the repo root onto `sys.path` and imports the applicatio
   `samparka` talks CardDAV over HTTP using the URL, username, and password saved from the Settings panel.
   `shakti hf-latest` calls the public HuggingFace API.
 
-Because the imports are real application imports, run these commands from the repo root with the project virtual environment active.
+Because the imports are real application imports, run these commands inside the container on a Docker Compose install (where `/app` is the working directory and `CRYOZEN_DATA_DIR=/app/data`), or from the repo root with the project virtual environment active on a licensee source checkout.
 A missing dependency produces `error: No module named ...` and exit code 2 rather than a stack trace.
 
 The environment variables the CLI reads are:
@@ -236,13 +208,6 @@ The result and the manifest list under `excluded` the ones that exist.
 A snapshot stages its SQLite copies in the data directory and writes the archive to the output directory, so `--out` may point at a network mount, because only the finished archive is written there.
 It refuses to start unless the data directory has room for the staged copies and the output directory has room for the uncompressed files, each with 64 MB to spare, which is a conservative bound; on one filesystem the two needs add up.
 
-```bash
-cryozen sanrakshana snapshot
-cryozen sanrakshana snapshot --out /mnt/nas/cryozen-nightly.tar.gz --include-attachments
-cryozen sanrakshana list
-cryozen sanrakshana verify ~/.cryozen/backups/your_backup_name_here.tar.gz
-```
-
 On the Compose path the command must run inside the container, because the host shell does not carry the container's `CRYOZEN_DATA_DIR`.
 `run` goes through the image entrypoint, which applies `PUID` and `PGID` from `.env` as the service does; `exec` would run as root, and a `--user` built in the host shell can name the wrong owner because that shell does not read `.env`.
 The entrypoint runs first-time setup only when it starts the server, so a one-off command like this one finds the database as it was.
@@ -275,10 +240,6 @@ The output lists under `not_in_archive` any subtree the snapshot excluded, such 
 When `DATABASE_URL` names a file inside the data directory, or is unset, the archived database lands at that path, whatever the file is called, and `database_restored_to` confirms it.
 When it names a file outside the data directory, that file is left alone, `configured_database_not_replaced` names it, and `database_restored_to` names where the archived database went, so move it there yourself with the application stopped.
 An archive that holds `data/backups/` was made before snapshots always skipped that directory, and both `verify` and `restore` refuse it; unpack it by hand or take a fresh snapshot.
-
-```bash
-cryozen sanrakshana restore ~/.cryozen/backups/your_backup_name_here.tar.gz --yes
-```
 
 On the Compose path, stop the application and run it in a one-off container:
 
@@ -452,8 +413,8 @@ Every subcommand here fails with a clear message when CardDAV has not been confi
 
 ## Operations scripts
 
-These are one-shot scripts rather than dispatcher subcommands, so run them by path from the repo root.
-They are not reachable through `cryozen <name>`.
+These are one-shot scripts rather than dispatcher subcommands, and they are not reachable through `cryozen <name>`.
+On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, and development scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, and `cli/demo_email/*`) require a source checkout, which is available to licensees.
 
 | Script | Purpose | Invocation |
 | --- | --- | --- |
@@ -498,60 +459,7 @@ Read the following before running anything in that table:
 
 ### Product control plane
 
-`scripts/cryozen_ops.py` manages the lifecycle records under `.cryozen/`: it mints identifiers, creates record pairs, applies audited state transitions, validates every record against `.cryozen/config/schemas/`, reconciles the records with the tasks-axi backlog, and writes reports.
-
-```sh
-python scripts/cryozen_ops.py mint TASK
-python scripts/cryozen_ops.py collisions
-python scripts/cryozen_ops.py new TASK --title "Add a thing" --slug add-a-thing --set repository=cryozen --set priority=P2 --set 'acceptance_criteria=["it works"]'
-python scripts/cryozen_ops.py transition TASK-2026-0001 --to IN_PROGRESS --actor claude --reason "dispatched" --evidence "worktree 4"
-python scripts/cryozen_ops.py transition PR-2026-0001 --to MERGED --actor git-operations --reason "merged" --at 2026-08-24T00:55:20Z
-python scripts/cryozen_ops.py validate
-python scripts/cryozen_ops.py reconcile
-python scripts/cryozen_ops.py drift
-python scripts/cryozen_ops.py report daily
-python scripts/cryozen_ops.py report sprint SPRINT-2026-001
-python scripts/cryozen_ops.py report rc RC-2026-001
-python scripts/cryozen_ops.py report release REL-2026-001
-```
-
-`mint` returns a number above every id in the working tree and on every local and remote-tracking ref and tag, so run `git fetch` first; `collisions` exits non-zero when an id has two different titles across refs.
-`new` refuses a record that leaves out a field its schema requires, so a record cannot be created in a shape `validate` would reject; pass each one with `--set`.
-`validate` and `reconcile` exit non-zero when they find a problem, so they can gate a pull request.
-`--at` records the time an event actually happened, so a state change entered after the fact keeps its real timestamp rather than the time it was typed; the record's `updated_at` stays the time the file was written, so it never precedes `created_at`.
-Moving a record back to a state earlier in its lifecycle than the one that stamped a completion time clears that timestamp, so a reopened item carries no completion time; an archival move forward, such as `MERGED` to `CLOSED` or `RELEASED` to `SUPERSEDED`, keeps it.
-`report sprint` counts finished and carried items from the sprint's member records rather than reporting points it has no estimate for.
-`report rc` scores the statements in `.cryozen/config/release-policy.yaml` from what the candidate record proves; a statement nothing has recorded counts as unproven, and a candidate is eligible only when every statement passes and every child record is finished.
-`report release` renders a release and the candidate it came from, printing `not recorded` for anything that was never filled in.
-`reconcile` compares the records with the tasks-axi backlog; `drift` compares them with each other and reports a parent finished ahead of its children, a merged pull request over unfinished work, work claiming a pull request nothing names, unfinished work left on a closed sprint, and a released candidate and release that do not name each other.
-The daily and sprint reports carry both under their own headings.
-
-The whole control plane is reachable through the dispatcher as `cryozen product`, which forwards the lifecycle verbs to the operations script and `verify` to the release verifier.
-
-```sh
-cryozen product status
-cryozen product check
-cryozen product report daily
-cryozen product verify v1.4.0
-```
-
-`cryozen product check` runs validate, reconcile, and drift in one pass and exits with the worst result, so it can gate a pull request without touching the network.
-For a verb another installed tool owns, it names that tool rather than reimplementing it.
-The operational task queue stays in tasks-axi, which reads `.cryozen/backlog/backlog.md` through `.tasks.toml` and prunes finished items into `.cryozen/backlog/done-archive.md`; `reconcile` reads the same two paths out of `.tasks.toml`.
-
-`scripts/cryozen_release_verify.py` reads a published tag back from every place it has to appear.
-
-```sh
-python scripts/cryozen_release_verify.py v1.4.0
-python scripts/cryozen_release_verify.py v1.4.0 --json
-python scripts/cryozen_release_verify.py v1.4.0-rc.1 --skip website
-```
-
-A pre-release needs `--skip website` and a tag up to v1.1.0 needs `--skip docker`; RELEASING.md says why.
-
-It checks the tag on the product repository, a release on the product repository and on the public releases channel carrying exactly the asset contract in `scripts/release_contract.py`, a `SHA256SUMS.txt` covering every asset, an anonymous download of every public asset URL, the GHCR image tag, and the asset links on the cryozen.ai download page.
-Each check prints pass or fail with the evidence it read, and the command exits non-zero when any check fails, so a release record cannot claim distribution that was never verified.
-The same contract module is what `tests/test_release_packaging_artifact_names.py` pins the build scripts and the release workflow to, so the names exist in one place.
+Internal lifecycle and release-verification scripts under `scripts/` (`scripts/cryozen_ops.py` and `scripts/cryozen_release_verify.py`) apply only to source builds, which are available to licensees; for public container deployments, pull the published image from [/download#docker](/download#docker).
 
 ## Getting help
 

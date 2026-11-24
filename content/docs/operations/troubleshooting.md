@@ -21,9 +21,9 @@ Read them the way your path expects:
 - **systemd**: `journalctl -u cryozen-ui -f`.
 
 Two other log sources exist alongside those.
-The `logs/` directory in the repository is bind-mounted into the container and holds application-level logs.
-Local model downloads and serves run under `tmux` and write per-session logs to `/tmp/cryozen-tmux/`.
-The `cli/cryozen-logs` command enumerates both, so `cli/cryozen-logs list` saves you remembering which directory holds what.
+The `./logs` directory in the Compose directory is bind-mounted into the container and holds application-level logs.
+Local model downloads and serves run under `tmux` inside the container and write per-session logs to `/tmp/cryozen-tmux/`.
+Inside Docker, `docker compose exec cryozen python cli/cryozen-logs list` enumerates both so you do not have to remember which directory holds what.
 
 Raise the verbosity of a command-line tool for one run with `LOG_LEVEL=DEBUG`, which every `cryozen-*` command reads.
 
@@ -110,14 +110,7 @@ That happens for three reasons in practice:
 
 Check the resolved path first with `/api/ready`, then compare it against where `niti.json` actually is.
 
-If you have lost the administrator password rather than the session, reset it from the command line.
-This is the supported path on a host with no mail server:
-
-```bash
-python cli/seed_admin.py --email admin@local.test --password your_new_password_here --force
-```
-
-Inside Docker, run it against the same bind-mounted data directory the application reads, then restart so the account file is re-read:
+If you have lost the administrator password rather than the session, reset it inside the container against the same bind-mounted data directory the application reads, then restart so the account file is re-read:
 
 ```bash
 docker compose exec cryozen python cli/seed_admin.py \
@@ -125,8 +118,7 @@ docker compose exec cryozen python cli/seed_admin.py \
 docker compose restart cryozen
 ```
 
-Note that `cli/reset_admin.py` writes to `data/` relative to the repository, which is correct under Docker and wrong on a native install where the data directory resolves to `~/.cryozen`.
-Prefer `cli/seed_admin.py`, which resolves the data directory the same way the application does.
+Prefer `cli/seed_admin.py` over `cli/reset_admin.py`, because `seed_admin.py` resolves `CRYOZEN_DATA_DIR` the same way the application does (bare host-side `cli/` invocations require a source checkout, available to licensees).
 
 ## Every API request returns 401
 
@@ -371,14 +363,7 @@ The command refuses to run when the resolved directory or its `smriti.db` does n
 The archive holds the database `DATABASE_URL` names.
 Large or re-derivable subtrees are left out by default, as listed in the [CLI reference](/docs/reference/cli#backups-sanrakshana), and the manifest's `excluded` field names the ones it skipped.
 
-Check what a snapshot holds before you rely on it, rather than after you need it:
-
-```bash
-cli/cryozen-sanrakshana snapshot
-cli/cryozen-sanrakshana verify ~/.cryozen/backups/your-snapshot.tar.gz
-```
-
-On the Compose path that is:
+Check what a snapshot holds before you rely on it, rather than after you need it (run inside the container on the Compose path):
 
 ```bash
 docker compose run --rm --no-deps cryozen python cli/cryozen-sanrakshana snapshot
@@ -395,7 +380,7 @@ See [upgrading](/docs/operations/upgrading) for the full backup procedure per de
 ## The readiness report shows an old or missing backup
 
 `GET /api/ready` reports the age in seconds of the newest archive in the backup directory under `checks.backup` as `age_seconds`, and of the newest scheduled one as `daily_age_seconds`, with the schedule.
-It reports no paths, because the route needs no login; `cli/cryozen-sanrakshana list` shows them.
+It reports no paths, because the route needs no login; `docker compose run --rm --no-deps cryozen python cli/cryozen-sanrakshana list` shows them.
 An `error` of `unavailable` means the backup directory could not be read, and the application log carries the cause.
 Both ages are `null` on an instance that has never written an archive, which is normal for the first minute after a fresh install; a `daily_age_seconds` far above 86400 while `age_seconds` is small means someone takes manual snapshots and the scheduler is not writing.
 

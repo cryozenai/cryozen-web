@@ -28,15 +28,10 @@ The database runs in write-ahead log (WAL) mode, so while the application is up 
 Committed writes sit in `smriti.db-wal` until SQLite folds them into `smriti.db`, so a copy of `smriti.db` alone, taken while the application runs, misses the most recent writes.
 The snapshot command copies the database through SQLite's online backup API, which reads the WAL too, and that is why it is the tool to use on a running instance.
 
-Prefer `cli/cryozen-sanrakshana snapshot`.
+Prefer `cryozen-sanrakshana snapshot` run inside the container.
 It archives the resolved data directory, and it dumps every SQLite database through the backup API into a temporary file before adding it to the archive, so a running application cannot write a torn page into your backup.
 It writes to `backups/cryozen-sanrakshana-<timestamp>.tar.gz` inside the data directory unless you pass `--out` or set `CRYOZEN_BACKUP_DIR`, and it excludes large or re-derivable subtrees by default, as listed in the [CLI reference](/docs/reference/cli#backups-sanrakshana).
-Every archive carries a `manifest.json` naming the directory it came from, so you can check an archive before you need it.
-
-```bash
-cli/cryozen-sanrakshana snapshot
-cli/cryozen-sanrakshana verify ~/.cryozen/backups/your-snapshot.tar.gz
-```
+Every archive carries a `manifest.json` naming the directory it came from, so you can check an archive before you need it (running `cli/cryozen-sanrakshana` directly on the host applies to licensee source checkouts).
 
 On the Compose path the command must run inside the container, because the host shell does not carry the container's `CRYOZEN_DATA_DIR`, so from the host it resolves `~/.cryozen` rather than `./data`.
 `run` goes through the image entrypoint, which applies `PUID` and `PGID` from `.env` as the service does; `exec` would run as root, and a `--user` built in the host shell can name the wrong owner because that shell does not read `.env`.
@@ -124,17 +119,17 @@ Your data stays in `./data`, because the data directory is a bind mount and not 
 
 ## Upgrade a Docker Compose deployment
 
-Pull the new code, rebuild the image, and recreate the containers.
-The bind-mounted `./data` and `./logs` directories are untouched by a rebuild.
+Pull the latest published `ghcr.io/cryozenai/cryozen` image and recreate the containers.
+The bind-mounted `./data` and `./logs` directories are untouched when containers are recreated.
 
 ```bash
-cd cryozen
-git pull --ff-only
-docker compose up -d --build
+cd cryozen-releases
+docker compose pull
+docker compose up -d
 docker image prune -f
 ```
 
-On Windows, `update_windows.bat` runs the same sequence and checks that `git`, `docker`, and Compose v2 are present before it starts.
+Source builds and `update_windows.bat` are available to licensees; public container installs pull from [/download#docker](/download#docker).
 
 Watch the first boot, because the application applies schema changes during startup:
 
@@ -152,40 +147,11 @@ A 503 means a critical check failed, and the response body names which one.
 
 ## Upgrade a native launcher deployment
 
-Pull the new code and re-run the launcher.
-Each launcher hashes `requirements.txt` and reinstalls dependencies only when that hash changes, so an upgrade that does not touch dependencies starts as fast as a restart.
-
-```bash
-cd cryozen
-git pull --ff-only
-./start.sh
-```
-
-If the launcher reports that the port is in use, the previous process is still running.
-Stop it first: the launcher refuses to start rather than binding a second listener to the same database.
+Desktop packages from [the download page](/download) upgrade by installing the new package; source-based native launcher upgrades (`git pull` and `./start.sh`) are available to licensees, and container deployments pull the published image from [/download#docker](/download#docker).
 
 ## Upgrade a systemd deployment
 
-Stop the service, pull, reinstall dependencies, then start it again.
-The unit file runs `venv/bin/uvicorn` directly, so nothing updates the virtual environment on your behalf.
-
-```bash
-sudo systemctl stop cryozen-ui
-cd ~/cryozen-ui
-git pull --ff-only
-./venv/bin/pip install -r requirements.txt
-sudo systemctl start cryozen-ui
-journalctl -u cryozen-ui -f
-```
-
-If the upgrade changed `cryozen-ui.service`, copy the new unit into place and reload systemd before starting:
-
-```bash
-sudo cp cryozen-ui.service /etc/systemd/system/
-sudo systemctl daemon-reload
-```
-
-Remember that the shipped unit contains `YOURUSER` placeholders, so re-apply your own `User`, `WorkingDirectory`, `ExecStart`, and `EnvironmentFile` values whenever you replace it.
+Source-based `systemd` deployments are available to licensees; for public container deployments, pull the published image from [/download#docker](/download#docker).
 
 ## Upgrading from the project's previous name
 
@@ -210,7 +176,7 @@ Do them when it suits you, and each is independent of the others:
 
 - **Rename your environment variables**: switch variables from the previous-name prefix to `CRYOZEN_*` in `.env`, shell profiles, and unit files. The aliasing runs once at import, so a variable exported after startup is not picked up.
 - **Point service units at `cryozen:app`**: edit `ExecStart` in your systemd unit and any launcher script you wrote yourself, then run `sudo systemctl daemon-reload` and restart. This removes the dependency on the shim.
-- **Update command-line aliases**: the repository now ships only `cli/cryozen` and its `cli/cryozen-*` subcommands. A symlink or shell alias pointing at a pre-rename script name refers to a file that no longer exists, so repoint it, for example with `ln -sf "$PWD/cli/cryozen" ~/.local/bin/cryozen`.
+- **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to licensee source checkouts).
 - **Move the data directory**: nothing moves the pre-rename data directory to `~/.cryozen` for you, and the application is content to keep using the old path indefinitely. If you want the new name, stop the application, move the old directory to `~/.cryozen`, and start it again.
 
 ## Route names moved to English
@@ -319,14 +285,14 @@ Send `Content-Type: application/json` from any script that creates tokens or web
 Rolling back means restoring the code and the data together.
 Restore the code alone and you are running old code against data a newer version wrote, which is where rollbacks go wrong.
 
-Rolling back is safe when you restore the backup you took before the upgrade:
+Rolling back is safe when you restore the backup you took before the upgrade and pin the previous image tag in `docker-compose.yml` (for example `ghcr.io/cryozenai/cryozen:your_previous_tag_here`):
 
 ```bash
 docker compose down
 rm -rf data
 tar -xzf ~/cryozen-backup-20260731.tar.gz
-git checkout your_previous_tag_here
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 If you skipped the snapshot, the copy the application took on its own is the next best thing: `backups/pre-migration/` inside the data directory holds `smriti.db` as it was before the newest build first migrated it, named with the schema versions it moved between.
