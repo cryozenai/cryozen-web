@@ -110,6 +110,8 @@ app/
   sitemap.ts robots.ts
 components/           header, footer, CTAs, primitives
   deck/               slide and block renderers, presenting chrome, title-slide mark
+  media/              app-frame (window chrome around a capture) and product-video (the client player: poster first, video only in view, play/pause, captions)
+  tour/               chapter: a capture beside its synced step list, prerequisites, privacy note, docs link, and transcript
 lib/
   site.ts             names, URLs, nav
   platforms.ts        per-platform asset names, requirements, install steps
@@ -119,6 +121,9 @@ lib/
   facts.ts            measured product facts the decks quote
   release-facts.json  exact snapshot of the public release facts
   decks/              deck copy as typed data, one file per positioning
+  release-facts.json  public release facts vendored from cryozen-releases, including the strings site copy must never contain
+  product/            what the site claims CryoZen does, as typed data: one surface per capability, in tour order
+  media/              the capture manifest, its loader and validator, and the step-sync logic the tour uses
 scripts/
   check-node-pins.mjs Node pin lockstep check, with its test alongside
   check-deck-print.mjs print-fidelity check for the decks; needs Chrome and poppler
@@ -127,6 +132,7 @@ scripts/
   release-facts.test.mjs checks the facts contract and scans for banned strings
   release-channel.test.mjs  release-channel contract test: releases, downloads, docs, and support links all land in the public repo
   decks.test.mjs      deck-data invariants: slide numbering, emphasis markers, sourced market assumptions, measured facts
+  product.test.mjs    product-claim contract test: the surfaces are exactly the claimable set and claim nothing the release does not ship, plus the capture manifest and step-sync logic
   check-links.mjs     crawls a running site and fetches every external link anonymously, with its test alongside
   check-production.mjs compares the commit production reports at /version.json with main, with its test alongside
 ```
