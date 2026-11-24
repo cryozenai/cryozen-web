@@ -5,8 +5,10 @@
 // if any transform matches nothing in its file, or if any banned term, private
 // source-repo URL, `docker compose ... --build` command, or source-checkout-only
 // content (launcher scripts, systemd, the cryozen-ui unit, ~/.cryozen) survives
-// outside the explicit allowlist, or if the docs tell Compose users to set a
-// variable in `.env` that lib/release-compose.yml never reads.
+// outside the explicit allowlist, if the docs reference a Compose file or a
+// host-run script that lib/release-channel-files.json does not list, or if the
+// docs tell Compose users to set a variable in `.env` that
+// lib/release-compose.yml never reads.
 //
 // Usage:
 //   PRODUCT_REPO=/path/to/cryozen node scripts/sync-docs.mjs [--ref v1.2.0]
@@ -21,6 +23,7 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_OUT_DIR = join(REPO_ROOT, "content", "docs");
 const DEFAULT_FACTS_PATH = join(REPO_ROOT, "lib", "release-facts.json");
 const DEFAULT_COMPOSE_PATH = join(REPO_ROOT, "lib", "release-compose.yml");
+const DEFAULT_CHANNEL_FILES_PATH = join(REPO_ROOT, "lib", "release-channel-files.json");
 
 /**
  * User-facing allowlist mapped from source path in the product repository to
@@ -838,7 +841,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "## Operations scripts",
       "",
       "These are one-shot scripts rather than dispatcher subcommands, and they are not reachable through `cryozen <name>`.",
-      "On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, and development scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, and `cli/demo_email/*`) require a source checkout, which is not public.",
+      "On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, development, and host diagnostic scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, `cli/check-docker-gpu.sh`, `cli/check-docker-amd-gpu.sh`, and `cli/demo_email/*`) require a source checkout, which is not public.",
     ].join("\n"),
   },
   {
@@ -1308,7 +1311,7 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "      - GOOGLE_CLIENT_SECRET=your_client_secret_here",
       "```",
       "",
-      "Compose reads the override automatically while `COMPOSE_FILE` is unset; if you set `COMPOSE_FILE` for a GPU overlay, add `docker-compose.override.yml` to that list too.",
+      "Compose reads the override automatically while `COMPOSE_FILE` is unset; if you set `COMPOSE_FILE`, add `docker-compose.override.yml` to that list too.",
     ].join("\n"),
   },
   {
@@ -1397,6 +1400,83 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
     reason: "Qualify the .env precedence entry for Docker Compose, where the application never reads that file.",
     pattern: "- **`.env` file**: read once from the repository root at `cryozen.py` with `encoding=\"utf-8-sig\"`, which tolerates the UTF-8 byte order mark that Windows Notepad adds.",
     replacement: "- **`.env` file**: read once from the repository root at `cryozen.py` with `encoding=\"utf-8-sig\"`, which tolerates the UTF-8 byte order mark that Windows Notepad adds. On Docker Compose the application never reads this file, and only the variables `docker-compose.yml` forwards reach it, as described at the top of this page.",
+  },
+  {
+    // lib/release-channel-files.json: the public cryozen-releases tree has no docker/gpu.*.yml, docker-compose.gpu-*.yml, or cli/check-docker-*.sh, and lib/release-compose.yml passes no GPU device.
+    id: "deployment-gpu-overlays-source-only",
+    files: ["docs/operations/deployment.md"],
+    reason: "Replace the GPU overlay and diagnostic-script instructions, whose files are not in the public release channel, with a source-checkout note and the public alternatives.",
+    pattern: [
+      "The GPU overlay files pass the host GPU into the `cryozen` container.",
+      "They do not install a compute stack: the image stays slim, so you still install vLLM or llama-cpp-python through the Compute dependencies panel before a model can serve on the GPU.",
+      "",
+      "For NVIDIA, install the NVIDIA Container Toolkit on the host, point Docker at the runtime, then select the overlay in `.env`:",
+      "",
+      "```bash",
+      "sudo nvidia-ctk runtime configure --runtime=docker",
+      "sudo systemctl restart docker",
+      "echo \"COMPOSE_FILE=docker-compose.yml:docker/gpu.nvidia.yml\" >> .env",
+      "docker compose up -d",
+      "```",
+      "",
+      "For AMD, install the ROCm drivers so `/dev/kfd` and `/dev/dri` exist, add your Docker user to the `video` and `render` groups, and record the numeric render group id:",
+      "",
+      "```bash",
+      "echo \"COMPOSE_FILE=docker-compose.yml:docker/gpu.amd.yml\" >> .env",
+      "echo \"RENDER_GID=$(getent group render | cut -d: -f3)\" >> .env",
+      "docker compose up -d",
+      "```",
+      "",
+      "On Windows, `COMPOSE_FILE` separates paths with a semicolon rather than a colon.",
+      "",
+      "Two diagnostic scripts check the host before you commit to a configuration.",
+      "`cli/check-docker-gpu.sh` is read-only by default and can also print or run the NVIDIA toolkit install, and write `COMPOSE_FILE` to `.env` when you pass `--enable-nvidia-overlay`.",
+      "`cli/check-docker-amd-gpu.sh` is read-only with no install mode, and verifies that a container can see the AMD device nodes.",
+      "",
+      "Some stack-management interfaces accept only one Compose file and ignore `COMPOSE_FILE`.",
+      "For those, use `docker-compose.gpu-nvidia.yml` or `docker-compose.gpu-amd.yml`, which are the base file and the matching overlay already merged.",
+      "Prefer the overlay workflow anywhere you drive Compose from a shell, because the merged files are maintained copies rather than the source of truth.",
+    ].join("\n"),
+    replacement: [
+      "The GPU Compose overlays and the GPU diagnostic scripts ship in the source checkout, which is not public, and the published `docker-compose.yml` passes no GPU into the container.",
+      "To use a GPU with the public stack, run your model server, such as Ollama, on the host outside Docker and connect CryoZen to it through `host.docker.internal`, as [Integrations](../guides/integrations.md#local-models) describes.",
+      "Desktop packages from [the download page](/download) run without Docker.",
+    ].join("\n"),
+  },
+  {
+    // lib/release-channel-files.json: the public cryozen-releases tree has no docker/gpu.*.yml, docker-compose.gpu-*.yml, or cli/check-docker-*.sh, and lib/release-compose.yml passes no GPU device.
+    id: "troubleshooting-gpu-overlays-source-only",
+    files: ["docs/operations/troubleshooting.md"],
+    reason: "Drop the GPU overlay reference, whose files are not in the public release channel.",
+    pattern: [
+      "Inside Docker, the image ships without a compute stack on purpose.",
+      "The GPU overlays pass the device through but install nothing, so install the inference packages through the Compute dependencies panel before expecting a GPU model to serve.",
+    ].join("\n"),
+    replacement: "Inside Docker, the image ships without a compute stack on purpose, so install the inference packages through the Compute dependencies panel before expecting a model to serve in the container.",
+  },
+  {
+    // lib/release-channel-files.json: the public cryozen-releases tree has no docker/gpu.*.yml, docker-compose.gpu-*.yml, or cli/check-docker-*.sh, and lib/release-compose.yml passes no GPU device.
+    id: "config-compose-file-row-public",
+    files: ["docs/reference/configuration.md"],
+    reason: "Drop the GPU overlay use from the COMPOSE_FILE row, since the overlays are not in the public release channel.",
+    pattern: "A colon-separated (semicolon on Windows) list of compose files merged left to right, used to layer the GPU overlays.",
+    replacement: "A colon-separated (semicolon on Windows) list of compose files merged left to right.",
+  },
+  {
+    // lib/release-channel-files.json: the public cryozen-releases tree has no docker/gpu.*.yml, docker-compose.gpu-*.yml, or cli/check-docker-*.sh, and lib/release-compose.yml passes no GPU device.
+    id: "config-render-gid-row-public",
+    files: ["docs/reference/configuration.md"],
+    reason: "Mark RENDER_GID as read only by the AMD overlay in the source checkout.",
+    pattern: "| `RENDER_GID` | `render` | Compose-only, AMD ROCm overlay. Numeric gid of the host `render` group, read from `getent group render`. |",
+    replacement: "| `RENDER_GID` | `render` | Compose-only. Read by the AMD ROCm overlay in the source checkout, which is not public; the published `docker-compose.yml` does not use it. |",
+  },
+  {
+    // lib/release-channel-files.json: the public cryozen-releases tree has no docker/gpu.*.yml, docker-compose.gpu-*.yml, or cli/check-docker-*.sh, and lib/release-compose.yml passes no GPU device.
+    id: "config-lm-studio-row-public",
+    files: ["docs/reference/configuration.md"],
+    reason: "Name only the published docker-compose.yml as forwarding LM_STUDIO_URL.",
+    pattern: "`docker-compose.yml` and both GPU compose files forward it, so setting it in `.env` reaches the container.",
+    replacement: "`docker-compose.yml` forwards it, so setting it in `.env` reaches the container.",
   },
 ];
 
@@ -1714,6 +1794,39 @@ export function findComposeEnvMismatches(text, composeNames, settingNames) {
   return matches;
 }
 
+// Files the docs tell readers to create themselves next to the public bundle.
+const USER_CREATED_FILES = ["docker-compose.override.yml"];
+const COMPOSE_PATH_RE = /(?<![\w/.-])(docker\/[\w.*/-]+|docker-compose[\w.-]*\.ya?ml)/g;
+const HOST_INVOCATION_RE = /^(?:sudo\s+)?(?:python3?\s+)?(?:\.\/)?((?:cli|scripts|packaging|docker)\/[\w.*/-]+)/;
+
+/**
+ * Compose files and host-run scripts the docs reference that the public
+ * release channel does not ship: any `docker/...` or `docker-compose*.yml`
+ * path, and any code-block line that runs a `cli/`, `scripts/`, `packaging/`,
+ * or `docker/` path on the host rather than through `docker compose exec`.
+ */
+export function findUnpublishedPaths(text, publishedPaths) {
+  const allowed = new Set([...publishedPaths, ...USER_CREATED_FILES]);
+  const matches = [];
+  const lines = text.split(/\r?\n/);
+  let fenceMarker = "";
+  for (let i = 0; i < lines.length; i += 1) {
+    const fence = /^\s*(`{3,}|~{3,})/.exec(lines[i]);
+    if (fence) {
+      if (!fenceMarker) fenceMarker = fence[1][0];
+      else if (fence[1][0] === fenceMarker) fenceMarker = "";
+      continue;
+    }
+    const paths = [...lines[i].matchAll(COMPOSE_PATH_RE)].map((m) => m[1]);
+    const hostRun = fenceMarker ? HOST_INVOCATION_RE.exec(lines[i].trim()) : null;
+    if (hostRun) paths.push(hostRun[1]);
+    for (const path of new Set(paths)) {
+      if (!allowed.has(path)) matches.push({ line: i + 1, path, text: lines[i].trim() });
+    }
+  }
+  return matches;
+}
+
 export function findSourceOnlyMatches(text, desktopDataDirs) {
   const matches = [];
   const lines = text.split(/\r?\n/);
@@ -1747,6 +1860,7 @@ export function syncDocs({
   outDir = DEFAULT_OUT_DIR,
   factsPath = DEFAULT_FACTS_PATH,
   composePath = DEFAULT_COMPOSE_PATH,
+  channelFilesPath = DEFAULT_CHANNEL_FILES_PATH,
   transforms = DEFAULT_TRANSFORMS,
 } = {}) {
   if (!productRepo) {
@@ -1758,6 +1872,7 @@ export function syncDocs({
   const sourceRepo = typeof facts.repos?.source === "string" ? facts.repos.source.trim() : "";
   const desktopDataDirs = Object.values(facts.install?.data_dirs ?? {});
   const composeNames = composeEnvNames(readFileSync(composePath, "utf8"));
+  const publishedPaths = JSON.parse(readFileSync(channelFilesPath, "utf8"));
   const commit = gitCommitSha(productRepo, ref);
 
   const prepared = [];
@@ -1821,6 +1936,14 @@ export function syncDocs({
         .map((hit) => `${entry.source}:${hit.line} matched source-checkout-only content: ${hit.text}`)
         .join("\n");
       throw new Error(`Source-only content check failed:\n${detail}`);
+    }
+
+    const unpublishedHits = findUnpublishedPaths(fullContent, publishedPaths);
+    if (unpublishedHits.length > 0) {
+      const detail = unpublishedHits
+        .map((hit) => `${entry.source}:${hit.line} references ${hit.path}, which the public release channel does not ship: ${hit.text}`)
+        .join("\n");
+      throw new Error(`Unpublished path check failed:\n${detail}`);
     }
 
     prepared.push({

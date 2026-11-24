@@ -414,7 +414,7 @@ Every subcommand here fails with a clear message when CardDAV has not been confi
 ## Operations scripts
 
 These are one-shot scripts rather than dispatcher subcommands, and they are not reachable through `cryozen <name>`.
-On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, and development scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, and `cli/demo_email/*`) require a source checkout, which is not public.
+On a Docker Compose install, run database and data-maintenance scripts inside the container with `docker compose exec cryozen python cli/<script>.py ...`; build, packaging, development, and host diagnostic scripts (`cli/pipeline.sh`, `cli/validate_mac_app.sh`, `cli/fix_paths.py`, `cli/pr_blocker_audit.py`, `cli/encode_previews.sh`, `cli/check-docker-gpu.sh`, `cli/check-docker-amd-gpu.sh`, and `cli/demo_email/*`) require a source checkout, which is not public.
 
 | Script | Purpose | Invocation |
 | --- | --- | --- |

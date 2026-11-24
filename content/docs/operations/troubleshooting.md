@@ -286,8 +286,7 @@ A local diffusion server runs through Compute and needs PyTorch and the `diffuse
 The launcher preflights that import and stops with `ERROR: Diffusion serving requires PyTorch + diffusers.` followed by the real import error, rather than starting a server that cannot load a model.
 Install both on the serving host, then start the server again.
 
-Inside Docker, the image ships without a compute stack on purpose.
-The GPU overlays pass the device through but install nothing, so install the inference packages through the Compute dependencies panel before expecting a GPU model to serve.
+Inside Docker, the image ships without a compute stack on purpose, so install the inference packages through the Compute dependencies panel before expecting a model to serve in the container.
 
 ## An SSH operation fails with a changed host key
 

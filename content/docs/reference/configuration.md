@@ -79,8 +79,8 @@ Rotating it invalidates in-flight OAuth handshakes only, so a user who is mid-co
 | `NTFY_BASE_URL` | `http://localhost:8091` | Compose-only. Public base URL handed to the ntfy container. No Python code reads it; `routers/auth_router.py` only mentions it in an error hint. |
 | `PUID` | `1000` | Compose-only. Numeric user id the container drops to before running uvicorn. |
 | `PGID` | `1000` | Compose-only. Numeric group id the container drops to. |
-| `COMPOSE_FILE` | Unset | Native `docker compose` feature, not CryoZen code. A colon-separated (semicolon on Windows) list of compose files merged left to right, used to layer the GPU overlays. |
-| `RENDER_GID` | `render` | Compose-only, AMD ROCm overlay. Numeric gid of the host `render` group, read from `getent group render`. |
+| `COMPOSE_FILE` | Unset | Native `docker compose` feature, not CryoZen code. A colon-separated (semicolon on Windows) list of compose files merged left to right. |
+| `RENDER_GID` | `render` | Compose-only. Read by the AMD ROCm overlay in the source checkout, which is not public; the published `docker-compose.yml` does not use it. |
 
 ## Authentication and sessions
 
@@ -105,7 +105,7 @@ Rotating it invalidates in-flight OAuth handshakes only, so a user who is mid-co
 | `LLM_HOSTS` | Empty | Comma-separated extra hosts for model discovery (`services/constants.py`, `services/model_discovery.py`). Hostnames or IPs only; discovery scans ports 8000 to 8020 plus 1234 and 11434 on each. Setting it overrides Tailscale host discovery. |
 | `OLLAMA_BASE_URL` | Unset | Explicit Ollama endpoint. Its hostname and non-default port join the discovery scan (`services/model_discovery.py`) and it is reported by `/api/runtime` (`cryozen.py`). |
 | `OLLAMA_URL` | Unset | Alternate spelling checked after `OLLAMA_BASE_URL` in both the discovery scan and `/api/runtime` (`cryozen.py`). |
-| `LM_STUDIO_URL` | Unset | LM Studio endpoint whose hostname and port join the discovery scan (`services/model_discovery.py`). `docker-compose.yml` and both GPU compose files forward it, so setting it in `.env` reaches the container. |
+| `LM_STUDIO_URL` | Unset | LM Studio endpoint whose hostname and port join the discovery scan (`services/model_discovery.py`). `docker-compose.yml` forwards it, so setting it in `.env` reaches the container. |
 | `OPENAI_API_KEY` | Unset | OpenAI API key (`services/constants.py`). |
 | `ANTHROPIC_API_KEY` | Unset | Anthropic API key (`services/constants.py`). |
 | `GOOGLE_API_KEY` | Unset | Google API key, used both as an LLM provider key (`services/constants.py`) and as the Google Programmable Search key (`engines/anveshana/providers.py`). |

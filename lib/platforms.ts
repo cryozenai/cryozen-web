@@ -106,7 +106,7 @@ export const platforms: Platform[] = [
     assetName: null,
     fileLabel: "Container image",
     summary:
-      "The recommended path for servers, GPUs, and anything long-running. Runs the full stack, including SearXNG and ChromaDB, from the published image (linux/amd64 and linux/arm64); no build step.",
+      "The recommended path for servers and anything long-running. Runs the full stack, including SearXNG and ChromaDB, from the published image (linux/amd64 and linux/arm64); no build step.",
     requirements: ["Docker with Compose v2", "A host you control"],
     steps: [
       ...dockerCommands,

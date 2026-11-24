@@ -28,6 +28,7 @@ import {
   findDockerComposeBuildMatches,
   findSourceOnlyMatches,
   findSourceRepoMatches,
+  findUnpublishedPaths,
   settingNamesFromReference,
   syncDocs,
 } from "./sync-docs.mjs";
@@ -36,6 +37,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CONTENT_DOCS_DIR = join(ROOT, "content", "docs");
 const FACTS_PATH = join(ROOT, "lib", "release-facts.json");
 const RELEASE_COMPOSE_PATH = join(ROOT, "lib", "release-compose.yml");
+const RELEASE_CHANNEL_FILES_PATH = join(ROOT, "lib", "release-channel-files.json");
 
 const tempDirs = [];
 
@@ -357,6 +359,7 @@ test("published content/docs links resolve to synced docs and never link to gith
   assert.equal(files.length, DOC_ALLOWLIST.length);
 
   const composeNames = composeEnvNames(readFileSync(RELEASE_COMPOSE_PATH, "utf8"));
+  const publishedPaths = JSON.parse(readFileSync(RELEASE_CHANNEL_FILES_PATH, "utf8"));
   const settingNames = settingNamesFromReference(
     readFileSync(join(CONTENT_DOCS_DIR, "reference", "configuration.md"), "utf8"),
   );
@@ -396,6 +399,11 @@ test("published content/docs links resolve to synced docs and never link to gith
       findComposeEnvMismatches(content, composeNames, settingNames),
       [],
       `${filePath} must not tell Compose users to set an unforwarded variable in .env`,
+    );
+    assert.deepEqual(
+      findUnpublishedPaths(content, publishedPaths),
+      [],
+      `${filePath} must not reference files the public release channel does not ship`,
     );
 
     // The page renders the body without its leading H1 (lib/docs/index.ts).
@@ -640,6 +648,56 @@ test("the published Compose file decides which settings work from .env", () => {
     [
       [1, "SESSION_SECRET"],
       [5, "FORWARDED_ALLOW_IPS"],
+    ],
+  );
+});
+
+test("sync-docs fails loudly when docs reference a Compose overlay the release channel does not ship", () => {
+  const { repoDir } = createFixtureGitRepo(
+    baseFixtureFiles({
+      "docs/operations/deployment.md": [
+        "# Deployment",
+        "",
+        "Select the overlay:",
+        "",
+        "```bash",
+        'echo "COMPOSE_FILE=docker-compose.yml:docker/gpu.nvidia.yml" >> .env',
+        "```",
+        "",
+      ].join("\n"),
+    }),
+    "v9.9.9",
+  );
+  const outDir = makeTempDir("cryozen-docs-fail-unpublished-");
+
+  assert.throws(
+    () => syncDocs({ productRepo: repoDir, ref: "v9.9.9", outDir, factsPath: FACTS_PATH }),
+    /^Error: Unpublished path check failed:\ndocs\/operations\/deployment\.md:\d+ references docker\/gpu\.nvidia\.yml, which the public release channel does not ship: [^\n]*$/,
+  );
+  assert.equal(existsSync(join(outDir, "index.md")), false, "failed sync must not write partial output");
+});
+
+test("findUnpublishedPaths checks Compose files and host-run scripts against the release channel tree", () => {
+  const publishedPaths = JSON.parse(readFileSync(RELEASE_CHANNEL_FILES_PATH, "utf8"));
+  const text = [
+    "Edit `docker-compose.yml`, then add `docker-compose.override.yml` next to it.",
+    "Use `docker-compose.gpu-amd.yml` for single-file tools.",
+    "The `cli/seed_admin.py` script provisions an admin.",
+    "```bash",
+    "docker compose exec cryozen python cli/seed_admin.py --email a@b.test",
+    "cli/check-docker-gpu.sh",
+    "./cli/pipeline.sh --strict-lint",
+    'COMPOSE_FILE="docker-compose.yml:docker/gpu.amd.yml" docker compose up -d',
+    "```",
+  ].join("\n");
+
+  assert.deepEqual(
+    findUnpublishedPaths(text, publishedPaths).map((hit) => [hit.line, hit.path]),
+    [
+      [2, "docker-compose.gpu-amd.yml"],
+      [6, "cli/check-docker-gpu.sh"],
+      [7, "cli/pipeline.sh"],
+      [8, "docker/gpu.amd.yml"],
     ],
   );
 });

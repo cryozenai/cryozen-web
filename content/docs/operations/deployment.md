@@ -69,7 +69,7 @@ services:
       - GOOGLE_CLIENT_SECRET=your_client_secret_here
 ```
 
-Compose reads the override automatically while `COMPOSE_FILE` is unset; if you set `COMPOSE_FILE` for a GPU overlay, add `docker-compose.override.yml` to that list too.
+Compose reads the override automatically while `COMPOSE_FILE` is unset; if you set `COMPOSE_FILE`, add `docker-compose.override.yml` to that list too.
 
 ## Deploy with the native launcher
 
@@ -149,35 +149,9 @@ Do not add a proxy that rewrites or strips those headers, and do not attempt to 
 
 ## Enable GPU passthrough in Docker
 
-The GPU overlay files pass the host GPU into the `cryozen` container.
-They do not install a compute stack: the image stays slim, so you still install vLLM or llama-cpp-python through the Compute dependencies panel before a model can serve on the GPU.
-
-For NVIDIA, install the NVIDIA Container Toolkit on the host, point Docker at the runtime, then select the overlay in `.env`:
-
-```bash
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
-echo "COMPOSE_FILE=docker-compose.yml:docker/gpu.nvidia.yml" >> .env
-docker compose up -d
-```
-
-For AMD, install the ROCm drivers so `/dev/kfd` and `/dev/dri` exist, add your Docker user to the `video` and `render` groups, and record the numeric render group id:
-
-```bash
-echo "COMPOSE_FILE=docker-compose.yml:docker/gpu.amd.yml" >> .env
-echo "RENDER_GID=$(getent group render | cut -d: -f3)" >> .env
-docker compose up -d
-```
-
-On Windows, `COMPOSE_FILE` separates paths with a semicolon rather than a colon.
-
-Two diagnostic scripts check the host before you commit to a configuration.
-`cli/check-docker-gpu.sh` is read-only by default and can also print or run the NVIDIA toolkit install, and write `COMPOSE_FILE` to `.env` when you pass `--enable-nvidia-overlay`.
-`cli/check-docker-amd-gpu.sh` is read-only with no install mode, and verifies that a container can see the AMD device nodes.
-
-Some stack-management interfaces accept only one Compose file and ignore `COMPOSE_FILE`.
-For those, use `docker-compose.gpu-nvidia.yml` or `docker-compose.gpu-amd.yml`, which are the base file and the matching overlay already merged.
-Prefer the overlay workflow anywhere you drive Compose from a shell, because the merged files are maintained copies rather than the source of truth.
+The GPU Compose overlays and the GPU diagnostic scripts ship in the source checkout, which is not public, and the published `docker-compose.yml` passes no GPU into the container.
+To use a GPU with the public stack, run your model server, such as Ollama, on the host outside Docker and connect CryoZen to it through `host.docker.internal`, as [Integrations](/docs/guides/integrations#local-models) describes.
+Desktop packages from [the download page](/download) run without Docker.
 
 ## Wire health checks into an orchestrator
 
