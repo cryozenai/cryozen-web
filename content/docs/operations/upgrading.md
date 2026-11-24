@@ -18,7 +18,8 @@ Back it up first, every time, and confirm the backup exists before you pull new 
 Find the directory before you copy it, because it differs by deployment path:
 
 - **Docker Compose**: `./data` in the repository, bind-mounted to `/app/data`. The image pins `CRYOZEN_DATA_DIR=/app/data`, so this is always the answer on the Compose path.
-- **Native launcher and systemd**: `~/.cryozen`, or the legacy pre-rename data directory under `~` when that directory exists and `~/.cryozen` does not.
+- **Desktop packages**: `~/Library/Application Support/CryoZen` on macOS, `%LOCALAPPDATA%\CryoZen` on Windows, and `~/.local/share/cryozen` on Linux.
+- **Native launcher and systemd**: these paths require a source checkout, which is not public.
 - **Any path with `CRYOZEN_DATA_DIR` set**: whatever that variable names, which wins over both defaults.
 
 The directory holds the SQLite database `smriti.db`, the account file `niti.json`, the signed-in session store `sessions.json`, the Fernet key `.app_key`, the ChromaDB directory, uploads, personal documents, generated images, mail attachments, deep research runs, and the pinned SSH host keys.
@@ -53,7 +54,7 @@ The application also takes two backups on its own:
 
 Neither replaces the snapshot you take by hand before an upgrade, because the daily archive can be up to a day old.
 
-For a stopped instance, or for a native install where the resolved directory sits outside the repository, copy the directory with a tool that preserves dotfiles:
+For a stopped instance on the Compose path, copy the directory with a tool that preserves dotfiles:
 
 ```bash
 docker compose stop cryozen
@@ -61,25 +62,10 @@ tar -czf ~/cryozen-backup-$(date +%Y%m%d).tar.gz --exclude=data/backups -C . dat
 docker compose start cryozen
 ```
 
-```bash
-sudo systemctl stop cryozen-ui
-tar -czf ~/cryozen-backup-$(date +%Y%m%d).tar.gz -C ~ .cryozen
-sudo systemctl start cryozen-ui
-```
-
-Know which of these two archives `restore` will take, because they are not interchangeable.
 `verify` and `restore` require every entry to sit under a top-level `data/` directory, so they accept a snapshot and the Compose archive above, whose members are rooted at `data/`.
 They also refuse an archive that holds `data/backups/`, which is why the Compose command excludes it.
-They refuse the native archive, whose members are rooted at `.cryozen/`, with `refusing tarball with entry outside data/`.
-That archive is still a complete copy of your data; it is a raw copy for manual recovery, so restore it by stopping the service and unpacking it over the resolved directory yourself.
-Delete `smriti.db-wal` and `smriti.db-shm` first, because they belong to the database you are replacing:
-
-```bash
-sudo systemctl stop cryozen-ui
-rm -f ~/.cryozen/smriti.db-wal ~/.cryozen/smriti.db-shm
-tar -xzf ~/cryozen-backup-20260731.tar.gz -C ~
-sudo systemctl start cryozen-ui
-```
+For a desktop package, quit CryoZen and copy its data directory, listed above, with a tool that preserves dotfiles.
+Backing up and restoring a native launcher or systemd install by hand requires a source checkout, which is not public.
 
 When you do use `restore`, stop the application first, because a running process keeps writing to the directory that is about to move aside.
 On the Compose path, run it in a one-off container:
@@ -175,7 +161,7 @@ Nothing in that list expires on a schedule, so none of the following is urgent.
 Do them when it suits you, and each is independent of the others:
 
 - **Rename your environment variables**: switch variables from the previous-name prefix to `CRYOZEN_*` in `.env`, shell profiles, and unit files. The aliasing runs once at import, so a variable exported after startup is not picked up.
-- **Point service units at `cryozen:app`**: edit `ExecStart` in your systemd unit and any launcher script you wrote yourself, then run `sudo systemctl daemon-reload` and restart. This removes the dependency on the shim.
+- **Point service units at `cryozen:app`**: service units and launcher scripts require a source checkout, which is not public.
 - **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to source checkouts, which are not public).
 - **Move the data directory**: nothing moves the pre-rename data directory to `~/.cryozen` for you, and the application is content to keep using the old path indefinitely. If you want the new name, stop the application, move the old directory to `~/.cryozen`, and start it again.
 

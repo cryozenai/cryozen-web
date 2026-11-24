@@ -24,6 +24,7 @@ import {
   DEFAULT_TRANSFORMS,
   DOC_ALLOWLIST,
   findDockerComposeBuildMatches,
+  findSourceOnlyCommandMatches,
   findSourceRepoMatches,
   syncDocs,
 } from "./sync-docs.mjs";
@@ -378,6 +379,11 @@ test("published content/docs links resolve to synced docs and never link to gith
       [],
       `${filePath} must not pass --build to docker compose`,
     );
+    assert.deepEqual(
+      findSourceOnlyCommandMatches(content),
+      [],
+      `${filePath} must not hand visitors source-checkout-only commands`,
+    );
 
     // The page renders the body without its leading H1 (lib/docs/index.ts).
     const body = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").replace(/^#\s+.+?\r?\n+/, "");
@@ -515,4 +521,59 @@ test("docs table of contents and lead text keep intraword underscores", () => {
     { level: 2, text: "SESSION_SECRET", id: "session_secret" },
     { level: 2, text: "Why emphasis and code_span", id: "why-emphasis-and-code_span" },
   ]);
+});
+
+test("sync-docs fails loudly when a source-checkout-only command survives in a code block", () => {
+  const { repoDir } = createFixtureGitRepo(
+    baseFixtureFiles({
+      "docs/operations/upgrading.md": [
+        "# Upgrading",
+        "",
+        "The `cryozen-ui` unit and `start.sh` need a source checkout.",
+        "",
+        "```bash",
+        "sudo systemctl restart cryozen-ui",
+        "```",
+        "",
+      ].join("\n"),
+    }),
+    "v9.9.9",
+  );
+  const outDir = makeTempDir("cryozen-docs-fail-source-only-");
+
+  assert.throws(
+    () =>
+      syncDocs({
+        productRepo: repoDir,
+        ref: "v9.9.9",
+        outDir,
+        factsPath: FACTS_PATH,
+      }),
+    /Source-only command check failed:\ndocs\/operations\/upgrading\.md:\d+ [^\n]*sudo systemctl restart cryozen-ui$/,
+  );
+  assert.equal(existsSync(join(outDir, "index.md")), false, "failed sync must not write partial output");
+});
+
+test("findSourceOnlyCommandMatches flags source-only commands in code blocks only", () => {
+  const text = [
+    "Prose may name `start.sh`, `cryozen-ui.service`, and the `~/.cryozen` default.",
+    "",
+    "```bash",
+    "sudo systemctl restart docker",
+    "./start-macos.sh",
+    "```",
+    "",
+    "~~~powershell",
+    ".\\launch-windows.ps1",
+    "~~~",
+    "",
+    "```bash",
+    "tar -czf backup.tar.gz -C ~ .cryozen && ls ~/.cryozen/backups",
+    "```",
+  ].join("\n");
+
+  assert.deepEqual(
+    findSourceOnlyCommandMatches(text).map((hit) => hit.text),
+    ["./start-macos.sh", ".\\launch-windows.ps1", "tar -czf backup.tar.gz -C ~ .cryozen && ls ~/.cryozen/backups"],
+  );
 });

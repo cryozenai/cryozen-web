@@ -3,7 +3,9 @@
 // content/docs/*.md, rewriting links, pruning unsynced index sections, applying
 // explicit transforms for banned terms and private-repo-only blocks, and failing
 // if any transform matches nothing in its file, or if any banned term, private
-// source-repo URL, or `docker compose ... --build` command survives.
+// source-repo URL, `docker compose ... --build` command, or source-checkout-only
+// command in a code block (launcher scripts, the cryozen-ui unit, ~/.cryozen)
+// survives.
 //
 // Usage:
 //   PRODUCT_REPO=/path/to/cryozen node scripts/sync-docs.mjs [--ref v1.2.0]
@@ -40,6 +42,9 @@ const SECURITY_BASENAMES = new Set(["THREAT_MODEL.md", "SECURITY.md"]);
 const DEFAULT_SOURCE_REPO = "cryozenai/cryozen";
 const DOCKER_COMPOSE_BUILD_LINE_RE =
   /\bdocker[\s-]+compose\b[^\r\n]*\s--build(?=$|\s|[`"'();])/i;
+
+const SOURCE_ONLY_COMMAND_RE =
+  /\bcryozen-ui\b|\bstart(?:-linux|-macos)?\.sh\b|\blaunch-windows\.ps1\b|\binstall-service\.sh\b|~\/\.cryozen\b/;
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -167,11 +172,13 @@ export const BANNED_TRANSFORMS = [
   {
     id: "upgrading-backup-legacy-dir",
     files: ["docs/operations/upgrading.md"],
-    reason: "Describe native data directory fallback without naming the banned directory.",
+    reason: "Replace the source-only native data directory line, which names the banned directory, with the desktop package data directories.",
     pattern:
       "- **Native launcher and systemd**: `~/.cryozen`, or `~/.srijan` when that directory exists and `~/.cryozen` does not.",
-    replacement:
-      "- **Native launcher and systemd**: `~/.cryozen`, or the legacy pre-rename data directory under `~` when that directory exists and `~/.cryozen` does not.",
+    replacement: [
+      "- **Desktop packages**: `~/Library/Application Support/CryoZen` on macOS, `%LOCALAPPDATA%\\CryoZen` on Windows, and `~/.local/share/cryozen` on Linux.",
+      "- **Native launcher and systemd**: these paths require a source checkout, which is not public.",
+    ].join("\n"),
   },
   {
     id: "upgrading-old-ghcr-image",
@@ -234,7 +241,7 @@ export const BANNED_TRANSFORMS = [
       "Do them when it suits you, and each is independent of the others:",
       "",
       "- **Rename your environment variables**: switch variables from the previous-name prefix to `CRYOZEN_*` in `.env`, shell profiles, and unit files. The aliasing runs once at import, so a variable exported after startup is not picked up.",
-      "- **Point service units at `cryozen:app`**: edit `ExecStart` in your systemd unit and any launcher script you wrote yourself, then run `sudo systemctl daemon-reload` and restart. This removes the dependency on the shim.",
+      "- **Point service units at `cryozen:app`**: service units and launcher scripts require a source checkout, which is not public.",
       "- **Update command-line aliases**: the container image and source repository ship only `cli/cryozen` and its `cli/cryozen-*` subcommands (run them inside Docker with `docker compose exec cryozen python cli/cryozen`; host-side symlinks such as `~/.local/bin/cryozen` apply to source checkouts, which are not public).",
       "- **Move the data directory**: nothing moves the pre-rename data directory to `~/.cryozen` for you, and the application is content to keep using the old path indefinitely. If you want the new name, stop the application, move the old directory to `~/.cryozen`, and start it again.",
     ].join("\n"),
@@ -388,6 +395,55 @@ export const PUBLIC_INSTALL_TRANSFORMS = [
       "## Deploy as a systemd service",
       "",
       "Source builds and the `systemd` service unit files (`cryozen-ui.service` and `install-service.sh`) require a source checkout, which is not public; for public server deployments, pull the published container image from [/download#docker](/download#docker).",
+    ].join("\n"),
+  },
+  {
+    // The cryozen-ui systemd unit and the ~/.cryozen native data path only exist on a source checkout.
+    id: "upgrading-backup-native-archive-source-only",
+    files: ["docs/operations/upgrading.md"],
+    reason: "Keep the Compose tar backup, and replace the systemd backup and native-archive restore with desktop and source-checkout notes.",
+    pattern: [
+      "For a stopped instance, or for a native install where the resolved directory sits outside the repository, copy the directory with a tool that preserves dotfiles:",
+      "",
+      "```bash",
+      "docker compose stop cryozen",
+      "tar -czf ~/cryozen-backup-$(date +%Y%m%d).tar.gz --exclude=data/backups -C . data",
+      "docker compose start cryozen",
+      "```",
+      "",
+      "```bash",
+      "sudo systemctl stop cryozen-ui",
+      "tar -czf ~/cryozen-backup-$(date +%Y%m%d).tar.gz -C ~ .cryozen",
+      "sudo systemctl start cryozen-ui",
+      "```",
+      "",
+      "Know which of these two archives `restore` will take, because they are not interchangeable.",
+      "`verify` and `restore` require every entry to sit under a top-level `data/` directory, so they accept a snapshot and the Compose archive above, whose members are rooted at `data/`.",
+      "They also refuse an archive that holds `data/backups/`, which is why the Compose command excludes it.",
+      "They refuse the native archive, whose members are rooted at `.cryozen/`, with `refusing tarball with entry outside data/`.",
+      "That archive is still a complete copy of your data; it is a raw copy for manual recovery, so restore it by stopping the service and unpacking it over the resolved directory yourself.",
+      "Delete `smriti.db-wal` and `smriti.db-shm` first, because they belong to the database you are replacing:",
+      "",
+      "```bash",
+      "sudo systemctl stop cryozen-ui",
+      "rm -f ~/.cryozen/smriti.db-wal ~/.cryozen/smriti.db-shm",
+      "tar -xzf ~/cryozen-backup-20260731.tar.gz -C ~",
+      "sudo systemctl start cryozen-ui",
+      "```",
+    ].join("\n"),
+    replacement: [
+      "For a stopped instance on the Compose path, copy the directory with a tool that preserves dotfiles:",
+      "",
+      "```bash",
+      "docker compose stop cryozen",
+      "tar -czf ~/cryozen-backup-$(date +%Y%m%d).tar.gz --exclude=data/backups -C . data",
+      "docker compose start cryozen",
+      "```",
+      "",
+      "`verify` and `restore` require every entry to sit under a top-level `data/` directory, so they accept a snapshot and the Compose archive above, whose members are rooted at `data/`.",
+      "They also refuse an archive that holds `data/backups/`, which is why the Compose command excludes it.",
+      "For a desktop package, quit CryoZen and copy its data directory, listed above, with a tool that preserves dotfiles.",
+      "Backing up and restoring a native launcher or systemd install by hand requires a source checkout, which is not public.",
     ].join("\n"),
   },
   {
@@ -1197,6 +1253,24 @@ export function findDockerComposeBuildMatches(text) {
   return matches;
 }
 
+export function findSourceOnlyCommandMatches(text) {
+  const matches = [];
+  const lines = text.split(/\r?\n/);
+  let fenceMarker = "";
+  for (let i = 0; i < lines.length; i += 1) {
+    const fence = /^\s*(`{3,}|~{3,})/.exec(lines[i]);
+    if (fence) {
+      if (!fenceMarker) fenceMarker = fence[1][0];
+      else if (fence[1][0] === fenceMarker) fenceMarker = "";
+      continue;
+    }
+    if (fenceMarker && SOURCE_ONLY_COMMAND_RE.test(lines[i])) {
+      matches.push({ line: i + 1, text: lines[i].trim() });
+    }
+  }
+  return matches;
+}
+
 function formatFrontmatter({ title, source, ref, commit }) {
   const quote = (value) => JSON.stringify(String(value));
   return [
@@ -1279,6 +1353,14 @@ export function syncDocs({
         .map((hit) => `${entry.source}:${hit.line} matched --build in docker compose command: ${hit.text}`)
         .join("\n");
       throw new Error(`Docker Compose --build check failed:\n${detail}`);
+    }
+
+    const sourceOnlyHits = findSourceOnlyCommandMatches(fullContent);
+    if (sourceOnlyHits.length > 0) {
+      const detail = sourceOnlyHits
+        .map((hit) => `${entry.source}:${hit.line} matched a source-checkout-only command in a code block: ${hit.text}`)
+        .join("\n");
+      throw new Error(`Source-only command check failed:\n${detail}`);
     }
 
     prepared.push({
