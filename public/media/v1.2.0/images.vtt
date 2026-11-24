@@ -1,0 +1,25 @@
+WEBVTT
+
+1
+00:00:00.400 --> 00:00:05.700
+Open Gallery from the sidebar. Photos and albums live here.
+
+2
+00:00:05.700 --> 00:00:08.000
+Open a photo to see its details.
+
+3
+00:00:08.000 --> 00:00:12.900
+Click Edit to open it in the layer editor.
+
+4
+00:00:12.900 --> 00:00:16.100
+Add a non-destructive adjustment layer, here Hue / Saturation.
+
+5
+00:00:16.100 --> 00:00:22.000
+Drag the sliders and watch the image change live.
+
+6
+00:00:22.000 --> 00:00:24.900
+Click Apply. The adjustment lives on its own layer, so the original stays untouched.

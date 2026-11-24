@@ -44,6 +44,149 @@
       "transcript": "A fresh CryoZen instance opens on the first-time setup screen. The username alex is typed, a password is entered and confirmed, and Create Admin Account is clicked. CryoZen signs in and opens Settings on the Integrations tab, where the catalog of services to connect is listed."
     },
     {
+      "id": "connect-model",
+      "title": "Connect a local model",
+      "duration": 17.3,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/connect-model.avif",
+        "webp": "/media/v1.2.0/connect-model.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/connect-model.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/connect-model.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/connect-model.vtt",
+      "steps": [
+        {
+          "at": 0.6,
+          "label": "Open Settings"
+        },
+        {
+          "at": 2.6,
+          "label": "Paste the endpoint URL"
+        },
+        {
+          "at": 5.9,
+          "label": "Test"
+        },
+        {
+          "at": 8.5,
+          "label": "Add"
+        },
+        {
+          "at": 12.6,
+          "label": "Ready to chat"
+        }
+      ],
+      "transcript": "Settings opens from the sidebar gear on the Add Models tab. The address of an Ollama running on the Docker host, http://host.docker.internal:11434/v1, is pasted into the Local endpoint field, and Test reports the server online with two models found, qwen3:14b and gemma2:2b. Add saves the endpoint under Added Models and selects qwen3:14b for chat. Settings is closed, the composer shows the selected model, and its model picker lists both models."
+    },
+    {
+      "id": "chat",
+      "title": "Chat with a local model",
+      "duration": 23.7,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/chat.avif",
+        "webp": "/media/v1.2.0/chat.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/chat.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/chat.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/chat.vtt",
+      "steps": [
+        {
+          "at": 0.5,
+          "label": "Pick a model"
+        },
+        {
+          "at": 3.4,
+          "label": "Ask a question"
+        },
+        {
+          "at": 11.3,
+          "label": "Watch it stream"
+        },
+        {
+          "at": 18.3,
+          "label": "Math and diagrams render offline"
+        }
+      ],
+      "transcript": "A new chat is open. The model picker in the composer switches from gemma2:2b to qwen3:14b, both served by a local Ollama. The question asks for a two-sentence explanation of compound interest, the formula in LaTeX, and a Mermaid flowchart. The reply streams in after a short thinking phase; the waiting time is trimmed from the video. The finished answer shows the formula typeset as math and the flowchart drawn as a diagram, both rendered locally."
+    },
+    {
+      "id": "agents",
+      "title": "Agents with Plan mode",
+      "duration": 24.6,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/agents.avif",
+        "webp": "/media/v1.2.0/agents.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/agents.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/agents.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/agents.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Agent mode"
+        },
+        {
+          "at": 2.1,
+          "label": "Shell and Plan mode"
+        },
+        {
+          "at": 3.8,
+          "label": "Describe the task"
+        },
+        {
+          "at": 8.1,
+          "label": "Review the plan"
+        },
+        {
+          "at": 11.7,
+          "label": "Approve & Run"
+        },
+        {
+          "at": 12.6,
+          "label": "Watch the tool trace"
+        },
+        {
+          "at": 15.5,
+          "label": "See the edit"
+        },
+        {
+          "at": 19.7,
+          "label": "See the tests pass"
+        }
+      ],
+      "transcript": "A new chat has the fictional northwind-site project selected as the workspace. The composer is switched to Agent, where Shell Access is on, Plan mode is turned on, and the task Add a /healthz route to app.py that returns 200 and ok, add one new test for it to test_app.py and keep the existing tests, then run python -m unittest is sent. In Plan mode the agent reads the project with read-only tools and proposes a checklist plan. Approve & Run lets it execute: after it reads the files, each edit and command joins the trace as it finishes, as it edits app.py and test_app.py and runs the tests. Opening an edit in the trace shows its diff with the added lines, and opening the test run shows the unittest output, with the new healthz test passing alongside the existing ones. Waiting time between tool calls is trimmed."
+    },
+    {
       "id": "research",
       "title": "Deep Research from the sidebar",
       "duration": 24.9,
@@ -139,6 +282,100 @@
       "transcript": "In a new chat the Web search button in the composer is switched on. The question How do tides work is sent, CryoZen searches the web through its bundled SearXNG instance, and the answer streams in; the wait is trimmed. Expanding Web sources lists the numbered pages the answer drew on, as links."
     },
     {
+      "id": "documents",
+      "title": "Edit living documents with AI",
+      "duration": 24.1,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/documents.avif",
+        "webp": "/media/v1.2.0/documents.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/documents.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/documents.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/documents.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Open Library"
+        },
+        {
+          "at": 4.3,
+          "label": "Open the document"
+        },
+        {
+          "at": 6.3,
+          "label": "Ask for an edit"
+        },
+        {
+          "at": 10.8,
+          "label": "Watch the edit land"
+        },
+        {
+          "at": 13.3,
+          "label": "Review the change"
+        },
+        {
+          "at": 18.3,
+          "label": "Version history"
+        },
+        {
+          "at": 20.7,
+          "label": "Preview or restore"
+        }
+      ],
+      "transcript": "Library opens from the sidebar, the Release notes 1.4 draft document is expanded, and Open docks the document editor beside the chat. The request Add an Upgrade notes section at the end: back up the database, run the migration, then restart the service, with a one-line reply, is sent; with a document open the chat runs in Agent mode, and the model writes the new section into the document, which is accepted if it is offered for review. The model wait is trimmed. The version badge now shows a new version, and the version history panel lists the latest version and v1 with their line differences and a Restore button."
+    },
+    {
+      "id": "memory",
+      "title": "Memory that carries across chats",
+      "duration": 24.9,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/memory.avif",
+        "webp": "/media/v1.2.0/memory.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/memory.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/memory.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/memory.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Open Brain"
+        },
+        {
+          "at": 2.9,
+          "label": "Add a memory"
+        },
+        {
+          "at": 11.7,
+          "label": "Ask in a new chat"
+        },
+        {
+          "at": 21.7,
+          "label": "See which memories were used"
+        }
+      ],
+      "transcript": "Brain opens from the sidebar and lists the saved memories about Alex and Northwind Labs. On the Add tab, the fact Bluefin Analytics is our first pilot customer is added with the project category. In a new chat, the question When does release 1.4 ship, and who is our first pilot customer is answered with December 3 and Bluefin Analytics, drawn from memory; the model wait is trimmed. Clicking the memory pill under the answer lists the memories that were used."
+    },
+    {
       "id": "notes",
       "title": "Keep notes and checklists",
       "duration": 23.4,
@@ -194,7 +431,7 @@
     {
       "id": "mail",
       "title": "Mail with AI summaries and replies",
-      "duration": 16.2,
+      "duration": 17.4,
       "width": 1280,
       "height": 800,
       "poster": {
@@ -226,7 +463,7 @@
           "label": "Summarize"
         },
         {
-          "at": 11.2,
+          "at": 11.3,
           "label": "Draft a reply with AI"
         }
       ],
@@ -282,6 +519,55 @@
       "transcript": "Calendar opens from the sidebar and is dragged to the top edge to fill the screen, then switched to the Week view showing the seeded Northwind meetings. In Quick add, the text Lunch w/ Mira, with the date of Thursday, 12:30pm-1:30pm, Cafe Mango is typed and Enter is pressed. CryoZen turns it into an event form with the title, date, times, and location filled in; the short wait for the model is trimmed. Create adds the event; the week grid is scrolled down to the afternoon, where it appears on Thursday."
     },
     {
+      "id": "automations",
+      "title": "Draft a scheduled task with AI",
+      "duration": 20.2,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/automations.avif",
+        "webp": "/media/v1.2.0/automations.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/automations.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/automations.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/automations.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Open Tasks"
+        },
+        {
+          "at": 3.1,
+          "label": "Add"
+        },
+        {
+          "at": 5.3,
+          "label": "Describe it in plain words"
+        },
+        {
+          "at": 9.3,
+          "label": "Draft with AI"
+        },
+        {
+          "at": 12.1,
+          "label": "Create"
+        },
+        {
+          "at": 14.6,
+          "label": "Run it now"
+        }
+      ],
+      "transcript": "Tasks opens from the sidebar with the scheduled jobs listed. On Add, the description Every Friday at 4pm, summarize this week's notes into a short status update is typed, and Draft with AI fills in the task form with a weekly Friday 4 pm schedule and a prompt; the model wait is trimmed. Create saves the task, its card appears in the list, and Run starts it immediately."
+    },
+    {
       "id": "compute",
       "title": "See which models fit your hardware",
       "duration": 17.4,
@@ -325,6 +611,112 @@
         }
       ],
       "transcript": "Compute opens from the sidebar. Scan / Download shows the detected hardware of this Docker container, with no GPU and its RAM and cores, and a table of models ranked by fit, VRAM, context, speed, and score. EDIT opens the hardware simulator; one GPU with 24 GB of VRAM and 64 GB of RAM is entered and applied, and the table re-ranks for that profile. The Quant filter is then set to Q4."
+    },
+    {
+      "id": "images",
+      "title": "Gallery and layer editor",
+      "duration": 24.9,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/images.avif",
+        "webp": "/media/v1.2.0/images.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/images.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/images.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/images.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Open Gallery"
+        },
+        {
+          "at": 5.7,
+          "label": "Open a photo"
+        },
+        {
+          "at": 8,
+          "label": "Edit in layers"
+        },
+        {
+          "at": 12.9,
+          "label": "Add an adjustment layer"
+        },
+        {
+          "at": 16.1,
+          "label": "Drag the sliders"
+        },
+        {
+          "at": 22,
+          "label": "Apply"
+        }
+      ],
+      "transcript": "Gallery opens from the sidebar with a grid of original landscape illustrations and is dragged to fullscreen. The alpine-sunset image is opened, and Edit launches the layer editor, fit to view. Adjust layer adds a Hue / Saturation adjustment; dragging the Hue and Saturation sliders recolors the mountains live, and Apply keeps the change on its own layer."
+    },
+    {
+      "id": "themes",
+      "title": "Switch and customize themes",
+      "duration": 24.9,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/themes.avif",
+        "webp": "/media/v1.2.0/themes.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/themes.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/themes.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/themes.vtt",
+      "steps": [
+        {
+          "at": 0,
+          "label": "Open Theme"
+        },
+        {
+          "at": 2,
+          "label": "Preview a preset"
+        },
+        {
+          "at": 8.2,
+          "label": "Back to the default"
+        },
+        {
+          "at": 10.2,
+          "label": "Customize"
+        },
+        {
+          "at": 14.7,
+          "label": "Pick a background effect"
+        },
+        {
+          "at": 16.3,
+          "label": "Save it"
+        },
+        {
+          "at": 20,
+          "label": "Turn up Intensity"
+        },
+        {
+          "at": 22.3,
+          "label": "See it behind your chats"
+        }
+      ],
+      "transcript": "The Theme window opens from the sidebar. Clicking the paper, retrowave, and terminal presets restyles the whole app instantly, then the default cryozen preset comes back. On the Customize tab, the window is dragged taller, Background / Effect is set to Perlin Flow, the result is saved as a custom theme named Northwind Night, and Intensity is turned up. Closing the window shows the animated effect behind the conversation."
     },
     {
       "id": "coderun",

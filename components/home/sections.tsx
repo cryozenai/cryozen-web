@@ -61,7 +61,9 @@ export function Hero({ releaseTag, download }: { releaseTag: string | null; down
       tab: surface.name,
       capture: firstCapture(slot.captures),
       heading: surface.tagline,
-      ledger: leaves(surface),
+      // The hero shows only how far data goes; the full detail is one click
+      // away on the tour and the feature page, and would crowd the fold here.
+      ledger: `${privacyLabels[surface.privacy.leaves]}.`,
     };
   });
 
@@ -117,13 +119,15 @@ export function Hero({ releaseTag, download }: { releaseTag: string | null; down
           </ul>
         </div>
 
-        <CaptureSwitcher
-          items={items}
-          label={hero.switcherLabel}
-          name="hero"
-          ledgerLabel={ledgerKey}
-          priority
-        />
+        <div className="min-w-0 xl:pt-12">
+          <CaptureSwitcher
+            items={items}
+            label={hero.switcherLabel}
+            name="hero"
+            ledgerLabel={ledgerKey}
+            priority
+          />
+        </div>
       </Wide>
     </section>
   );

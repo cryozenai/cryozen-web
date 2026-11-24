@@ -293,7 +293,7 @@ export const tourPage = {
     cards: [
       {
         title: "Download CryoZen",
-        body: "Installers for macOS, Windows, and Linux, and a Docker Compose stack for servers and GPUs.",
+        body: "Installers for macOS, Windows, and Linux, and a Docker Compose stack for servers.",
         href: "/download",
         cta: "Get the build",
       },
