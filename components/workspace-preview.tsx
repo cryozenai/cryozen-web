@@ -1,3 +1,4 @@
+import { desktopPort } from "@/lib/platforms";
 /**
  * A stylized frame of the workspace, not a screenshot. It exists to show the
  * shape of the product (one window, many surfaces) without claiming pixel
@@ -35,7 +36,7 @@ export function WorkspacePreview() {
         <span className="size-2.5 rounded-full bg-[#2b3a49]" />
         <span className="size-2.5 rounded-full bg-[#2b3a49]" />
         <span className="size-2.5 rounded-full bg-[#2b3a49]" />
-        <span className="ml-3 font-mono text-[11px] text-muted">127.0.0.1:7860</span>
+        <span className="ml-3 font-mono text-[11px] text-muted">127.0.0.1:{desktopPort}</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-[172px_1fr]">

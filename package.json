@@ -14,7 +14,8 @@
     "check:node-pins": "node scripts/check-node-pins.mjs",
     "check:deck-print": "node scripts/check-deck-print.mjs",
     "check:links": "node scripts/check-links.mjs",
-    "check:production": "node scripts/check-production.mjs"
+    "check:production": "node scripts/check-production.mjs",
+    "sync:facts": "node scripts/sync-release-facts.mjs"
   },
   "dependencies": {
     "next": "16.4.5",

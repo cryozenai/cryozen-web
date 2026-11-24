@@ -12,7 +12,7 @@
  * the Docker stack runs them. User data lives in the platform's per-user data
  * directory, never inside the install.
  */
-import { GITHUB_RELEASES_REPO, releasesRepoUrl } from "@/lib/site";
+import releaseFacts from "./release-facts.json" with { type: "json" };
 
 export type PlatformId = "macos" | "windows" | "linux" | "docker";
 
@@ -31,14 +31,12 @@ export interface Platform {
   alternates?: { assetName: string; label: string }[];
 }
 
-export const dockerCommands = [
-  // Derived rather than written out: this URL names the same repository as
-  // releasesRepoUrl, and spelling it twice is what let it survive the move to
-  // the cryozenai organisation while the rest of the site had been updated.
-  `git clone ${releasesRepoUrl}.git`,
-  `cd ${GITHUB_RELEASES_REPO} && cp .env.example .env`,
-  "docker compose up -d",
-] as const;
+export const {
+  docker: dockerCommands,
+  desktop_port: desktopPort,
+  docker_port: dockerPort,
+  data_dirs: dataDirs,
+} = releaseFacts.install;
 
 export const platforms: Platform[] = [
   {
@@ -56,7 +54,7 @@ export const platforms: Platform[] = [
     steps: [
       "Open CryoZen.dmg and drag CryoZen to Applications.",
       "If macOS says the app cannot be opened, right-click CryoZen, choose Open, then Open again: unsigned builds need this once. Signed and notarized builds open normally.",
-      "Your browser opens at http://127.0.0.1:7860 when the server is ready. Data lives in ~/Library/Application Support/CryoZen.",
+      `Your browser opens at http://127.0.0.1:${desktopPort} when the server is ready. Data lives in ${dataDirs.macos}.`,
     ],
     alternates: [{ assetName: "CryoZen-Intel.dmg", label: "Intel Macs (.dmg)" }],
   },
@@ -72,7 +70,7 @@ export const platforms: Platform[] = [
     steps: [
       "Run CryoZen-Setup-x64.exe and follow the prompts. Silent install for scripts: CryoZen-Setup-x64.exe /S",
       "If SmartScreen appears on an unsigned build, choose More info, then Run anyway. Signed builds do not prompt.",
-      "Launch CryoZen from the Start Menu. Your browser opens at http://127.0.0.1:7860 when the server is ready. Data lives in %LOCALAPPDATA%\\CryoZen and survives uninstall.",
+      `Launch CryoZen from the Start Menu. Your browser opens at http://127.0.0.1:${desktopPort} when the server is ready. Data lives in ${dataDirs.windows} and survives uninstall.`,
     ],
     alternates: [
       {
@@ -93,7 +91,7 @@ export const platforms: Platform[] = [
     steps: [
       "Make it executable: chmod +x CryoZen-x86_64.AppImage",
       "Run it: ./CryoZen-x86_64.AppImage",
-      "Your browser opens at http://127.0.0.1:7860 when the server is ready. Data lives in ~/.local/share/cryozen.",
+      `Your browser opens at http://127.0.0.1:${desktopPort} when the server is ready. Data lives in ${dataDirs.linux}.`,
     ],
     alternates: [
       { assetName: "cryozen_amd64.deb", label: ".deb (Debian, Ubuntu)" },
@@ -111,9 +109,8 @@ export const platforms: Platform[] = [
       "The recommended path for servers, GPUs, and anything long-running. Runs the full stack, including SearXNG and ChromaDB, from the published image (linux/amd64 and linux/arm64); no build step.",
     requirements: ["Docker with Compose v2", "A host you control"],
     steps: [
-      dockerCommands[0],
-      dockerCommands[1],
-      `${dockerCommands[2]}, then open http://localhost:7000`,
+      ...dockerCommands,
+      `Open http://localhost:${dockerPort}.`,
     ],
   },
 ];

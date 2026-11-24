@@ -1,0 +1,79 @@
+{
+  "brand": {
+    "prose": "CryoZen",
+    "id": "cryozen"
+  },
+  "owner": {
+    "org": "cryozenai",
+    "legal_holder": null
+  },
+  "image": "ghcr.io/cryozenai/cryozen",
+  "repos": {
+    "source": "cryozenai/cryozen",
+    "channel": "cryozenai/cryozen-releases",
+    "site": "cryozenai/cryozen-web"
+  },
+  "install": {
+    "docker": [
+      "git clone https://github.com/cryozenai/cryozen-releases.git",
+      "cd cryozen-releases && cp .env.example .env",
+      "docker compose up -d"
+    ],
+    "desktop_port": 7860,
+    "docker_port": 7000,
+    "data_dirs": {
+      "macos": "~/Library/Application Support/CryoZen",
+      "windows": "%LOCALAPPDATA%\\CryoZen",
+      "linux": "~/.local/share/cryozen"
+    }
+  },
+  "license": {
+    "spdx": "LicenseRef-CryoZen",
+    "url": null
+  },
+  "docs_base": null,
+  "features": [
+    {
+      "id": "chat",
+      "claim": "Chat with local and hosted models",
+      "surfaces": [
+        "desktop",
+        "docker"
+      ]
+    },
+    {
+      "id": "calendar",
+      "claim": "Calendar with recurring events",
+      "surfaces": [
+        "desktop",
+        "docker"
+      ]
+    },
+    {
+      "id": "deep-research",
+      "claim": "Multi-step deep research",
+      "surfaces": [
+        "desktop",
+        "docker"
+      ]
+    }
+  ],
+  "banned": [
+    "shreejitverma/cryozen",
+    "Srijan",
+    "source is published"
+  ],
+  "version": "v1.2.0",
+  "assets": [
+    "CryoZen-Intel.dmg",
+    "CryoZen-Linux-Portable.tar.gz",
+    "CryoZen-Setup-x64.exe",
+    "CryoZen-Windows-Portable.zip",
+    "CryoZen-x86_64.AppImage",
+    "CryoZen.dmg",
+    "SHA256SUMS.txt",
+    "cryozen.x86_64.rpm",
+    "cryozen_amd64.deb"
+  ],
+  "metrics": null
+}
