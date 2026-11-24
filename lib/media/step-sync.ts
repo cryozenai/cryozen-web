@@ -34,6 +34,18 @@ export function formatTimecode(seconds: number): string {
   return `${minutes}:${String(whole % 60).padStart(2, "0")}`;
 }
 
+/**
+ * `101` becomes `1 min 41 s`: a length of real time in words, for the note
+ * that says how long a shortened recording actually took.
+ */
+export function formatSpan(seconds: number): string {
+  const whole = Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds) : 0;
+  const minutes = Math.floor(whole / 60);
+  const rest = whole % 60;
+  if (minutes === 0) return `${rest} s`;
+  return rest === 0 ? `${minutes} min` : `${minutes} min ${rest} s`;
+}
+
 /** A how-to step as the content model writes it: untimed, because the recording owns timing. */
 export interface GuideStep {
   title: string;

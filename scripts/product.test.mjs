@@ -34,7 +34,7 @@ const { TAGLINE_MAX, SUMMARY_MAX, docsHref, privacyLabels, groupLabels } = await
 );
 const { manifest, captureIds, findCaptureId, getCapture } = await import("../lib/media/index.ts");
 const { parseManifest } = await import("../lib/media/parse.ts");
-const { activeStepIndex, chapterTimeline, formatTimecode } = await import(
+const { activeStepIndex, chapterTimeline, formatSpan, formatTimecode } = await import(
   "../lib/media/step-sync.ts"
 );
 const { desktopAddress } = await import("../lib/media/address.ts");
@@ -476,6 +476,33 @@ test("formatTimecode reads like a player", () => {
   assert.equal(formatTimecode(75.4), "1:15");
   assert.equal(formatTimecode(-3), "0:00");
   assert.equal(formatTimecode(Number.NaN), "0:00");
+});
+
+test("formatSpan says a length of real time in words", () => {
+  assert.equal(formatSpan(101), "1 min 41 s");
+  assert.equal(formatSpan(45), "45 s");
+  assert.equal(formatSpan(120), "2 min");
+  assert.equal(formatSpan(59.6), "1 min", "rounds to the nearest second before splitting");
+  assert.equal(formatSpan(0), "0 s");
+  assert.equal(formatSpan(Number.NaN), "0 s");
+});
+
+test("parseManifest keeps realDuration on a shortened recording and rejects a nonsensical one", () => {
+  const shortened = specManifest();
+  shortened.captures[0].realDuration = 101;
+  assert.equal(parseManifest(shortened).captures[0].realDuration, 101);
+  assert.equal("realDuration" in parseManifest(specManifest()).captures[0], false);
+
+  const withReal = (value) => {
+    const raw = specManifest();
+    raw.captures[0].realDuration = value;
+    return () => parseManifest(raw);
+  };
+  // The recording is 18.4 s long; a shortened one took longer than that for real.
+  assert.throws(withReal(18.4), /capture "chat"\.realDuration: expected more than the duration 18\.4/);
+  assert.throws(withReal(10), /capture "chat"\.realDuration: expected more than the duration 18\.4/);
+  assert.throws(withReal("101"), /capture "chat"\.realDuration: expected a number greater than zero/);
+  assert.throws(withReal(null), /capture "chat"\.realDuration: expected a number greater than zero/);
 });
 
 test("chapterTimeline syncs only the recording's marks and leaves the how-to untimed", () => {

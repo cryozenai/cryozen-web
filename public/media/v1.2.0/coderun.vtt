@@ -1,0 +1,17 @@
+WEBVTT
+
+1
+00:00:00.400 --> 00:00:06.600
+Ask for a JavaScript snippet.
+
+2
+00:00:06.600 --> 00:00:14.700
+The reply arrives as a code block with Run, Edit, and Copy actions.
+
+3
+00:00:14.700 --> 00:00:16.600
+Click Run. The code runs in a sandboxed worker in your browser, with a 15 second limit.
+
+4
+00:00:16.600 --> 00:00:20.300
+The console output appears right under the code.

@@ -1,1 +1,412 @@
-{ "version": "v1.2.0", "theme": null, "captures": [] }
+{
+  "version": "v1.2.0",
+  "theme": "cryozen",
+  "captures": [
+    {
+      "id": "first-run",
+      "title": "Create the admin account on first run",
+      "duration": 15.6,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/first-run.avif",
+        "webp": "/media/v1.2.0/first-run.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/first-run.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/first-run.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/first-run.vtt",
+      "steps": [
+        {
+          "at": 0.7,
+          "label": "Choose a username"
+        },
+        {
+          "at": 2.4,
+          "label": "Set a password"
+        },
+        {
+          "at": 6.6,
+          "label": "Create Admin Account"
+        },
+        {
+          "at": 9.5,
+          "label": "Land on Integrations"
+        }
+      ],
+      "transcript": "A fresh CryoZen instance opens on the first-time setup screen. The username alex is typed, a password is entered and confirmed, and Create Admin Account is clicked. CryoZen signs in and opens Settings on the Integrations tab, where the catalog of services to connect is listed."
+    },
+    {
+      "id": "research",
+      "title": "Deep Research from the sidebar",
+      "duration": 24.9,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/research.avif",
+        "webp": "/media/v1.2.0/research.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/research.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/research.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/research.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Open Deep Research"
+        },
+        {
+          "at": 2.4,
+          "label": "Ask a specific question"
+        },
+        {
+          "at": 6.6,
+          "label": "Choose rounds and model"
+        },
+        {
+          "at": 8.5,
+          "label": "Start"
+        },
+        {
+          "at": 13.1,
+          "label": "Shortened"
+        },
+        {
+          "at": 18.6,
+          "label": "Finished, with its sources"
+        },
+        {
+          "at": 20.5,
+          "label": "Discuss the report"
+        }
+      ],
+      "transcript": "Deep Research opens from the sidebar. The question How efficient are photovoltaic solar panels at turning sunlight into electricity is typed, Rounds is set to 1, and the local Ollama endpoint with gemma2:2b is chosen as the report model. Start begins the job, which plans sub-questions, searches the web through the bundled private SearXNG instance, reads pages, and writes a report. Shortened: this run took 1 minute 41 seconds of real time; the waiting part is shown as a time-lapse 19 times faster, with nothing removed. The finished job lists its duration and source count, and Discuss opens the report in a new chat for follow-up questions.",
+      "realDuration": 101
+    },
+    {
+      "id": "websearch",
+      "title": "Web search in chat with sources",
+      "duration": 17.2,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/websearch.avif",
+        "webp": "/media/v1.2.0/websearch.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/websearch.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/websearch.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/websearch.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Turn on Web search"
+        },
+        {
+          "at": 2.1,
+          "label": "Ask a question"
+        },
+        {
+          "at": 3.9,
+          "label": "Answer with sources"
+        },
+        {
+          "at": 12.4,
+          "label": "Check the sources"
+        }
+      ],
+      "transcript": "In a new chat the Web search button in the composer is switched on. The question How do tides work is sent, CryoZen searches the web through its bundled SearXNG instance, and the answer streams in; the wait is trimmed. Expanding Web sources lists the numbered pages the answer drew on, as links."
+    },
+    {
+      "id": "notes",
+      "title": "Keep notes and checklists",
+      "duration": 23.4,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/notes.avif",
+        "webp": "/media/v1.2.0/notes.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/notes.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/notes.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/notes.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Open Notes"
+        },
+        {
+          "at": 2.9,
+          "label": "Check off an item"
+        },
+        {
+          "at": 5.7,
+          "label": "Add a to-do"
+        },
+        {
+          "at": 12.5,
+          "label": "Tag it"
+        },
+        {
+          "at": 15.1,
+          "label": "Save"
+        },
+        {
+          "at": 17.2,
+          "label": "Filter by tag"
+        },
+        {
+          "at": 20.1,
+          "label": "Today view"
+        }
+      ],
+      "transcript": "Notes opens as a side panel next to the chat. On the pinned Release 1.4 checklist, the item Publish the release notes is checked off. A new to-do titled Pilot kickoff prep is created with two items, Share the agenda and Book the demo room, tagged #launch, colored green, and saved. Clicking the #launch chip filters to launch notes, and the Today chip shows the next step from each goal."
+    },
+    {
+      "id": "mail",
+      "title": "Mail with AI summaries and replies",
+      "duration": 16.2,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/mail.avif",
+        "webp": "/media/v1.2.0/mail.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/mail.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/mail.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/mail.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Open Email"
+        },
+        {
+          "at": 3.5,
+          "label": "Open a message"
+        },
+        {
+          "at": 6.1,
+          "label": "Summarize"
+        },
+        {
+          "at": 11.2,
+          "label": "Draft a reply with AI"
+        }
+      ],
+      "transcript": "Email opens from the sidebar with the fictional Northwind inbox, five unread messages from a local test mail server. The message Onboarding screens ready for review, from Sam Okafor, is opened. Summary and Generate now produce a short AI summary of the message; the model wait is trimmed. AI reply with the Fast option drafts a reply that opens for editing before sending."
+    },
+    {
+      "id": "calendar",
+      "title": "Plan the week in Calendar",
+      "duration": 17.2,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/calendar.avif",
+        "webp": "/media/v1.2.0/calendar.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/calendar.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/calendar.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/calendar.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Open Calendar"
+        },
+        {
+          "at": 2.6,
+          "label": "Go fullscreen"
+        },
+        {
+          "at": 4.8,
+          "label": "Week view"
+        },
+        {
+          "at": 7.1,
+          "label": "Quick add in plain words"
+        },
+        {
+          "at": 10.2,
+          "label": "Review and Create"
+        },
+        {
+          "at": 14.1,
+          "label": "On the calendar"
+        }
+      ],
+      "transcript": "Calendar opens from the sidebar and is dragged to the top edge to fill the screen, then switched to the Week view showing the seeded Northwind meetings. In Quick add, the text Lunch w/ Mira, with the date of Thursday, 12:30pm-1:30pm, Cafe Mango is typed and Enter is pressed. CryoZen turns it into an event form with the title, date, times, and location filled in; the short wait for the model is trimmed. Create adds the event, and it appears on Thursday in the week grid."
+    },
+    {
+      "id": "compute",
+      "title": "See which models fit your hardware",
+      "duration": 15.7,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/compute.avif",
+        "webp": "/media/v1.2.0/compute.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/compute.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/compute.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/compute.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Open Compute"
+        },
+        {
+          "at": 2.4,
+          "label": "Scan / Download reads your hardware"
+        },
+        {
+          "at": 5.3,
+          "label": "Edit the hardware profile"
+        },
+        {
+          "at": 9.2,
+          "label": "Apply"
+        },
+        {
+          "at": 12.5,
+          "label": "Filter by quantization"
+        }
+      ],
+      "transcript": "Compute opens from the sidebar. Scan / Download shows the detected hardware of this Docker container, with no GPU and its RAM and cores, and a table of models ranked by fit, VRAM, context, speed, and score. EDIT opens the hardware simulator; one GPU with 24 GB of VRAM and 64 GB of RAM is entered and applied, and the table re-ranks for that profile. The Quant filter is then set to Q4."
+    },
+    {
+      "id": "coderun",
+      "title": "Run JavaScript in a sandbox",
+      "duration": 20.3,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/coderun.avif",
+        "webp": "/media/v1.2.0/coderun.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/coderun.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/coderun.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/coderun.vtt",
+      "steps": [
+        {
+          "at": 0.4,
+          "label": "Ask for code"
+        },
+        {
+          "at": 6.6,
+          "label": "Get a code block"
+        },
+        {
+          "at": 14.7,
+          "label": "Click Run"
+        },
+        {
+          "at": 16.6,
+          "label": "See the output"
+        }
+      ],
+      "transcript": "In a new chat, the request asks for a short JavaScript snippet that estimates pi from 200,000 random points, with only the code in the reply. The answer arrives as a code block with Run, Edit, and Copy buttons; the model wait is trimmed. Clicking Run executes the code in a sandboxed worker inside the browser, and the logged estimate of pi appears directly beneath the code block."
+    },
+    {
+      "id": "search",
+      "title": "Find any conversation with Ctrl+K",
+      "duration": 13.1,
+      "width": 1280,
+      "height": 800,
+      "poster": {
+        "avif": "/media/v1.2.0/search.avif",
+        "webp": "/media/v1.2.0/search.webp"
+      },
+      "sources": [
+        {
+          "src": "/media/v1.2.0/search.webm",
+          "type": "video/webm; codecs=vp9"
+        },
+        {
+          "src": "/media/v1.2.0/search.mp4",
+          "type": "video/mp4; codecs=avc1.640028"
+        }
+      ],
+      "captions": "/media/v1.2.0/search.vtt",
+      "steps": [
+        {
+          "at": 0.6,
+          "label": "Press Ctrl+K"
+        },
+        {
+          "at": 1.5,
+          "label": "Type a few words"
+        },
+        {
+          "at": 3.8,
+          "label": "Jump to the chat"
+        },
+        {
+          "at": 7,
+          "label": "Search again"
+        }
+      ],
+      "transcript": "From an empty chat, Ctrl+K opens conversation search. Typing handshake finds the earlier TCP handshake conversation with the match highlighted, and clicking the result opens that chat. Ctrl+K again, typing digest, and clicking the match jumps to the conversation about naming a weekly digest email."
+    }
+  ]
+}

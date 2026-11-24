@@ -92,10 +92,22 @@ function parseCapture(value: unknown, index: number, directory: string): Capture
     fail(`${named}.sources`, "expected at least one video source");
   }
 
+  let realDuration: number | undefined;
+  if (value.realDuration !== undefined) {
+    realDuration = positive(value.realDuration, `${named}.realDuration`);
+    if (realDuration <= duration) {
+      fail(
+        `${named}.realDuration`,
+        `expected more than the duration ${duration}, since it marks a shortened recording`,
+      );
+    }
+  }
+
   return {
     id: id as CaptureId,
     title: text(value.title, `${named}.title`),
     duration,
+    ...(realDuration === undefined ? {} : { realDuration }),
     width: positive(value.width, `${named}.width`),
     height: positive(value.height, `${named}.height`),
     poster: {

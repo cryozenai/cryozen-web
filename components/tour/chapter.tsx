@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { AppFrame, StaticFrame } from "@/components/media/app-frame";
 import { ProductVideo, type ProductVideoHandle } from "@/components/media/product-video";
+import { ShortenedNote } from "@/components/media/shortened-note";
 import { textLink } from "@/components/ui";
 import { activeStepIndex, chapterTimeline, formatTimecode } from "@/lib/media/step-sync";
 import type { TimedStep } from "@/lib/media/step-sync";
@@ -68,7 +69,13 @@ export function Chapter({
       </header>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <div className="min-w-0">
+        {/*
+         * The column beside the player is several times its height. Pinning the
+         * player keeps the recording in view while the steps are read, so
+         * pressing a step is seen to do something. The offset clears the site
+         * header and the tour's chapter index.
+         */}
+        <div className="min-w-0 lg:sticky lg:top-32">
           <AppFrame>
             {capture ? (
               <ProductVideo
@@ -87,8 +94,10 @@ export function Chapter({
             )}
           </AppFrame>
 
+          {capture ? <ShortenedNote capture={capture} className="mt-3" /> : null}
+
           {capture ? (
-            <details className="mt-4 rounded-lg border border-hairline bg-surface/60 px-4 py-3 text-sm/6 text-muted">
+            <details className="mt-3 rounded-lg border border-hairline bg-surface/60 px-4 py-3 text-sm/6 text-muted">
               <summary className="cursor-pointer font-medium text-ink">
                 Transcript: {capture.title}
               </summary>
