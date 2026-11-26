@@ -93,7 +93,7 @@ test("unlisted decks are crawled, and an internal link to a missing page fails",
 
 test("mailto links are ignored and a clean site reports nothing", async () => {
   const base = await site({
-    "/": `<a href="mailto:hello@cryozen.ai">mail</a><a href="${host}/moved">redirected</a>`,
+    "/": `<a href="mailto:founder@cryozen.ai">mail</a><a href="${host}/moved">redirected</a>`,
     "/pitch": "",
   });
 
