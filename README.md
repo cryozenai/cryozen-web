@@ -241,7 +241,6 @@ Deleting the `metadata` export in that layout makes them public.
 
 Open items are marked `TODO(cryozen)` in the source:
 
-- `lib/site.ts` - confirm the `hello@cryozen.ai` mailbox exists.
 - `lib/pricing.ts` - set real prices on the Team and Enterprise tiers. They currently render as "Pricing on request" rather than an invented number.
 - `app/privacy/page.tsx`, `app/terms/page.tsx` - have counsel review.
 - `lib/decks/*.ts` - the decks state pre-launch, pre-revenue traction on purpose. Replace the velocity metrics with real adoption numbers once there are any, and re-run `npm run check:deck-print` afterwards.

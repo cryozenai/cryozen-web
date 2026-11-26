@@ -16,8 +16,12 @@ export const site = {
   tagline: "Your AI workspace, on hardware you control.",
   description:
     "CryoZen is a self-hosted AI workspace: chat, autonomous agents with real tools, deep research, living documents, and a mail and calendar client in one application. Local models or your own API keys. No telemetry.",
-  // TODO(cryozen): confirm this mailbox exists before the site goes live.
-  contactEmail: "hello@cryozen.ai",
+  /**
+   * The single contact address for everything for now: sales, support,
+   * security reports, privacy and legal requests. Every page reads it from
+   * here, so changing it is this one line.
+   */
+  contactEmail: "founder@cryozen.ai",
 } as const;
 
 export const releasesRepoUrl = `https://github.com/${releaseFacts.repos.channel}`;
